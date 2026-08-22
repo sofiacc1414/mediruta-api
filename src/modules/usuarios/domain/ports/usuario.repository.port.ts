@@ -24,10 +24,17 @@ export type UsuarioRol = {
   estado: EstadoRol;
 };
 
+export type CuentaActual = {
+  id: string;
+  correo: string;
+  estadoCuenta: EstadoCuenta;
+};
+
 export abstract class UsuarioRepositoryPort {
   abstract registrar(input: RegistrarUsuarioInput): Promise<string>;
   abstract obtenerCredencialesLogin(
     correo: string,
   ): Promise<CredencialesLogin | null>;
+  abstract obtenerCuentaActual(usuarioId: string): Promise<CuentaActual | null>;
   abstract obtenerRoles(usuarioId: string): Promise<UsuarioRol[]>;
 }

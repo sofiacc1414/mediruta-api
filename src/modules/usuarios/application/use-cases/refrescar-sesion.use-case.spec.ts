@@ -12,9 +12,11 @@ describe('RefrescarSesionUseCase', () => {
   const sesiones: SesionRepositoryPort = {
     crear: jest.fn(),
     rotar: jest.fn(),
+    validar: jest.fn(),
   };
   const accessTokens: AccessTokenPort = {
     sign: jest.fn(),
+    verify: jest.fn(),
   };
 
   const useCase = new RefrescarSesionUseCase(

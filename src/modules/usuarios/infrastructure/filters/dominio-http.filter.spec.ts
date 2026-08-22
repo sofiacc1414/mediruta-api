@@ -1,6 +1,7 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
+import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { DominioHttpFilter } from './dominio-http.filter';
 
@@ -49,6 +50,18 @@ describe('DominioHttpFilter', () => {
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.UNAUTHORIZED,
       message: 'La sesión no es válida o ha expirado.',
+    });
+  });
+
+  it('mapea NoAutorizadoError a HTTP 401 con mensaje genérico', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new NoAutorizadoError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.UNAUTHORIZED,
+      message: 'No autorizado.',
     });
   });
 });

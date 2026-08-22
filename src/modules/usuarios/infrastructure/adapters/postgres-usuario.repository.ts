@@ -3,6 +3,7 @@ import { DatabaseService } from '../../../../shared/infrastructure/database/data
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import {
   CredencialesLogin,
+  CuentaActual,
   RegistrarUsuarioInput,
   UsuarioRepositoryPort,
   UsuarioRol,
@@ -51,6 +52,32 @@ export class PostgresUsuarioRepository extends UsuarioRepositoryPort {
         correo: row.correo,
         passwordHash: row.password_hash,
         estadoCuenta: row.estado_cuenta,
+      };
+    });
+  }
+
+  obtenerCuentaActual(usuarioId: string): Promise<CuentaActual | null> {
+    return this.db.withUserContext(usuarioId, async (client) => {
+      const result = await client.query<{
+        id: string;
+        correo: string;
+        estado_cuenta: CuentaActual['estadoCuenta'];
+      }>(
+        `select id, correo, estado_cuenta
+         from public.usuarios
+         where id = $1
+           and estado_cuenta = 'activa'`,
+        [usuarioId],
+      );
+
+      if (!result.rowCount) {
+        return null;
+      }
+
+      return {
+        id: result.rows[0].id,
+        correo: result.rows[0].correo,
+        estadoCuenta: result.rows[0].estado_cuenta,
       };
     });
   }

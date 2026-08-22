@@ -5,6 +5,7 @@ import {
   RotarSesionInput,
   RotarSesionResultado,
   SesionRepositoryPort,
+  ValidarSesionInput,
 } from '../../domain/ports/sesion.repository.port';
 
 @Injectable()
@@ -50,6 +51,16 @@ export class PostgresSesionRepository extends SesionRepositoryPort {
         usuarioId: result.rows[0].usuario_id,
         sid: result.rows[0].sid,
       };
+    });
+  }
+
+  validar(input: ValidarSesionInput): Promise<boolean> {
+    return this.db.withAppRole(async (client) => {
+      const result = await client.query(
+        'select * from app.validar_sesion($1, $2)',
+        [input.usuarioId, input.sid],
+      );
+      return Boolean(result.rowCount);
     });
   }
 }

@@ -27,6 +27,7 @@ describe('IniciarSesionUseCase', () => {
   const usuarios: UsuarioRepositoryPort = {
     registrar: jest.fn(),
     obtenerCredencialesLogin: jest.fn(),
+    obtenerCuentaActual: jest.fn(),
     obtenerRoles: jest.fn(),
   };
   const refreshTokens: RefreshTokenPort = {
@@ -36,9 +37,11 @@ describe('IniciarSesionUseCase', () => {
   const sesiones: SesionRepositoryPort = {
     crear: jest.fn(),
     rotar: jest.fn(),
+    validar: jest.fn(),
   };
   const accessTokens: AccessTokenPort = {
     sign: jest.fn(),
+    verify: jest.fn(),
   };
 
   const useCase = new IniciarSesionUseCase(

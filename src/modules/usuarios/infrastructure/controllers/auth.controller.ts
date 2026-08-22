@@ -1,20 +1,26 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
   Req,
   UseFilters,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { IniciarSesionUseCase } from '../../application/use-cases/iniciar-sesion.use-case';
+import { ObtenerSesionActualUseCase } from '../../application/use-cases/obtener-sesion-actual.use-case';
 import { RefrescarSesionUseCase } from '../../application/use-cases/refrescar-sesion.use-case';
 import { RegistrarUsuarioUseCase } from '../../application/use-cases/registrar-usuario.use-case';
+import type { IdentidadAutenticada } from '../../domain/identidad-autenticada';
+import { UsuarioAutenticado } from '../decorators/usuario-autenticado.decorator';
 import { IniciarSesionDto } from '../dtos/iniciar-sesion.dto';
 import { RefrescarSesionDto } from '../dtos/refrescar-sesion.dto';
 import { RegistrarUsuarioDto } from '../dtos/registrar-usuario.dto';
 import { DominioHttpFilter } from '../filters/dominio-http.filter';
+import { AccessAuthGuard } from '../guards/access-auth.guard';
 
 @Controller('auth')
 @UseFilters(DominioHttpFilter)
@@ -23,6 +29,7 @@ export class AuthController {
     private readonly registrarUsuario: RegistrarUsuarioUseCase,
     private readonly iniciarSesion: IniciarSesionUseCase,
     private readonly refrescarSesion: RefrescarSesionUseCase,
+    private readonly obtenerSesionActual: ObtenerSesionActualUseCase,
   ) {}
 
   @Post('registro')
@@ -63,6 +70,13 @@ export class AuthController {
       userAgent: headerTexto(req.headers['user-agent']),
       ip: req.ip ?? null,
     });
+  }
+
+  @Get('me')
+  @UseGuards(AccessAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  me(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
+    return this.obtenerSesionActual.execute(identidad.usuarioId);
   }
 }
 

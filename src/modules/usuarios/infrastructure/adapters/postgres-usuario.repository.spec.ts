@@ -90,4 +90,39 @@ describe('PostgresUsuarioRepository', () => {
     );
     expect(roles).toEqual([{ codigo: 'PACIENTE', estado: 'habilitado' }]);
   });
+
+  it('consulta la cuenta actual con withUserContext y sin password_hash', async () => {
+    const query = jest.fn().mockResolvedValue({
+      rowCount: 1,
+      rows: [
+        {
+          id: 'usuario-uuid',
+          correo: 'persona@mail.com',
+          estado_cuenta: 'activa',
+        },
+      ],
+    });
+    const withUserContext = jest.fn(async (_id, callback) =>
+      callback({ query }),
+    );
+    const db = { withUserContext } as unknown as DatabaseService;
+
+    const repository = new PostgresUsuarioRepository(db);
+    const cuenta = await repository.obtenerCuentaActual('usuario-uuid');
+
+    expect(withUserContext).toHaveBeenCalledWith(
+      'usuario-uuid',
+      expect.any(Function),
+    );
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('select id, correo, estado_cuenta'),
+      ['usuario-uuid'],
+    );
+    expect(query.mock.calls[0][0]).not.toContain('password_hash');
+    expect(cuenta).toEqual({
+      id: 'usuario-uuid',
+      correo: 'persona@mail.com',
+      estadoCuenta: 'activa',
+    });
+  });
 });

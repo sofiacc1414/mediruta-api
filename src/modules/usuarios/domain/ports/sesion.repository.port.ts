@@ -19,7 +19,13 @@ export type RotarSesionResultado = {
   sid: string;
 };
 
+export type ValidarSesionInput = {
+  usuarioId: string;
+  sid: string;
+};
+
 export abstract class SesionRepositoryPort {
   abstract crear(input: CrearSesionInput): Promise<string>;
   abstract rotar(input: RotarSesionInput): Promise<RotarSesionResultado | null>;
+  abstract validar(input: ValidarSesionInput): Promise<boolean>;
 }

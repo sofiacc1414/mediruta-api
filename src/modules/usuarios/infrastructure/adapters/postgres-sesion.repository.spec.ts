@@ -76,4 +76,44 @@ describe('PostgresSesionRepository', () => {
       }),
     ).resolves.toBeNull();
   });
+
+  it('valida la sesión únicamente vía app.validar_sesion', async () => {
+    const query = jest.fn().mockResolvedValue({
+      rowCount: 1,
+      rows: [{ usuario_id: 'usuario-uuid' }],
+    });
+    const withAppRole = jest.fn(async (callback) => callback({ query }));
+    const db = { withAppRole } as unknown as DatabaseService;
+
+    const repository = new PostgresSesionRepository(db);
+
+    await expect(
+      repository.validar({
+        usuarioId: 'usuario-uuid',
+        sid: 'sid-uuid',
+      }),
+    ).resolves.toBe(true);
+
+    expect(withAppRole).toHaveBeenCalled();
+    expect(query).toHaveBeenCalledWith(
+      'select * from app.validar_sesion($1, $2)',
+      ['usuario-uuid', 'sid-uuid'],
+    );
+  });
+
+  it('devuelve false cuando app.validar_sesion no retorna filas', async () => {
+    const query = jest.fn().mockResolvedValue({ rowCount: 0, rows: [] });
+    const db = {
+      withAppRole: jest.fn(async (callback) => callback({ query })),
+    } as unknown as DatabaseService;
+
+    const repository = new PostgresSesionRepository(db);
+
+    await expect(
+      repository.validar({
+        usuarioId: 'usuario-uuid',
+        sid: 'sid-revocado',
+      }),
+    ).resolves.toBe(false);
+  });
 });

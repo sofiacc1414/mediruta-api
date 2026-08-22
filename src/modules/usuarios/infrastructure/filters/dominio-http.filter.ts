@@ -7,6 +7,7 @@ import {
 import { Response } from 'express';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
+import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-invalido.error';
 
@@ -15,6 +16,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   TipoRegistroInvalidoError,
   CredencialesInvalidasError,
   RefreshTokenInvalidoError,
+  NoAutorizadoError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -30,7 +32,8 @@ export class DominioHttpFilter implements ExceptionFilter {
 
     if (
       exception instanceof CredencialesInvalidasError ||
-      exception instanceof RefreshTokenInvalidoError
+      exception instanceof RefreshTokenInvalidoError ||
+      exception instanceof NoAutorizadoError
     ) {
       response.status(HttpStatus.UNAUTHORIZED).json({
         statusCode: HttpStatus.UNAUTHORIZED,
