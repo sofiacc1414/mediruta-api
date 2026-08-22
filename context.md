@@ -257,6 +257,21 @@ supabase/
 - Los refresh tokens se guardan de forma que puedan revocarse (ej. tabla `sesiones` o `refresh_tokens` con estado activo/revocado) — un logout o cambio de contraseña debe poder invalidar sesiones existentes.
 - La App (Flutter) y el Web **nunca** llaman a `supabase-js`/`supabase_flutter` para login — llaman a los endpoints de auth de la API (`POST /auth/registro`, `POST /auth/login`, `POST /auth/refrescar`, etc.) y guardan el JWT propio (en Flutter: almacenamiento seguro tipo `flutter_secure_storage`; en Web: la estrategia que el equipo defina, evitando `localStorage` para el refresh token).
 
+#### Modelo multirrol
+
+Una persona tiene **una sola cuenta por correo**. Un usuario **puede tener múltiples roles**. **No existe** una columna singular `usuarios.rol`.
+
+- `usuarios` representa identidad y credenciales (`password_hash`, estado de cuenta).
+- `roles` representa el catálogo de roles del sistema: `PACIENTE`, `DOMICILIARIO`, `ADMINISTRADOR`, `ROOT`.
+- `usuario_roles` representa los roles asignados a cada usuario y el estado de esa asignación.
+- El **estado de cuenta** (`activa`, `bloqueada`, `desactivada`) y el **estado del rol** (`habilitado`, `pendiente_validacion`, `rechazado`) son conceptos diferentes.
+- Un Domiciliario puede ser simultáneamente Paciente.
+- La selección de “modo Paciente/Domiciliario” en la App es únicamente una decisión de presentación; los permisos reales los determina la API consultando la BD (`usuario_roles` + `roles`), no un claim del JWT ni una columna en `usuarios`.
+
+Registro público únicamente como `PACIENTE` o `DOMICILIARIO`. Un paciente nuevo recibe `PACIENTE` → `habilitado`. Un domiciliario nuevo recibe `PACIENTE` → `habilitado` y `DOMICILIARIO` → `pendiente_validacion`. `ADMINISTRADOR` y `ROOT` no tienen registro público; `ROOT` es una cuenta técnica/interna.
+
+La autorización por rol consulta siempre `usuario_roles` + `roles`. En RLS, la identidad es `app.current_user_id()`; si hace falta privilegio administrativo en SQL, se usa `app.usuario_tiene_rol('ADMINISTRADOR')` o `app.usuario_tiene_rol('ROOT')` — nunca `usuarios.rol`, nunca `auth.uid()`, nunca Supabase Auth.
+
 **Consecuencia directa sobre RLS:** las políticas de Supabase no pueden usar `auth.uid()`, porque esa función depende de que la sesión venga autenticada por Supabase Auth — y aquí no es el caso. La API se conecta a Postgres **directamente** (no a través del auto-API de PostgREST/Supabase), así que se reemplaza `auth.uid()` por una función propia respaldada por una variable de sesión que la API establece en cada transacción autenticada:
 
 ```sql
@@ -343,12 +358,13 @@ create policy "paciente_crea_su_solicitud"
 
 create policy "admin_lee_todas_las_solicitudes"
   on solicitudes for select
-  using (exists (
-    select 1 from usuarios u where u.id = app.current_user_id() and u.rol = 'administrador'
-  ));
+  using (
+    app.usuario_tiene_rol('ADMINISTRADOR')
+    or app.usuario_tiene_rol('ROOT')
+  );
 ```
 
-`app.current_user_id()` es la función propia definida en la sección 4.1 — **nunca** `auth.uid()`. Es la única convención válida en todo el proyecto para políticas RLS.
+`app.usuario_tiene_rol(...)` determina el privilegio administrativo mediante la relación `usuario_roles` + `roles` (y el estado `habilitado` de esa asignación), **nunca** mediante una columna `usuarios.rol`. `app.current_user_id()` es la función propia definida en la sección 4.1 — **nunca** `auth.uid()`. Es la única convención válida en todo el proyecto para identificar al usuario en políticas RLS.
 
 - Nombra las políticas describiendo **quién puede hacer qué**, en español, consistente con el resto del proyecto: `<rol>_<accion>_<alcance>`.
 - El `service_role` de Supabase (que evade RLS) se usa **solo** desde procesos internos de la API para operaciones administrativas explícitas — nunca se expone al Web ni a la App.
@@ -520,4 +536,4 @@ Antes de implementar cualquier funcionalidad de backend, BD, o app: (1) escribe 
 
 ---
 
-*Última actualización: 19 de agosto de 2026. Cualquier cambio a este documento debe discutirse y acordarse en equipo antes de aplicarse — no se edita en silencio para justificar una excepción puntual.*
+*Última actualización: 22 de agosto de 2026 (modelo multirrol: `usuarios` + `roles` + `usuario_roles`; se retira el ejemplo `usuarios.rol`). Cualquier cambio a este documento debe discutirse y acordarse en equipo antes de aplicarse — no se edita en silencio para justificar una excepción puntual.*
