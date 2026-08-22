@@ -1,6 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsEnum, IsString, Matches, MaxLength, MinLength } from 'class-validator';
-import { TipoRegistro } from '../../domain/value-objects/tipo-registro';
+import { IsEmail, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -8,7 +7,7 @@ import {
   PASSWORD_PATTERN_MESSAGE,
 } from './politica-contrasena';
 
-export class RegistrarUsuarioDto {
+export class RestablecerContrasenaDto {
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
@@ -18,15 +17,16 @@ export class RegistrarUsuarioDto {
   correo: string;
 
   @IsString()
+  @Matches(/^\d{6}$/, {
+    message: 'El código de recuperación debe tener exactamente 6 dígitos.',
+  })
+  codigo: string;
+
+  @IsString()
   @MinLength(PASSWORD_MIN_LENGTH)
   @MaxLength(PASSWORD_MAX_LENGTH)
   @Matches(PASSWORD_PATTERN, {
     message: PASSWORD_PATTERN_MESSAGE,
   })
-  password: string;
-
-  @IsEnum(TipoRegistro, {
-    message: 'El tipo de registro solo puede ser PACIENTE o DOMICILIARIO.',
-  })
-  tipoRegistro: TipoRegistro;
+  nuevaPassword: string;
 }

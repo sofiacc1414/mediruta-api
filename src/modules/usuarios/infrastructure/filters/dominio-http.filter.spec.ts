@@ -2,6 +2,7 @@ import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
+import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-invalida.error';
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { DominioHttpFilter } from './dominio-http.filter';
 
@@ -62,6 +63,18 @@ describe('DominioHttpFilter', () => {
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.UNAUTHORIZED,
       message: 'No autorizado.',
+    });
+  });
+
+  it('mapea RecuperacionInvalidaError a HTTP 400 con mensaje genérico', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new RecuperacionInvalidaError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.BAD_REQUEST,
+      message: 'El código de recuperación no es válido o ya no está disponible.',
     });
   });
 });

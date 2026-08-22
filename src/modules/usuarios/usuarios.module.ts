@@ -6,14 +6,22 @@ import { IniciarSesionUseCase } from './application/use-cases/iniciar-sesion.use
 import { ObtenerSesionActualUseCase } from './application/use-cases/obtener-sesion-actual.use-case';
 import { RefrescarSesionUseCase } from './application/use-cases/refrescar-sesion.use-case';
 import { RegistrarUsuarioUseCase } from './application/use-cases/registrar-usuario.use-case';
+import { RestablecerContrasenaUseCase } from './application/use-cases/restablecer-contrasena.use-case';
+import { SolicitarRecuperacionContrasenaUseCase } from './application/use-cases/solicitar-recuperacion-contrasena.use-case';
 import { AccessTokenPort } from './domain/ports/access-token.port';
+import { CodigoRecuperacionPort } from './domain/ports/codigo-recuperacion.port';
+import { CorreoRecuperacionPort } from './domain/ports/correo-recuperacion.port';
 import { PasswordHasherPort } from './domain/ports/password-hasher.port';
+import { RecuperacionContrasenaRepositoryPort } from './domain/ports/recuperacion-contrasena.repository.port';
 import { RefreshTokenPort } from './domain/ports/refresh-token.port';
 import { SesionRepositoryPort } from './domain/ports/sesion.repository.port';
 import { UsuarioRepositoryPort } from './domain/ports/usuario.repository.port';
 import { BcryptPasswordHasher } from './infrastructure/adapters/bcrypt-password-hasher.adapter';
+import { CryptoCodigoRecuperacionAdapter } from './infrastructure/adapters/crypto-codigo-recuperacion.adapter';
 import { CryptoRefreshTokenAdapter } from './infrastructure/adapters/crypto-refresh-token.adapter';
+import { DesarrolloCorreoRecuperacionAdapter } from './infrastructure/adapters/desarrollo-correo-recuperacion.adapter';
 import { JwtAccessTokenAdapter } from './infrastructure/adapters/jwt-access-token.adapter';
+import { PostgresRecuperacionContrasenaRepository } from './infrastructure/adapters/postgres-recuperacion-contrasena.repository';
 import { PostgresSesionRepository } from './infrastructure/adapters/postgres-sesion.repository';
 import { PostgresUsuarioRepository } from './infrastructure/adapters/postgres-usuario.repository';
 import { AuthController } from './infrastructure/controllers/auth.controller';
@@ -50,6 +58,8 @@ import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
     RefrescarSesionUseCase,
     ObtenerSesionActualUseCase,
     CerrarSesionUseCase,
+    SolicitarRecuperacionContrasenaUseCase,
+    RestablecerContrasenaUseCase,
     AccessAuthGuard,
     {
       provide: PasswordHasherPort,
@@ -70,6 +80,18 @@ import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
     {
       provide: AccessTokenPort,
       useClass: JwtAccessTokenAdapter,
+    },
+    {
+      provide: CodigoRecuperacionPort,
+      useClass: CryptoCodigoRecuperacionAdapter,
+    },
+    {
+      provide: RecuperacionContrasenaRepositoryPort,
+      useClass: PostgresRecuperacionContrasenaRepository,
+    },
+    {
+      provide: CorreoRecuperacionPort,
+      useClass: DesarrolloCorreoRecuperacionAdapter,
     },
   ],
 })

@@ -8,6 +8,7 @@ import { Response } from 'express';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
+import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-invalida.error';
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-invalido.error';
 
@@ -17,6 +18,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   CredencialesInvalidasError,
   RefreshTokenInvalidoError,
   NoAutorizadoError,
+  RecuperacionInvalidaError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {

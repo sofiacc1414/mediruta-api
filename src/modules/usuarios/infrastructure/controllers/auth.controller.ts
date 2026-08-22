@@ -15,11 +15,15 @@ import { IniciarSesionUseCase } from '../../application/use-cases/iniciar-sesion
 import { ObtenerSesionActualUseCase } from '../../application/use-cases/obtener-sesion-actual.use-case';
 import { RefrescarSesionUseCase } from '../../application/use-cases/refrescar-sesion.use-case';
 import { RegistrarUsuarioUseCase } from '../../application/use-cases/registrar-usuario.use-case';
+import { RestablecerContrasenaUseCase } from '../../application/use-cases/restablecer-contrasena.use-case';
+import { SolicitarRecuperacionContrasenaUseCase } from '../../application/use-cases/solicitar-recuperacion-contrasena.use-case';
 import type { IdentidadAutenticada } from '../../domain/identidad-autenticada';
 import { UsuarioAutenticado } from '../decorators/usuario-autenticado.decorator';
 import { IniciarSesionDto } from '../dtos/iniciar-sesion.dto';
 import { RefrescarSesionDto } from '../dtos/refrescar-sesion.dto';
 import { RegistrarUsuarioDto } from '../dtos/registrar-usuario.dto';
+import { RestablecerContrasenaDto } from '../dtos/restablecer-contrasena.dto';
+import { SolicitarRecuperacionContrasenaDto } from '../dtos/solicitar-recuperacion-contrasena.dto';
 import { DominioHttpFilter } from '../filters/dominio-http.filter';
 import { AccessAuthGuard } from '../guards/access-auth.guard';
 
@@ -32,6 +36,8 @@ export class AuthController {
     private readonly refrescarSesion: RefrescarSesionUseCase,
     private readonly obtenerSesionActual: ObtenerSesionActualUseCase,
     private readonly cerrarSesion: CerrarSesionUseCase,
+    private readonly solicitarRecuperacion: SolicitarRecuperacionContrasenaUseCase,
+    private readonly restablecerContrasena: RestablecerContrasenaUseCase,
   ) {}
 
   @Post('registro')
@@ -88,6 +94,24 @@ export class AuthController {
     await this.cerrarSesion.execute({
       usuarioId: identidad.usuarioId,
       sid: identidad.sid,
+    });
+  }
+
+  @Post('recuperar-contrasena')
+  @HttpCode(HttpStatus.OK)
+  recuperarContrasena(@Body() dto: SolicitarRecuperacionContrasenaDto) {
+    return this.solicitarRecuperacion.execute({
+      correo: dto.correo,
+    });
+  }
+
+  @Post('restablecer-contrasena')
+  @HttpCode(HttpStatus.OK)
+  restablecer(@Body() dto: RestablecerContrasenaDto) {
+    return this.restablecerContrasena.execute({
+      correo: dto.correo,
+      codigo: dto.codigo,
+      nuevaPassword: dto.nuevaPassword,
     });
   }
 }
