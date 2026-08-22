@@ -294,3 +294,88 @@ Se normaliza con `lower(btrim(...))`. Se rechaza vacío. La autoridad contra dup
 ### Migración
 
 `20260822183358_create_registro_usuario_function.sql`
+
+## `app.obtener_credenciales_login(text)`
+
+Puerta interna para que la API lea el `password_hash` durante el login. `mediruta_app` **no** tiene `SELECT` directo sobre `usuarios.password_hash`. App/Web no llaman esta función.
+
+### Firma
+
+```text
+app.obtener_credenciales_login(p_correo text)
+  → TABLE (usuario_id uuid, correo text, password_hash text, estado_cuenta text)
+```
+
+### Seguridad
+
+- `SECURITY DEFINER`
+- `search_path` vacío; consulta solo `public.usuarios`
+- sin SQL dinámico
+- `EXECUTE` únicamente para `mediruta_app`
+- `REVOKE ALL` de `PUBLIC`, `anon` y `authenticated`
+- el `password_hash` solo sale hacia la capa interna de la API para `bcrypt.compare`
+
+### Comportamiento
+
+- Correo canónico: `lower(btrim(...))`. NULL, vacío o solo espacios → **0 filas** (sin excepción que revele el motivo).
+- Si el correo no existe → **0 filas**. No lanza “usuario no encontrado”.
+- **No** filtra por `estado_cuenta`. Puede devolver `activa`, `bloqueada` o `desactivada` para que la API niegue el login internamente.
+- No retorna roles, sesiones ni perfil.
+
+La API responderá el **mismo mensaje genérico** ante correo inexistente, contraseña incorrecta, cuenta bloqueada o desactivada (p. ej. «Correo o contraseña incorrectos, o la cuenta no está disponible.»). Si esta función devuelve 0 filas, la API hará `bcrypt.compare` contra un hash dummy (no se genera en PostgreSQL) para no filtrar existencia por tiempo de respuesta.
+
+## `app.crear_sesion(...)`
+
+Crea una sesión revocable. `mediruta_app` **no** tiene INSERT directo sobre `sesiones`. No genera JWT ni refresh token; solo persiste el hash que envía la API.
+
+### Firma
+
+```text
+app.crear_sesion(
+  p_usuario_id uuid,
+  p_refresh_token_hash text,
+  p_expira_en timestamptz,
+  p_user_agent text,
+  p_ip inet
+) → uuid
+```
+
+El `uuid` es `sesiones.id` y será el claim `sid` del access JWT (`sub` = usuario, `sid` = sesión, `iat`, `exp`). Los roles no van en el JWT.
+
+### Seguridad
+
+- `SECURITY DEFINER`
+- `search_path` vacío
+- sin SQL dinámico
+- `EXECUTE` únicamente para `mediruta_app`
+- `REVOKE ALL` de `PUBLIC`, `anon` y `authenticated`
+- recibe solo el hash del refresh; nunca el token en claro
+- no retorna `refresh_token_hash`
+
+### Comportamiento
+
+- Exige usuario existente y `estado_cuenta = 'activa'`. Si no, SQLSTATE `22023` sin detalle sensible y **no** crea sesión.
+- Rechaza hash NULL, vacío o solo espacios (`length(btrim(...)) > 0`).
+- Rechaza `p_expira_en` NULL o no posterior a `now()`.
+- `user_agent` e `ip` (`inet`) son opcionales.
+- Inserta `revocada = false`. UNIQUE de `refresh_token_hash` es la autoridad ante duplicados (sin `SELECT` previo).
+
+## Flujo de login (API; no implementado en esta migración)
+
+```text
+correo + password
+        ↓
+app.obtener_credenciales_login
+        ↓
+bcrypt.compare() en la API
+        ↓
+si credenciales y cuenta activa
+        ↓
+API genera refresh token aleatorio y su hash
+        ↓
+app.crear_sesion  →  sid
+        ↓
+API genera access JWT propio (NestJS, no PostgreSQL)
+```
+
+**Migración:** `20260822185620_create_login_functions.sql`
