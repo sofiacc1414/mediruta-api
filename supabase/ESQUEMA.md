@@ -146,8 +146,9 @@ Sesiones revocables de la autenticación propia de MediRuta (access JWT corto + 
 - Crear: `app.crear_sesion` (login). Rotar: `app.rotar_sesion` (refresh). Ambas reciben solo hashes, nunca el refresh token real.
 - Validar access JWT: `app.validar_sesion(usuarioId, sid)` — NestJS verifica firma/`exp`; PostgreSQL verifica el estado actual de sesión y cuenta.
 - Logout de la sesión actual: `app.revocar_sesion(usuarioId, sid)` — `revocada = true` sin borrar la fila. No cierra las demás sesiones del usuario. Tras eso, `app.validar_sesion` devolverá 0 filas y `app.rotar_sesion` no podrá consumir ese refresh.
-- Cambio o restablecimiento de contraseña: revocar las sesiones que corresponda.
-- Operaciones posteriores (aún no creadas): `POST /auth/logout` en NestJS (usará `app.revocar_sesion`), cerrar sesión en todos los dispositivos.
+- G05 restablecimiento (sin sesión): `app.restablecer_contrasena` revoca **todas** las sesiones.
+- G06 cambio autenticado: `app.cambiar_contrasena_autenticada` **mantiene** el `sid` actual y revoca las demás.
+- Operaciones posteriores (aún no creadas): `POST /auth/cambiar-contrasena` en NestJS.
 
 **Migración:** `20260822180351_create_sesiones.sql`
 
@@ -210,9 +211,9 @@ Rol **técnico** de PostgreSQL. **No** es un rol funcional de MediRuta (`PACIENT
 
 **Privilegios de tabla (objeto por objeto; sin `GRANT ALL` ni grants sobre `ALL TABLES`):**
 - `roles`: `SELECT` (RLS sigue aplicando)
-- `usuarios`: `SELECT` solo de `id`, `correo`, `estado_cuenta`, `creado_en`, `actualizado_en` — **sin** `password_hash`; **sin** INSERT/UPDATE/DELETE
+- `usuarios`: `SELECT` solo de `id`, `correo`, `estado_cuenta`, `creado_en`, `actualizado_en` — **sin** `password_hash`; **sin** INSERT/UPDATE/DELETE. El hash solo sale por `app.obtener_credenciales_login` (login) y `app.obtener_password_hash_cambio_contrasena` (G06).
 - `usuario_roles`: `SELECT` (RLS limita a las filas del usuario actual) — **sin** INSERT/UPDATE/DELETE
-- `sesiones`: **sin** acceso DML directo (ni SELECT/INSERT/UPDATE/DELETE). Crear, rotar, validar y revocar solo vía `EXECUTE` de `app.crear_sesion`, `app.rotar_sesion`, `app.validar_sesion` y `app.revocar_sesion`. Sin `SELECT` de `refresh_token_hash` ni `UPDATE` directo.
+- `sesiones`: **sin** acceso DML directo (ni SELECT/INSERT/UPDATE/DELETE). Crear, rotar, validar, revocar y cambio autenticado de contraseña solo vía `EXECUTE` de `app.crear_sesion`, `app.rotar_sesion`, `app.validar_sesion`, `app.revocar_sesion`, `app.obtener_password_hash_cambio_contrasena` y `app.cambiar_contrasena_autenticada`. Sin `SELECT` de `refresh_token_hash` ni `UPDATE` directo.
 - `recuperaciones_contrasena`: **sin** acceso DML directo (ni SELECT/INSERT/UPDATE/DELETE). Crear y restablecer solo vía `EXECUTE` de `app.crear_recuperacion_contrasena` y `app.restablecer_contrasena`. Sin `SELECT` de `codigo_hash`.
 
 RLS sigue siendo obligatorio (`ENABLE` + `FORCE` en las tablas). Las operaciones sensibles (hashes, alta de usuario, cambio de contraseña, sesiones, recuperación) usarán más adelante mecanismos internos de mínimo privilegio; no se salta RLS dejando de usar `mediruta_app`.
@@ -680,3 +681,116 @@ POST /auth/restablecer-contrasena
 ```
 
 **Migración:** `20260822204033_create_password_recovery_functions.sql`
+
+## G05 vs G06 — sesiones tras cambiar la contraseña
+
+| | G05 recuperación / restablecimiento | G06 cambio autenticado |
+|---|---|---|
+| Cómo llega el usuario | OTP por correo; pudo perder el control de las credenciales | Sesión válida + contraseña actual |
+| Contraseña en claro a PostgreSQL | Nunca | Nunca |
+| bcrypt | Lo verifica/genera NestJS | Lo verifica/genera NestJS |
+| Sesiones | Revoca **TODAS** | **Mantiene** el `sid` actual; revoca las demás |
+| Después | Debe iniciar sesión de nuevo | Sigue usando la sesión actual |
+
+## `app.obtener_password_hash_cambio_contrasena(uuid, uuid)`
+
+Puerta interna para que `POST /auth/cambiar-contrasena` (NestJS, aún no implementado) lea el `password_hash` del usuario **ya autenticado**. No se pide el hash por correo. Recibe `usuarioId` + `sid` de `AccessAuthGuard`. `mediruta_app` **no** tiene `SELECT` directo sobre `usuarios.password_hash`. App/Web no llaman esta función.
+
+La contraseña actual en claro **nunca** llega a PostgreSQL. NestJS hará `bcrypt.compare` con este hash.
+
+### Firma
+
+```text
+app.obtener_password_hash_cambio_contrasena(
+  p_usuario_id uuid,
+  p_sid uuid
+) → TABLE (password_hash text)
+```
+
+Solo retorna `password_hash`. No retorna correo, roles, `estado_cuenta`, metadatos de sesión ni `refresh_token_hash`.
+
+### Seguridad
+
+- `SECURITY DEFINER`
+- `search_path` vacío (`set search_path = ''`); objetos `public.usuarios` / `public.sesiones`
+- `LANGUAGE sql` `STABLE`: solo lectura
+- sin SQL dinámico
+- `EXECUTE` únicamente para `mediruta_app`
+- `REVOKE ALL` de `PUBLIC`, `anon` y `authenticated`
+- no cambia RLS ni crea policies; no otorga permisos de tabla
+
+### Comportamiento
+
+Retorna **1 fila** solo si se cumplen todas:
+
+```text
+usuarios.id = p_usuario_id
+AND usuarios.estado_cuenta = 'activa'
+AND sesiones.id = p_sid
+AND sesiones.usuario_id = p_usuario_id
+AND sesiones.revocada = false
+AND sesiones.expira_en > now()
+```
+
+Retorna **0 filas** (sin excepción, sin revelar el motivo) si la identidad o la sesión no son válidas: usuario inexistente, cuenta no activa, sid inexistente, sid de otro usuario, sesión revocada o expirada. También cubre la carrera en la que el guard ya pasó y la sesión se invalida después.
+
+## `app.cambiar_contrasena_autenticada(...)`
+
+Puerta interna para aplicar el cambio **después** de que NestJS verificó la contraseña actual con bcrypt y generó el bcrypt de la nueva. Recibe `usuarioId` + `sid` + el hash actual que la API acaba de leer + el nuevo hash. Nunca contraseñas en claro. No implementa bcrypt ni la política de complejidad (8–72, mayúscula, minúscula, número, especial): eso vive en la API.
+
+### Firma
+
+```text
+app.cambiar_contrasena_autenticada(
+  p_usuario_id uuid,
+  p_sid uuid,
+  p_password_hash_actual_esperado text,
+  p_nuevo_password_hash text
+) → boolean
+```
+
+`true` si cambió la contraseña. `false` (sin revelar el motivo) si: usuario inexistente o no activo, sesión inválida, o el `password_hash` ya no coincide con el esperado.
+
+Parámetros estructuralmente inválidos (NULL, hashes vacíos o solo espacios) → SQLSTATE `22023` (`parámetro inválido`), sin hashes, ids, sid ni correo. `btrim` solo comprueba vacío; los hashes comparados/guardados no se recortan.
+
+### Seguridad
+
+- `SECURITY DEFINER`
+- `search_path` vacío; objetos `public.usuarios` / `public.sesiones`
+- sin SQL dinámico
+- `EXECUTE` únicamente para `mediruta_app`
+- `REVOKE ALL` de `PUBLIC`, `anon` y `authenticated`
+- no cambia RLS ni otorga UPDATE/SELECT directo sobre tablas sensibles
+- no usa `auth.uid()`, GoTrue ni `pgcrypto`
+
+### Comportamiento (atómico, un solo `SECURITY DEFINER`)
+
+1. Bloquea `public.usuarios` (`FOR UPDATE`) con `id = p_usuario_id` y `estado_cuenta = 'activa'`. Si no → `false`. No activa ni desbloquea cuentas.
+2. Bloquea la sesión actual (`FOR UPDATE`): `id = p_sid`, `usuario_id = p_usuario_id`, `revocada = false`, `expira_en > now()`. Si no → `false`. No cambia contraseña ni revoca sesiones.
+3. Comparación **exacta**: `usuarios.password_hash = p_password_hash_actual_esperado`. Si ya cambió (carrera) → `false`, sin UPDATE.
+4. Si todo coincide: `password_hash = p_nuevo_password_hash`, `actualizado_en = now()`. **No** modifica `estado_cuenta`, `correo`, roles ni `creado_en`.
+5. Revoca las **demás** sesiones no revocadas (`usuario_id = p_usuario_id`, `id <> p_sid`, `revocada = false`). La sesión `p_sid` permanece `revocada = false`. No crea sesión nueva ni toca su `refresh_token_hash`.
+
+Sin bloques `EXCEPTION` que permitan un commit parcial.
+
+### Concurrencia
+
+Dos cambios simultáneos con el mismo hash original: el `FOR UPDATE` del usuario serializa. Solo el primero ve el hash esperado y gana. El segundo detecta `password_hash != p_password_hash_actual_esperado` y retorna `false`. No sobrescribe la contraseña más reciente.
+
+### Flujo previsto en la API (aún no implementado)
+
+```text
+AccessAuthGuard → usuarioId + sid
+        ↓
+app.obtener_password_hash_cambio_contrasena
+        ↓
+bcrypt.compare(contraseñaActual, hash) en NestJS
+        ↓
+bcrypt.hash(nuevaPassword) en NestJS
+        ↓
+app.cambiar_contrasena_autenticada(usuarioId, sid, hashActual, hashNuevo)
+        ↓
+sesión actual sigue válida; las demás quedan revocadas
+```
+
+**Migración:** `20260822224316_create_change_password_functions.sql`
