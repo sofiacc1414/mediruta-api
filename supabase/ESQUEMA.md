@@ -148,3 +148,42 @@ Sesiones revocables de la autenticación propia de MediRuta (access JWT corto + 
 - Operaciones posteriores (aún no creadas): crear sesión, validar/rotar refresh, comprobar `sid`, revocar una o todas.
 
 **Migración:** `20260822180351_create_sesiones.sql`
+
+### `recuperaciones_contrasena`
+
+Solicitudes de recuperación de contraseña de la autenticación propia de MediRuta (OTP de 6 dígitos por correo). **No** es la recuperación de Supabase Auth / GoTrue. El OTP real **nunca** se almacena; solo `codigo_hash`. El algoritmo de hash/HMAC y el pepper los define la API.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK; default `gen_random_uuid()` |
+| `usuario_id` | `uuid` | `NOT NULL`; FK a `usuarios.id` |
+| `codigo_hash` | `text` | `NOT NULL`; representación segura del OTP (nunca el código en claro; no hay columna `codigo`) |
+| `expira_en` | `timestamptz` | `NOT NULL`; debe ser posterior a `creado_en`; la API fija ~10 minutos |
+| `usado` | `boolean` | `NOT NULL`; default `false` |
+| `intentos` | `integer` | `NOT NULL`; default `0`; no negativos; el máximo lo impone la API |
+| `creado_en` | `timestamptz` | `NOT NULL`; default `now()` |
+
+**Restricciones:**
+- PK: `id`
+- `recuperaciones_contrasena_codigo_hash_no_vacio_check` — `length(btrim(codigo_hash)) > 0`
+- `recuperaciones_contrasena_expira_en_posterior_check` — `expira_en > creado_en`
+- `recuperaciones_contrasena_intentos_check` — `intentos >= 0`
+
+**Relaciones (FKs):**
+- `recuperaciones_contrasena_usuario_id_fkey` — `usuario_id` → `usuarios.id` `ON DELETE CASCADE`
+
+**Seguridad / RLS:**
+- `ENABLE ROW LEVEL SECURITY`
+- `FORCE ROW LEVEL SECURITY`
+- **Sin policies de forma intencional.** App y Web no consultan esta tabla ni leen `codigo_hash`, intentos ni expiración. No se expone por PostgREST (`REVOKE` a `anon` y `authenticated` solo sobre `public.recuperaciones_contrasena`).
+- No se almacenan OTP en claro, contraseñas ni tokens de sesión.
+
+**Reglas HU-01 (las aplica la API; no hay funciones, triggers ni envío de correo en esta migración):**
+- OTP numérico de 6 dígitos, generado criptográficamente y temporal.
+- Vigencia prevista ~10 minutos (`expira_en` lo establece la API; sin trigger).
+- Un solo uso: tras éxito, `usado = true` y el código no se acepta otra vez.
+- Cada validación incorrecta incrementa `intentos`; el tope lo impone la API (no hay máximo rígido en BD).
+- La solicitud de recuperación responde de forma genérica aunque el correo no exista (evita enumerar cuentas).
+- Restablecimiento exitoso (transaccional): nuevo `password_hash`, marcar el código usado y revocar sesiones según la política de HU-01.
+
+**Migración:** `20260822181231_create_recuperaciones_contrasena.sql`
