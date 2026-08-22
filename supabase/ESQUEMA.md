@@ -109,3 +109,42 @@ Asignación de uno o más roles del catálogo a una cuenta. Una persona tiene un
 `usuario_roles.estado` es el estado de la **asignación de rol**. Es distinto de `usuarios.estado_cuenta` (`activa` / `bloqueada` / `desactivada`).
 
 **Migración:** `20260822175639_create_usuario_roles.sql`
+
+### `sesiones`
+
+Sesiones revocables de la autenticación propia de MediRuta (access JWT corto + refresh opaco). **No** son sesiones de Supabase Auth / GoTrue. El access token lleva `sub` (usuario), `sid` (`sesiones.id`), `iat` y `exp`. Los roles **no** son autoridad en el JWT; se consultan en BD.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK; default `gen_random_uuid()`; claim `sid` del access JWT |
+| `usuario_id` | `uuid` | `NOT NULL`; FK a `usuarios.id` |
+| `refresh_token_hash` | `text` | `NOT NULL`; `UNIQUE`; solo el hash (nunca el refresh token original) |
+| `revocada` | `boolean` | `NOT NULL`; default `false` |
+| `expira_en` | `timestamptz` | `NOT NULL`; debe ser posterior a `creado_en` |
+| `user_agent` | `text` | nullable; cliente/dispositivo opcional |
+| `ip` | `inet` | nullable; IP opcional |
+| `creado_en` | `timestamptz` | `NOT NULL`; default `now()` |
+| `actualizado_en` | `timestamptz` | `NOT NULL`; default `now()`; lo actualiza la API (sin trigger) |
+
+**Restricciones:**
+- PK: `id`
+- `sesiones_refresh_token_hash_key` — `UNIQUE (refresh_token_hash)`
+- `sesiones_refresh_token_hash_no_vacio_check` — `length(refresh_token_hash) > 0`
+- `sesiones_expira_en_posterior_check` — `expira_en > creado_en`
+
+**Relaciones (FKs):**
+- `sesiones_usuario_id_fkey` — `usuario_id` → `usuarios.id` `ON DELETE CASCADE`
+
+**Seguridad / RLS:**
+- `ENABLE ROW LEVEL SECURITY`
+- `FORCE ROW LEVEL SECURITY`
+- **Sin policies de forma intencional.** Con RLS+FORCE y sin policies, el acceso DML normal queda denegado. App y Web no consultan esta tabla; no se expone por PostgREST (`REVOKE` a `anon` y `authenticated` solo sobre `public.sesiones`).
+- El refresh token original nunca se almacena. PostgreSQL no impone el algoritmo del hash; eso lo define la API.
+
+**Uso conceptual (lo implementa la API, no esta migración):**
+- Sesión utilizable solo si pertenece al usuario, `revocada = false`, `expira_en > now()` y la cuenta sigue `activa`.
+- Logout: revocar la sesión actual (`revocada = true`) sin borrar la fila.
+- Cambio o restablecimiento de contraseña: revocar las sesiones que corresponda.
+- Operaciones posteriores (aún no creadas): crear sesión, validar/rotar refresh, comprobar `sid`, revocar una o todas.
+
+**Migración:** `20260822180351_create_sesiones.sql`
