@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { CambiarContrasenaUseCase } from '../../application/use-cases/cambiar-contrasena.use-case';
 import { CerrarSesionUseCase } from '../../application/use-cases/cerrar-sesion.use-case';
 import { IniciarSesionUseCase } from '../../application/use-cases/iniciar-sesion.use-case';
 import { ObtenerSesionActualUseCase } from '../../application/use-cases/obtener-sesion-actual.use-case';
@@ -19,6 +20,7 @@ import { RestablecerContrasenaUseCase } from '../../application/use-cases/restab
 import { SolicitarRecuperacionContrasenaUseCase } from '../../application/use-cases/solicitar-recuperacion-contrasena.use-case';
 import type { IdentidadAutenticada } from '../../domain/identidad-autenticada';
 import { UsuarioAutenticado } from '../decorators/usuario-autenticado.decorator';
+import { CambiarContrasenaDto } from '../dtos/cambiar-contrasena.dto';
 import { IniciarSesionDto } from '../dtos/iniciar-sesion.dto';
 import { RefrescarSesionDto } from '../dtos/refrescar-sesion.dto';
 import { RegistrarUsuarioDto } from '../dtos/registrar-usuario.dto';
@@ -38,6 +40,7 @@ export class AuthController {
     private readonly cerrarSesion: CerrarSesionUseCase,
     private readonly solicitarRecuperacion: SolicitarRecuperacionContrasenaUseCase,
     private readonly restablecerContrasena: RestablecerContrasenaUseCase,
+    private readonly cambiarContrasena: CambiarContrasenaUseCase,
   ) {}
 
   @Post('registro')
@@ -111,6 +114,21 @@ export class AuthController {
     return this.restablecerContrasena.execute({
       correo: dto.correo,
       codigo: dto.codigo,
+      nuevaPassword: dto.nuevaPassword,
+    });
+  }
+
+  @Post('cambiar-contrasena')
+  @UseGuards(AccessAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  cambiar(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Body() dto: CambiarContrasenaDto,
+  ) {
+    return this.cambiarContrasena.execute({
+      usuarioId: identidad.usuarioId,
+      sid: identidad.sid,
+      passwordActual: dto.passwordActual,
       nuevaPassword: dto.nuevaPassword,
     });
   }

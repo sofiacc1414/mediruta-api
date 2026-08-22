@@ -5,9 +5,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { CambioContrasenaInvalidoError } from '../../domain/errors/cambio-contrasena-invalido.error';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
+import { NuevaContrasenaIgualError } from '../../domain/errors/nueva-contrasena-igual.error';
 import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-invalida.error';
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-invalido.error';
@@ -19,6 +21,8 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   RefreshTokenInvalidoError,
   NoAutorizadoError,
   RecuperacionInvalidaError,
+  CambioContrasenaInvalidoError,
+  NuevaContrasenaIgualError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {

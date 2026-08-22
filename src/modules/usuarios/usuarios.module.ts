@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { CambiarContrasenaUseCase } from './application/use-cases/cambiar-contrasena.use-case';
 import { CerrarSesionUseCase } from './application/use-cases/cerrar-sesion.use-case';
 import { IniciarSesionUseCase } from './application/use-cases/iniciar-sesion.use-case';
 import { ObtenerSesionActualUseCase } from './application/use-cases/obtener-sesion-actual.use-case';
@@ -9,6 +10,7 @@ import { RegistrarUsuarioUseCase } from './application/use-cases/registrar-usuar
 import { RestablecerContrasenaUseCase } from './application/use-cases/restablecer-contrasena.use-case';
 import { SolicitarRecuperacionContrasenaUseCase } from './application/use-cases/solicitar-recuperacion-contrasena.use-case';
 import { AccessTokenPort } from './domain/ports/access-token.port';
+import { CambioContrasenaRepositoryPort } from './domain/ports/cambio-contrasena.repository.port';
 import { CodigoRecuperacionPort } from './domain/ports/codigo-recuperacion.port';
 import { CorreoRecuperacionPort } from './domain/ports/correo-recuperacion.port';
 import { PasswordHasherPort } from './domain/ports/password-hasher.port';
@@ -17,6 +19,7 @@ import { RefreshTokenPort } from './domain/ports/refresh-token.port';
 import { SesionRepositoryPort } from './domain/ports/sesion.repository.port';
 import { UsuarioRepositoryPort } from './domain/ports/usuario.repository.port';
 import { BcryptPasswordHasher } from './infrastructure/adapters/bcrypt-password-hasher.adapter';
+import { PostgresCambioContrasenaRepository } from './infrastructure/adapters/postgres-cambio-contrasena.repository';
 import { CryptoCodigoRecuperacionAdapter } from './infrastructure/adapters/crypto-codigo-recuperacion.adapter';
 import { CryptoRefreshTokenAdapter } from './infrastructure/adapters/crypto-refresh-token.adapter';
 import { JwtAccessTokenAdapter } from './infrastructure/adapters/jwt-access-token.adapter';
@@ -60,6 +63,7 @@ import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
     CerrarSesionUseCase,
     SolicitarRecuperacionContrasenaUseCase,
     RestablecerContrasenaUseCase,
+    CambiarContrasenaUseCase,
     AccessAuthGuard,
     {
       provide: PasswordHasherPort,
@@ -92,6 +96,10 @@ import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
     {
       provide: CorreoRecuperacionPort,
       useClass: ResendCorreoRecuperacionAdapter,
+    },
+    {
+      provide: CambioContrasenaRepositoryPort,
+      useClass: PostgresCambioContrasenaRepository,
     },
   ],
 })

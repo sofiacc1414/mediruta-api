@@ -1,5 +1,12 @@
 import { HttpStatus } from '@nestjs/common';
-import { HTTP_CODE_METADATA } from '@nestjs/common/constants';
+import {
+  GUARDS_METADATA,
+  HTTP_CODE_METADATA,
+} from '@nestjs/common/constants';
+import {
+  CambiarContrasenaUseCase,
+  MENSAJE_CONTRASENA_CAMBIADA,
+} from '../../application/use-cases/cambiar-contrasena.use-case';
 import { CerrarSesionUseCase } from '../../application/use-cases/cerrar-sesion.use-case';
 import { ObtenerSesionActualUseCase } from '../../application/use-cases/obtener-sesion-actual.use-case';
 import {
@@ -12,12 +19,14 @@ import {
 } from '../../application/use-cases/solicitar-recuperacion-contrasena.use-case';
 import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-invalida.error';
 import { AuthController } from './auth.controller';
+import { AccessAuthGuard } from '../guards/access-auth.guard';
 
 function crearController(overrides?: {
   obtenerSesionActual?: { execute: jest.Mock };
   cerrarSesion?: { execute: jest.Mock };
   solicitarRecuperacion?: { execute: jest.Mock };
   restablecerContrasena?: { execute: jest.Mock };
+  cambiarContrasena?: { execute: jest.Mock };
 }) {
   return new AuthController(
     { execute: jest.fn() } as never,
@@ -35,6 +44,9 @@ function crearController(overrides?: {
     (overrides?.restablecerContrasena ?? {
       execute: jest.fn(),
     }) as unknown as RestablecerContrasenaUseCase,
+    (overrides?.cambiarContrasena ?? {
+      execute: jest.fn(),
+    }) as unknown as CambiarContrasenaUseCase,
   );
 }
 
@@ -149,5 +161,48 @@ describe('AuthController', () => {
         nuevaPassword: 'ClaveNueva1!',
       }),
     ).rejects.toBeInstanceOf(RecuperacionInvalidaError);
+  });
+
+  it('POST /auth/cambiar-contrasena está protegido y usa la identidad del guard', async () => {
+    const cambiarContrasena = {
+      execute: jest.fn().mockResolvedValue({
+        message: MENSAJE_CONTRASENA_CAMBIADA,
+      }),
+    };
+    const controller = crearController({ cambiarContrasena });
+
+    const resultado = await controller.cambiar(
+      {
+        usuarioId: 'usuario-desde-guard',
+        sid: 'sid-desde-guard',
+      },
+      {
+        passwordActual: 'ClaveActual1!',
+        nuevaPassword: 'ClaveNueva1!',
+      },
+    );
+
+    expect(cambiarContrasena.execute).toHaveBeenCalledWith({
+      usuarioId: 'usuario-desde-guard',
+      sid: 'sid-desde-guard',
+      passwordActual: 'ClaveActual1!',
+      nuevaPassword: 'ClaveNueva1!',
+    });
+    expect(resultado).toEqual({ message: MENSAJE_CONTRASENA_CAMBIADA });
+    expect(resultado).not.toHaveProperty('passwordHash');
+    expect(resultado).not.toHaveProperty('accessToken');
+    expect(resultado).not.toHaveProperty('refreshToken');
+    expect(
+      Reflect.getMetadata(
+        GUARDS_METADATA,
+        AuthController.prototype.cambiar,
+      ),
+    ).toEqual([AccessAuthGuard]);
+    expect(
+      Reflect.getMetadata(
+        HTTP_CODE_METADATA,
+        AuthController.prototype.cambiar,
+      ),
+    ).toBe(HttpStatus.OK);
   });
 });

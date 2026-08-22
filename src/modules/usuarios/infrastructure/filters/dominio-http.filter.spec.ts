@@ -1,7 +1,9 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
+import { CambioContrasenaInvalidoError } from '../../domain/errors/cambio-contrasena-invalido.error';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
+import { NuevaContrasenaIgualError } from '../../domain/errors/nueva-contrasena-igual.error';
 import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-invalida.error';
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { DominioHttpFilter } from './dominio-http.filter';
@@ -75,6 +77,31 @@ describe('DominioHttpFilter', () => {
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.BAD_REQUEST,
       message: 'El código de recuperación no es válido o ya no está disponible.',
+    });
+  });
+
+  it('mapea CambioContrasenaInvalidoError a HTTP 400 con mensaje genérico', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new CambioContrasenaInvalidoError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.BAD_REQUEST,
+      message:
+        'No fue posible cambiar la contraseña con las credenciales proporcionadas.',
+    });
+  });
+
+  it('mapea NuevaContrasenaIgualError a HTTP 400', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new NuevaContrasenaIgualError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.BAD_REQUEST,
+      message: 'La nueva contraseña debe ser diferente de la contraseña actual.',
     });
   });
 });
