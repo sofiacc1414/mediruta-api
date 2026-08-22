@@ -7,9 +7,12 @@ import { RegistrarUsuarioUseCase } from './registrar-usuario.use-case';
 describe('RegistrarUsuarioUseCase', () => {
   const passwordHasher: PasswordHasherPort = {
     hash: jest.fn(),
+    compare: jest.fn(),
   };
   const usuarios: UsuarioRepositoryPort = {
     registrar: jest.fn(),
+    obtenerCredencialesLogin: jest.fn(),
+    obtenerRoles: jest.fn(),
   };
 
   const useCase = new RegistrarUsuarioUseCase(passwordHasher, usuarios);

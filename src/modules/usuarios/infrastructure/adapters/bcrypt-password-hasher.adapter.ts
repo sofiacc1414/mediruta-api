@@ -9,4 +9,8 @@ export class BcryptPasswordHasher extends PasswordHasherPort {
   hash(password: string): Promise<string> {
     return bcrypt.hash(password, SALT_ROUNDS);
   }
+
+  compare(plainPassword: string, hash: string): Promise<boolean> {
+    return bcrypt.compare(plainPassword, hash);
+  }
 }

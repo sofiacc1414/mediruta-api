@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import {
+  CredencialesLogin,
   RegistrarUsuarioInput,
   UsuarioRepositoryPort,
+  UsuarioRol,
 } from '../../domain/ports/usuario.repository.port';
 import { esViolacionCorreoUnico } from './postgres-unique-violation';
 
@@ -28,5 +30,41 @@ export class PostgresUsuarioRepository extends UsuarioRepositoryPort {
       }
       throw error;
     }
+  }
+
+  obtenerCredencialesLogin(correo: string): Promise<CredencialesLogin | null> {
+    return this.db.withAppRole(async (client) => {
+      const result = await client.query<{
+        usuario_id: string;
+        correo: string;
+        password_hash: string;
+        estado_cuenta: CredencialesLogin['estadoCuenta'];
+      }>('select * from app.obtener_credenciales_login($1)', [correo]);
+
+      if (!result.rowCount) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return {
+        usuarioId: row.usuario_id,
+        correo: row.correo,
+        passwordHash: row.password_hash,
+        estadoCuenta: row.estado_cuenta,
+      };
+    });
+  }
+
+  obtenerRoles(usuarioId: string): Promise<UsuarioRol[]> {
+    return this.db.withUserContext(usuarioId, async (client) => {
+      const result = await client.query<UsuarioRol>(
+        `select r.codigo, ur.estado
+         from public.usuario_roles ur
+         inner join public.roles r on r.id = ur.rol_id
+         where ur.usuario_id = $1`,
+        [usuarioId],
+      );
+      return result.rows;
+    });
   }
 }

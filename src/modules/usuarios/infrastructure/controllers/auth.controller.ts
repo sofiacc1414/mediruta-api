@@ -1,12 +1,26 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseFilters } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  UseFilters,
+} from '@nestjs/common';
+import type { Request } from 'express';
+import { IniciarSesionUseCase } from '../../application/use-cases/iniciar-sesion.use-case';
 import { RegistrarUsuarioUseCase } from '../../application/use-cases/registrar-usuario.use-case';
+import { IniciarSesionDto } from '../dtos/iniciar-sesion.dto';
 import { RegistrarUsuarioDto } from '../dtos/registrar-usuario.dto';
 import { DominioHttpFilter } from '../filters/dominio-http.filter';
 
 @Controller('auth')
 @UseFilters(DominioHttpFilter)
 export class AuthController {
-  constructor(private readonly registrarUsuario: RegistrarUsuarioUseCase) {}
+  constructor(
+    private readonly registrarUsuario: RegistrarUsuarioUseCase,
+    private readonly iniciarSesion: IniciarSesionUseCase,
+  ) {}
 
   @Post('registro')
   @HttpCode(HttpStatus.CREATED)
@@ -17,4 +31,26 @@ export class AuthController {
       tipoRegistro: dto.tipoRegistro,
     });
   }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  login(@Body() dto: IniciarSesionDto, @Req() req: Request) {
+    // TODO: Antes de integrar el Web administrativo, el refresh token del
+    // flujo Web debe entregarse mediante cookie HttpOnly y no exponerse al
+    // JavaScript del navegador. Esta respuesta JSON es solo para probar la
+    // API y preparar Flutter (flutter_secure_storage).
+    return this.iniciarSesion.execute({
+      correo: dto.correo,
+      password: dto.password,
+      userAgent: headerTexto(req.headers['user-agent']),
+      ip: req.ip ?? null,
+    });
+  }
+}
+
+function headerTexto(valor: string | string[] | undefined): string | null {
+  if (typeof valor === 'string') {
+    return valor;
+  }
+  return null;
 }

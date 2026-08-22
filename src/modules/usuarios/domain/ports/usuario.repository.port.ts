@@ -6,6 +6,28 @@ export type RegistrarUsuarioInput = {
   tipoRegistro: TipoRegistro;
 };
 
+export type EstadoCuenta = 'activa' | 'bloqueada' | 'desactivada';
+
+export type CredencialesLogin = {
+  usuarioId: string;
+  correo: string;
+  passwordHash: string;
+  estadoCuenta: EstadoCuenta;
+};
+
+export type CodigoRol = 'PACIENTE' | 'DOMICILIARIO' | 'ADMINISTRADOR' | 'ROOT';
+
+export type EstadoRol = 'habilitado' | 'pendiente_validacion' | 'rechazado';
+
+export type UsuarioRol = {
+  codigo: CodigoRol;
+  estado: EstadoRol;
+};
+
 export abstract class UsuarioRepositoryPort {
   abstract registrar(input: RegistrarUsuarioInput): Promise<string>;
+  abstract obtenerCredencialesLogin(
+    correo: string,
+  ): Promise<CredencialesLogin | null>;
+  abstract obtenerRoles(usuarioId: string): Promise<UsuarioRol[]>;
 }
