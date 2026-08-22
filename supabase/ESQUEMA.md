@@ -141,12 +141,13 @@ Sesiones revocables de la autenticación propia de MediRuta (access JWT corto + 
 - **Sin policies de forma intencional.** Con RLS+FORCE y sin policies, el acceso DML normal queda denegado. App y Web no consultan esta tabla; no se expone por PostgREST (`REVOKE` a `anon` y `authenticated` solo sobre `public.sesiones`).
 - El refresh token original nunca se almacena. PostgreSQL no impone el algoritmo del hash; eso lo define la API.
 
-**Uso conceptual (lo implementa la API; crear y rotar ya existen como funciones `app.*`):**
+**Uso conceptual (lo implementa la API; crear, rotar y validar ya existen como funciones `app.*`):**
 - Sesión utilizable solo si pertenece al usuario, `revocada = false`, `expira_en > now()` y la cuenta sigue `activa`.
 - Crear: `app.crear_sesion` (login). Rotar: `app.rotar_sesion` (refresh). Ambas reciben solo hashes, nunca el refresh token real.
-- Logout: revocar la sesión actual (`revocada = true`) sin borrar la fila (función posterior).
+- Validar access JWT: `app.validar_sesion(usuarioId, sid)` — NestJS verifica firma/`exp`; PostgreSQL verifica el estado actual de sesión y cuenta.
+- Logout: revocar la sesión actual (`revocada = true`) sin borrar la fila (función posterior). Tras eso, `app.validar_sesion` devolverá 0 filas.
 - Cambio o restablecimiento de contraseña: revocar las sesiones que corresponda.
-- Operaciones posteriores (aún no creadas): comprobar `sid` para el AuthGuard, revocar una o todas.
+- Operaciones posteriores (aún no creadas): AuthGuard / `GET /auth/me` / rutas privadas (usarán `app.validar_sesion`), revocar una o todas.
 
 **Migración:** `20260822180351_create_sesiones.sql`
 
@@ -209,7 +210,7 @@ Rol **técnico** de PostgreSQL. **No** es un rol funcional de MediRuta (`PACIENT
 - `roles`: `SELECT` (RLS sigue aplicando)
 - `usuarios`: `SELECT` solo de `id`, `correo`, `estado_cuenta`, `creado_en`, `actualizado_en` — **sin** `password_hash`; **sin** INSERT/UPDATE/DELETE
 - `usuario_roles`: `SELECT` (RLS limita a las filas del usuario actual) — **sin** INSERT/UPDATE/DELETE
-- `sesiones`: **sin** acceso DML directo (ni SELECT/INSERT/UPDATE/DELETE). Crear y rotar solo vía `EXECUTE` de `app.crear_sesion` y `app.rotar_sesion`
+- `sesiones`: **sin** acceso DML directo (ni SELECT/INSERT/UPDATE/DELETE). Crear, rotar y validar solo vía `EXECUTE` de `app.crear_sesion`, `app.rotar_sesion` y `app.validar_sesion`. Sin `SELECT` de `refresh_token_hash`.
 - `recuperaciones_contrasena`: **sin** acceso DML directo
 
 RLS sigue siendo obligatorio (`ENABLE` + `FORCE` en las tablas). Las operaciones sensibles (hashes, alta de usuario, cambio de contraseña, sesiones, recuperación) usarán más adelante mecanismos internos de mínimo privilegio; no se salta RLS dejando de usar `mediruta_app`.
@@ -469,3 +470,70 @@ API genera access JWT (sub + sid nuevo)
 `POST /auth/refrescar` se implementará posteriormente en NestJS. Esta migración solo crea la función.
 
 **Migración:** `20260822191737_create_refresh_session_function.sql`
+
+## `app.validar_sesion(uuid, uuid)`
+
+Puerta interna para que AuthGuard, `GET /auth/me` y el resto de rutas privadas (NestJS, aún no implementados) comprueben que un access JWT ya verificado criptográficamente sigue autorizado. `mediruta_app` **no** tiene SELECT directo sobre `public.sesiones` ni sobre `refresh_token_hash`. App/Web no llaman esta función.
+
+**PostgreSQL no verifica la firma del JWT.** La división es:
+
+```text
+NestJS        →  firma + exp + estructura (solo sub, sid, iat, exp)
+PostgreSQL    →  estado actual de la sesión y de la cuenta
+```
+
+### Firma
+
+```text
+app.validar_sesion(
+  p_usuario_id uuid,
+  p_sid uuid
+) → TABLE (usuario_id uuid)
+```
+
+Recibe `usuarioId` (`sub`) y `sid` extraídos del JWT ya verificado por la API. Retorna únicamente `usuario_id`. No retorna hashes, correo, password, roles, `estado_cuenta`, metadatos de sesión ni secretos.
+
+### Seguridad
+
+- `SECURITY DEFINER` (excepción controlada: `mediruta_app` no tiene SELECT sensible en `sesiones`)
+- `search_path` vacío (`set search_path = ''`); objetos siempre como `public.sesiones` / `public.usuarios`
+- `LANGUAGE sql` `STABLE`: solo lectura; sin INSERT/UPDATE
+- sin SQL dinámico
+- `EXECUTE` únicamente para `mediruta_app`
+- `REVOKE ALL` de `PUBLIC`, `anon` y `authenticated`
+- no cambia RLS ni crea policies; no otorga permisos de tabla
+
+### Comportamiento
+
+Retorna **1 fila** solo si se cumplen todas:
+
+```text
+sesiones.id = p_sid
+AND sesiones.usuario_id = p_usuario_id
+AND sesiones.revocada = false
+AND sesiones.expira_en > now()
+AND usuarios.estado_cuenta = 'activa'
+```
+
+El `sid` debe pertenecer exactamente al `sub`. Encontrar el `sid` no basta.
+
+Retorna **0 filas** (sin excepción, sin revelar el motivo) si:
+- `p_usuario_id` o `p_sid` es NULL
+- sid o usuario inexistente
+- sid de otro usuario
+- sesión revocada o expirada
+- cuenta `bloqueada` o `desactivada`
+
+La API mapeará 0 filas a un 401 genérico.
+
+### Relación con rotación de refresh
+
+Tras `app.rotar_sesion`, la sesión A queda `revocada = true` y nace la sesión B. El access JWT viejo (`sid = A`) deja de autorizar (0 filas). El nuevo (`sid = B`) autoriza (1 fila). Es intencional.
+
+### Relación con logout y cuentas
+
+Cuando `POST /auth/logout` (aún no implementado) marque `revocada = true`, `app.validar_sesion` devolverá 0 filas de inmediato, aunque el JWT no haya expirado.
+
+Si `estado_cuenta` pasa a `bloqueada` o `desactivada`, también 0 filas, aunque el JWT y la sesión sigan vigentes. La BD es la autoridad actual.
+
+**Migración:** `20260822195751_create_validate_session_function.sql`
