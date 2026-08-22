@@ -141,13 +141,13 @@ Sesiones revocables de la autenticación propia de MediRuta (access JWT corto + 
 - **Sin policies de forma intencional.** Con RLS+FORCE y sin policies, el acceso DML normal queda denegado. App y Web no consultan esta tabla; no se expone por PostgREST (`REVOKE` a `anon` y `authenticated` solo sobre `public.sesiones`).
 - El refresh token original nunca se almacena. PostgreSQL no impone el algoritmo del hash; eso lo define la API.
 
-**Uso conceptual (lo implementa la API; crear, rotar y validar ya existen como funciones `app.*`):**
+**Uso conceptual (lo implementa la API; crear, rotar, validar y revocar ya existen como funciones `app.*`):**
 - Sesión utilizable solo si pertenece al usuario, `revocada = false`, `expira_en > now()` y la cuenta sigue `activa`.
 - Crear: `app.crear_sesion` (login). Rotar: `app.rotar_sesion` (refresh). Ambas reciben solo hashes, nunca el refresh token real.
 - Validar access JWT: `app.validar_sesion(usuarioId, sid)` — NestJS verifica firma/`exp`; PostgreSQL verifica el estado actual de sesión y cuenta.
-- Logout: revocar la sesión actual (`revocada = true`) sin borrar la fila (función posterior). Tras eso, `app.validar_sesion` devolverá 0 filas.
+- Logout de la sesión actual: `app.revocar_sesion(usuarioId, sid)` — `revocada = true` sin borrar la fila. No cierra las demás sesiones del usuario. Tras eso, `app.validar_sesion` devolverá 0 filas y `app.rotar_sesion` no podrá consumir ese refresh.
 - Cambio o restablecimiento de contraseña: revocar las sesiones que corresponda.
-- Operaciones posteriores (aún no creadas): AuthGuard / `GET /auth/me` / rutas privadas (usarán `app.validar_sesion`), revocar una o todas.
+- Operaciones posteriores (aún no creadas): `POST /auth/logout` en NestJS (usará `app.revocar_sesion`), cerrar sesión en todos los dispositivos.
 
 **Migración:** `20260822180351_create_sesiones.sql`
 
@@ -210,7 +210,7 @@ Rol **técnico** de PostgreSQL. **No** es un rol funcional de MediRuta (`PACIENT
 - `roles`: `SELECT` (RLS sigue aplicando)
 - `usuarios`: `SELECT` solo de `id`, `correo`, `estado_cuenta`, `creado_en`, `actualizado_en` — **sin** `password_hash`; **sin** INSERT/UPDATE/DELETE
 - `usuario_roles`: `SELECT` (RLS limita a las filas del usuario actual) — **sin** INSERT/UPDATE/DELETE
-- `sesiones`: **sin** acceso DML directo (ni SELECT/INSERT/UPDATE/DELETE). Crear, rotar y validar solo vía `EXECUTE` de `app.crear_sesion`, `app.rotar_sesion` y `app.validar_sesion`. Sin `SELECT` de `refresh_token_hash`.
+- `sesiones`: **sin** acceso DML directo (ni SELECT/INSERT/UPDATE/DELETE). Crear, rotar, validar y revocar solo vía `EXECUTE` de `app.crear_sesion`, `app.rotar_sesion`, `app.validar_sesion` y `app.revocar_sesion`. Sin `SELECT` de `refresh_token_hash` ni `UPDATE` directo.
 - `recuperaciones_contrasena`: **sin** acceso DML directo
 
 RLS sigue siendo obligatorio (`ENABLE` + `FORCE` en las tablas). Las operaciones sensibles (hashes, alta de usuario, cambio de contraseña, sesiones, recuperación) usarán más adelante mecanismos internos de mínimo privilegio; no se salta RLS dejando de usar `mediruta_app`.
@@ -532,8 +532,60 @@ Tras `app.rotar_sesion`, la sesión A queda `revocada = true` y nace la sesión 
 
 ### Relación con logout y cuentas
 
-Cuando `POST /auth/logout` (aún no implementado) marque `revocada = true`, `app.validar_sesion` devolverá 0 filas de inmediato, aunque el JWT no haya expirado.
+Cuando `app.revocar_sesion` (y el futuro `POST /auth/logout`) marque `revocada = true`, `app.validar_sesion` devolverá 0 filas de inmediato, aunque el JWT no haya expirado.
 
 Si `estado_cuenta` pasa a `bloqueada` o `desactivada`, también 0 filas, aunque el JWT y la sesión sigan vigentes. La BD es la autoridad actual.
 
 **Migración:** `20260822195751_create_validate_session_function.sql`
+
+## `app.revocar_sesion(uuid, uuid)`
+
+Puerta interna para que `POST /auth/logout` (NestJS, aún no implementado) cierre **solo la sesión actual**. Recibe `usuarioId` + `sid` de la identidad ya autenticada por `AccessAuthGuard`. `mediruta_app` **no** tiene UPDATE directo sobre `public.sesiones`. App/Web no llaman esta función.
+
+No es “cerrar sesión en todos los dispositivos”.
+
+### Firma
+
+```text
+app.revocar_sesion(
+  p_usuario_id uuid,
+  p_sid uuid
+) → boolean
+```
+
+`true` si encontró esa sesión exacta (`id` + `usuario_id`) aún no revocada y la marcó `revocada = true`. `false` si no había una sesión revocable con esa combinación (inexistente, de otro usuario, ya revocada, o parámetros NULL). No lanza excepción. No retorna hashes, correo, password, roles, fechas ni metadatos.
+
+### Seguridad
+
+- `SECURITY DEFINER` (excepción controlada: `mediruta_app` no tiene UPDATE directo en `sesiones`)
+- `search_path` vacío (`set search_path = ''`); objeto siempre como `public.sesiones`
+- sin SQL dinámico
+- `EXECUTE` únicamente para `mediruta_app`
+- `REVOKE ALL` de `PUBLIC`, `anon` y `authenticated`
+- no cambia RLS ni crea policies; no otorga permisos de tabla
+- no consulta `usuarios.estado_cuenta` ni `expira_en`: es invalidación, no autorización
+
+### Comportamiento
+
+```text
+UPDATE public.sesiones
+SET revocada = true, actualizado_en = now()
+WHERE id = p_sid
+  AND usuario_id = p_usuario_id
+  AND revocada = false
+```
+
+- NULL en `p_usuario_id` o `p_sid` → `false`
+- sesión ya revocada o carrera (refresh/logout concurrente) → 0 filas → `false`
+- **nunca** pone `revocada = false`
+- **nunca** hace `DELETE`; la fila y su hash se conservan
+- otras sesiones del mismo usuario no se tocan
+
+### Efecto sobre access y refresh
+
+Tras revocar sid A:
+
+- el access JWT con `sid = A` puede seguir teniendo firma válida, pero `app.validar_sesion` → 0 filas → AuthGuard 401
+- `app.rotar_sesion` exige `revocada = false`, así que el refresh de A deja de servir
+
+**Migración:** `20260822201750_create_revoke_session_function.sql`
