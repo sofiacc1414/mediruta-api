@@ -141,11 +141,12 @@ Sesiones revocables de la autenticación propia de MediRuta (access JWT corto + 
 - **Sin policies de forma intencional.** Con RLS+FORCE y sin policies, el acceso DML normal queda denegado. App y Web no consultan esta tabla; no se expone por PostgREST (`REVOKE` a `anon` y `authenticated` solo sobre `public.sesiones`).
 - El refresh token original nunca se almacena. PostgreSQL no impone el algoritmo del hash; eso lo define la API.
 
-**Uso conceptual (lo implementa la API, no esta migración):**
+**Uso conceptual (lo implementa la API; crear y rotar ya existen como funciones `app.*`):**
 - Sesión utilizable solo si pertenece al usuario, `revocada = false`, `expira_en > now()` y la cuenta sigue `activa`.
-- Logout: revocar la sesión actual (`revocada = true`) sin borrar la fila.
+- Crear: `app.crear_sesion` (login). Rotar: `app.rotar_sesion` (refresh). Ambas reciben solo hashes, nunca el refresh token real.
+- Logout: revocar la sesión actual (`revocada = true`) sin borrar la fila (función posterior).
 - Cambio o restablecimiento de contraseña: revocar las sesiones que corresponda.
-- Operaciones posteriores (aún no creadas): crear sesión, validar/rotar refresh, comprobar `sid`, revocar una o todas.
+- Operaciones posteriores (aún no creadas): comprobar `sid` para el AuthGuard, revocar una o todas.
 
 **Migración:** `20260822180351_create_sesiones.sql`
 
@@ -208,7 +209,7 @@ Rol **técnico** de PostgreSQL. **No** es un rol funcional de MediRuta (`PACIENT
 - `roles`: `SELECT` (RLS sigue aplicando)
 - `usuarios`: `SELECT` solo de `id`, `correo`, `estado_cuenta`, `creado_en`, `actualizado_en` — **sin** `password_hash`; **sin** INSERT/UPDATE/DELETE
 - `usuario_roles`: `SELECT` (RLS limita a las filas del usuario actual) — **sin** INSERT/UPDATE/DELETE
-- `sesiones`: **sin** acceso DML directo
+- `sesiones`: **sin** acceso DML directo (ni SELECT/INSERT/UPDATE/DELETE). Crear y rotar solo vía `EXECUTE` de `app.crear_sesion` y `app.rotar_sesion`
 - `recuperaciones_contrasena`: **sin** acceso DML directo
 
 RLS sigue siendo obligatorio (`ENABLE` + `FORCE` en las tablas). Las operaciones sensibles (hashes, alta de usuario, cambio de contraseña, sesiones, recuperación) usarán más adelante mecanismos internos de mínimo privilegio; no se salta RLS dejando de usar `mediruta_app`.
@@ -379,3 +380,92 @@ API genera access JWT propio (NestJS, no PostgreSQL)
 ```
 
 **Migración:** `20260822185620_create_login_functions.sql`
+
+## `app.rotar_sesion(...)`
+
+Puerta interna para que `POST /auth/refrescar` (NestJS, aún no implementado) rote una sesión de forma atómica. `mediruta_app` **no** tiene UPDATE/INSERT/SELECT directo sobre `public.sesiones`. App/Web no llaman esta función.
+
+La API recibe el refresh token opaco real, calcula su HMAC-SHA256 con `JWT_REFRESH_SECRET` y genera un token nuevo + su hash. **PostgreSQL nunca recibe el token real**, solo los hashes.
+
+### Firma
+
+```text
+app.rotar_sesion(
+  p_refresh_token_hash_actual text,
+  p_nuevo_refresh_token_hash text,
+  p_nueva_expira_en timestamptz,
+  p_user_agent text,
+  p_ip inet
+) → TABLE (usuario_id uuid, sid uuid)
+```
+
+`sid` es el `id` de la **nueva** sesión (claim `sid` del access JWT siguiente). No retorna hashes, correo, password, roles, `estado_cuenta` ni el refresh token.
+
+### Seguridad
+
+- `SECURITY DEFINER` (excepción controlada: `mediruta_app` no tiene DML directo en `sesiones`)
+- `search_path` vacío (`set search_path = ''`); objetos siempre como `public.sesiones` / `public.usuarios`
+- sin SQL dinámico
+- `EXECUTE` únicamente para `mediruta_app`
+- `REVOKE ALL` de `PUBLIC`, `anon` y `authenticated`
+- recibe solo hashes; nunca el refresh token en claro
+- no cambia RLS ni crea policies; no otorga permisos de tabla
+
+### Parámetros
+
+Rechaza con SQLSTATE `22023` y mensaje interno genérico (`parámetro inválido`) si:
+- el hash actual es NULL, vacío o solo espacios (`btrim` solo para comprobar; el valor comparado/almacenado no se recorta)
+- el hash nuevo es NULL, vacío o solo espacios
+- `p_nueva_expira_en` es NULL o no posterior a `now()`
+
+`user_agent` e `ip` son opcionales.
+
+### Comportamiento
+
+Consume la sesión actual y crea la nueva en **una sola sentencia** (CTEs modificadores: `UPDATE` + `INSERT` + `SELECT`). No hay `UPDATE … INTO` + `IF NOT FOUND` + `INSERT` por separado.
+
+El `UPDATE` condicional exige:
+
+```text
+revocada = false
+AND refresh_token_hash = hash actual (igualdad exacta)
+AND expira_en > now()
+AND usuarios.estado_cuenta = 'activa'
+```
+
+Si no hay fila que cumpla todo (sesión inexistente, ya revocada, expirada, o cuenta bloqueada/desactivada) el `UPDATE` produce 0 filas, el `INSERT` no inserta y la función retorna **0 filas**. No revela cuál condición falló. La API mapeará 0 filas a un 401 genérico.
+
+Si el `UPDATE` consume la fila:
+- la sesión anterior queda `revocada = true` y **conserva su hash**
+- el `INSERT` crea **exactamente una** fila nueva (`id` por default UUID) con el hash nuevo, `revocada = false` y `p_nueva_expira_en`
+- retorna `usuario_id` + el nuevo `sid` (distinto del anterior)
+
+No se actualiza el hash sobre la misma fila. Reutilizar el refresh token anterior encuentra la sesión ya revocada y vuelve a devolver 0 filas.
+
+### Atomicidad y concurrencia
+
+Sin `BEGIN`/`COMMIT` internos ni bloques `EXCEPTION`. `UPDATE`, `INSERT` y el `SELECT` final son la misma sentencia: si el `INSERT` falla, toda la sentencia falla y la revocación hace rollback.
+
+Dos ejecuciones concurrentes con el mismo hash no pueden rotar las dos: el `UPDATE` condicional bloquea la fila; solo una ve `revocada = false` y gana. La otra obtiene 0 filas.
+
+### Flujo previsto en la API (aún no implementado)
+
+```text
+refresh token recibido
+        ↓
+API calcula HMAC-SHA256 del token actual
+        ↓
+API genera nuevo refresh opaco + su hash
+        ↓
+app.rotar_sesion(hashActual, hashNuevo, ...)
+        ↓
+0 filas → 401 genérico
+        ↓
+usuario_id + nuevo sid
+        ↓
+API genera access JWT (sub + sid nuevo)
+```
+
+`POST /auth/refrescar` se implementará posteriormente en NestJS. Esta migración solo crea la función.
+
+**Migración:** `20260822191737_create_refresh_session_function.sql`
