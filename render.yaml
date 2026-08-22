@@ -7,7 +7,7 @@ services:
   - type: web
     name: mediruta-api
     runtime: node
-    region: ohio # más cercano a Supabase (aws-0-us-east-2)
+    region: virginia # elegida en el dashboard; cercana a Supabase (aws-0-us-east-2)
     plan: free
     branch: main
     buildCommand: npm install && npm run build
