@@ -230,3 +230,67 @@ COMMIT / ROLLBACK
 Login/registro y demás operaciones no autenticadas usarán mecanismos internos específicos; no se ejecutan como superusuario “para que RLS no moleste”.
 
 **Migración:** `20260822181654_create_mediruta_app_role.sql`
+
+## `app.registrar_usuario(...)`
+
+Operación interna y atómica de la API para el registro público de HU-01. Inserta `usuarios` + `usuario_roles` en la misma transacción del caller. **No** crea sesión ni inicia login.
+
+### Firma
+
+```text
+app.registrar_usuario(
+  p_correo text,
+  p_password_hash text,
+  p_tipo_registro text
+) → uuid
+```
+
+El `uuid` es el `id` del usuario nuevo. No recibe `rol_id`, `usuario_id`, estados, ni datos de perfil.
+
+### Seguridad
+
+- `SECURITY DEFINER` (excepción controlada: `mediruta_app` no tiene INSERT directo en `usuarios` ni `usuario_roles`)
+- `search_path` vacío (`set search_path = ''`); tablas y roles siempre como `public.*`
+- sin SQL dinámico
+- `EXECUTE` únicamente para `mediruta_app`
+- `REVOKE ALL` de `PUBLIC`, `anon` y `authenticated`
+- App/Web nunca la llaman directamente (solo la API)
+
+### Reglas
+
+Registro PACIENTE:
+
+```text
+usuarios.estado_cuenta = activa
+PACIENTE = habilitado
+```
+
+Registro DOMICILIARIO:
+
+```text
+usuarios.estado_cuenta = activa
+PACIENTE = habilitado
+DOMICILIARIO = pendiente_validacion
+```
+
+Los IDs de rol se leen de `public.roles` por `codigo`. No se insertan roles ni se usan UUID fijos. Si falta un código de catálogo, la función falla.
+
+### Prohibiciones
+
+No puede crear `ADMINISTRADOR` ni `ROOT`. Cualquier `p_tipo_registro` distinto de `PACIENTE` o `DOMICILIARIO` (tras `upper(btrim(...))`) lanza SQLSTATE `22023` y no inserta nada.
+
+### Atomicidad
+
+Sin `BEGIN`/`COMMIT` internos. Si falla el INSERT del usuario o de cualquier `usuario_roles`, falla toda la operación (la transacción de la API hace rollback).
+
+### Contraseña
+
+Solo recibe `password_hash` (bcrypt ya calculado por la API). Nunca contraseña en texto plano. Rechaza hash vacío o solo espacios.
+
+### Correo
+
+Se normaliza con `lower(btrim(...))`. Se rechaza vacío. La autoridad contra duplicados es `UNIQUE` de `usuarios.correo` (la API mapeará `23505`). No hay `SELECT` previo para “evitar” el UNIQUE.
+
+### Migración
+
+`20260822183358_create_registro_usuario_function.sql`
