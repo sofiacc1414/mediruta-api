@@ -187,3 +187,46 @@ Solicitudes de recuperación de contraseña de la autenticación propia de MediR
 - Restablecimiento exitoso (transaccional): nuevo `password_hash`, marcar el código usado y revocar sesiones según la política de HU-01.
 
 **Migración:** `20260822181231_create_recuperaciones_contrasena.sql`
+
+## Rol PostgreSQL interno `mediruta_app`
+
+Rol **técnico** de PostgreSQL. **No** es un rol funcional de MediRuta (`PACIENTE`, `DOMICILIARIO`, `ADMINISTRADOR`, `ROOT`). La API lo asume para aplicar mínimo privilegio y para que RLS sea real (la conexión `DATABASE_URL` es administrativa).
+
+**Atributos:**
+- `NOLOGIN` y `NOINHERIT` se fijan explícitamente en `CREATE ROLE` / `ALTER ROLE` (`INHERIT` es el default de PostgreSQL; hay que apagarlo).
+- `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOREPLICATION` y `NOBYPASSRLS` son los defaults de `CREATE ROLE`; **no** se alteran después. El rol de migraciones de Supabase no es superusuario real y PostgreSQL deniega `ALTER ROLE` sobre esos atributos privilegiados.
+- La migración comprueba de forma defensiva que `mediruta_app` no tenga `SUPERUSER`, `CREATEDB`, `CREATEROLE`, `LOGIN`, `REPLICATION` ni `BYPASSRLS`. Si alguno estuviera activo, la migración falla.
+- Sin contraseña. No inicia sesión.
+
+**Membresía:** `GRANT mediruta_app TO postgres WITH INHERIT FALSE, SET TRUE` — `postgres` puede `SET LOCAL ROLE mediruta_app` sin heredar automáticamente los privilegios de `mediruta_app`. **No** se otorga `postgres` a `mediruta_app`.
+
+**Schemas:** `USAGE` en `public` y `app`. Sin `CREATE` sobre esos schemas.
+
+**Función:** `EXECUTE` sobre `app.current_user_id()`. No se crea `app.usuario_tiene_rol` en esta migración.
+
+**Privilegios de tabla (objeto por objeto; sin `GRANT ALL` ni grants sobre `ALL TABLES`):**
+- `roles`: `SELECT` (RLS sigue aplicando)
+- `usuarios`: `SELECT` solo de `id`, `correo`, `estado_cuenta`, `creado_en`, `actualizado_en` — **sin** `password_hash`; **sin** INSERT/UPDATE/DELETE
+- `usuario_roles`: `SELECT` (RLS limita a las filas del usuario actual) — **sin** INSERT/UPDATE/DELETE
+- `sesiones`: **sin** acceso DML directo
+- `recuperaciones_contrasena`: **sin** acceso DML directo
+
+RLS sigue siendo obligatorio (`ENABLE` + `FORCE` en las tablas). Las operaciones sensibles (hashes, alta de usuario, cambio de contraseña, sesiones, recuperación) usarán más adelante mecanismos internos de mínimo privilegio; no se salta RLS dejando de usar `mediruta_app`.
+
+**Patrón futuro de la API (aún no implementado en TypeScript):**
+
+```text
+BEGIN
+↓
+SET LOCAL ROLE mediruta_app
+↓
+set_config('app.current_user_id', ...)
+↓
+queries
+↓
+COMMIT / ROLLBACK
+```
+
+Login/registro y demás operaciones no autenticadas usarán mecanismos internos específicos; no se ejecutan como superusuario “para que RLS no moleste”.
+
+**Migración:** `20260822181654_create_mediruta_app_role.sql`
