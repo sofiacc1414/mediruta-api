@@ -31,19 +31,22 @@ export class DatabaseService implements OnModuleDestroy {
     userId: string,
     callback: (client: PoolClient) => Promise<T>,
   ): Promise<T> {
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
+    return this.inTransaction(async (client) => {
+      await client.query('SET LOCAL ROLE mediruta_app');
       await client.query('SELECT set_config($1, $2, true)', ['app.current_user_id', userId]);
-      const result = await callback(client);
-      await client.query('COMMIT');
-      return result;
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+      return callback(client);
+    });
+  }
+
+  /**
+   * Transacción sin usuario autenticado, con el rol de mínimo privilegio.
+   * Para registro y otras operaciones públicas que invocan funciones app.*.
+   */
+  async withAppRole<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+    return this.inTransaction(async (client) => {
+      await client.query('SET LOCAL ROLE mediruta_app');
+      return callback(client);
+    });
   }
 
   /** Para operaciones internas/administrativas sin usuario autenticado (usar con criterio). */
@@ -51,6 +54,23 @@ export class DatabaseService implements OnModuleDestroy {
     const client = await this.pool.connect();
     try {
       return await callback(client);
+    } finally {
+      client.release();
+    }
+  }
+
+  private async inTransaction<T>(
+    work: (client: PoolClient) => Promise<T>,
+  ): Promise<T> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await work(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
     } finally {
       client.release();
     }
