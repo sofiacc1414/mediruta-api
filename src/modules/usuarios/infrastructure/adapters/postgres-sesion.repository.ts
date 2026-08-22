@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import {
   CrearSesionInput,
+  RotarSesionInput,
+  RotarSesionResultado,
   SesionRepositoryPort,
 } from '../../domain/ports/sesion.repository.port';
 
@@ -24,6 +26,30 @@ export class PostgresSesionRepository extends SesionRepositoryPort {
         ],
       );
       return result.rows[0].sid;
+    });
+  }
+
+  rotar(input: RotarSesionInput): Promise<RotarSesionResultado | null> {
+    return this.db.withAppRole(async (client) => {
+      const result = await client.query<{
+        usuario_id: string;
+        sid: string;
+      }>('select * from app.rotar_sesion($1, $2, $3, $4, $5)', [
+        input.refreshTokenHashActual,
+        input.nuevoRefreshTokenHash,
+        input.nuevaExpiraEn,
+        input.userAgent ?? null,
+        input.ip ?? null,
+      ]);
+
+      if (!result.rowCount) {
+        return null;
+      }
+
+      return {
+        usuarioId: result.rows[0].usuario_id,
+        sid: result.rows[0].sid,
+      };
     });
   }
 }

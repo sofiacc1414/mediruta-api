@@ -31,9 +31,11 @@ describe('IniciarSesionUseCase', () => {
   };
   const refreshTokens: RefreshTokenPort = {
     generar: jest.fn(),
+    hash: jest.fn(),
   };
   const sesiones: SesionRepositoryPort = {
     crear: jest.fn(),
+    rotar: jest.fn(),
   };
   const accessTokens: AccessTokenPort = {
     sign: jest.fn(),

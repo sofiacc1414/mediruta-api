@@ -6,4 +6,5 @@ export type RefreshTokenGenerado = {
 
 export abstract class RefreshTokenPort {
   abstract generar(): RefreshTokenGenerado;
+  abstract hash(token: string): string;
 }

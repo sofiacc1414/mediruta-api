@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { IniciarSesionUseCase } from './application/use-cases/iniciar-sesion.use-case';
+import { RefrescarSesionUseCase } from './application/use-cases/refrescar-sesion.use-case';
 import { RegistrarUsuarioUseCase } from './application/use-cases/registrar-usuario.use-case';
 import { AccessTokenPort } from './domain/ports/access-token.port';
 import { PasswordHasherPort } from './domain/ports/password-hasher.port';
@@ -43,6 +44,7 @@ import { AuthController } from './infrastructure/controllers/auth.controller';
   providers: [
     RegistrarUsuarioUseCase,
     IniciarSesionUseCase,
+    RefrescarSesionUseCase,
     {
       provide: PasswordHasherPort,
       useClass: BcryptPasswordHasher,

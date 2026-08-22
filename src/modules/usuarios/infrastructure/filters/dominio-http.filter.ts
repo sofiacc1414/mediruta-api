@@ -7,12 +7,14 @@ import {
 import { Response } from 'express';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
+import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-invalido.error';
 
 @Catch(
   CorreoYaRegistradoError,
   TipoRegistroInvalidoError,
   CredencialesInvalidasError,
+  RefreshTokenInvalidoError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -26,7 +28,10 @@ export class DominioHttpFilter implements ExceptionFilter {
       return;
     }
 
-    if (exception instanceof CredencialesInvalidasError) {
+    if (
+      exception instanceof CredencialesInvalidasError ||
+      exception instanceof RefreshTokenInvalidoError
+    ) {
       response.status(HttpStatus.UNAUTHORIZED).json({
         statusCode: HttpStatus.UNAUTHORIZED,
         message: exception.message,

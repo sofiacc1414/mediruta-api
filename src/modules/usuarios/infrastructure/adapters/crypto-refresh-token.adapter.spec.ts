@@ -29,6 +29,25 @@ describe('CryptoRefreshTokenAdapter', () => {
     expect(generado.expiraEn.getTime()).toBeGreaterThan(Date.now());
   });
 
+  it('hash() usa el mismo HMAC-SHA256 y secreto que generar()', () => {
+    const adapter = new CryptoRefreshTokenAdapter(
+      configCon({
+        JWT_REFRESH_SECRET: 'pepper-de-prueba',
+        JWT_REFRESH_EXPIRES_IN: '7d',
+      }),
+    );
+    const token = 'refresh-opaco-sin-alterar';
+    const hashIndependiente = createHmac('sha256', 'pepper-de-prueba')
+      .update(token)
+      .digest('hex');
+
+    expect(adapter.hash(token)).toBe(hashIndependiente);
+    expect(token).toBe('refresh-opaco-sin-alterar');
+
+    const generado = adapter.generar();
+    expect(adapter.hash(generado.token)).toBe(generado.hash);
+  });
+
   it('falla al inicializar si falta JWT_REFRESH_SECRET', () => {
     expect(
       () =>

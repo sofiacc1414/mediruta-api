@@ -1,6 +1,7 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
+import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { DominioHttpFilter } from './dominio-http.filter';
 
 function hostConRespuesta() {
@@ -36,6 +37,18 @@ describe('DominioHttpFilter', () => {
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.UNAUTHORIZED,
       message: 'Correo o contraseña incorrectos, o la cuenta no está disponible.',
+    });
+  });
+
+  it('mapea RefreshTokenInvalidoError a HTTP 401 con mensaje genérico', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new RefreshTokenInvalidoError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.UNAUTHORIZED,
+      message: 'La sesión no es válida o ha expirado.',
     });
   });
 });

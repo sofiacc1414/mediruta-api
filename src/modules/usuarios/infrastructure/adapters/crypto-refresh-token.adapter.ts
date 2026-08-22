@@ -28,15 +28,18 @@ export class CryptoRefreshTokenAdapter extends RefreshTokenPort {
     this.ttlMs = parsearDuracion(expiraEn, 'JWT_REFRESH_EXPIRES_IN');
   }
 
-  generar(): RefreshTokenGenerado {
-    const token = randomBytes(48).toString('base64url');
-    const hash = createHmac('sha256', this.refreshSecret)
+  hash(token: string): string {
+    return createHmac('sha256', this.refreshSecret)
       .update(token)
       .digest('hex');
+  }
+
+  generar(): RefreshTokenGenerado {
+    const token = randomBytes(48).toString('base64url');
 
     return {
       token,
-      hash,
+      hash: this.hash(token),
       expiraEn: new Date(Date.now() + this.ttlMs),
     };
   }
