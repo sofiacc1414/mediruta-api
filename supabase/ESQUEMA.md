@@ -1,6 +1,6 @@
 # Esquema de base de datos — MediRuta
 
-Referencia viva del estado real de la base de datos. Se actualiza **en el mismo PR** que la migración que modifica algo (ver `DOCS/context.md`, sección 9.1). Consúltalo antes de escribir cualquier query, caso de uso o migración nueva — no asumas ni inventes columnas.
+Referencia viva del estado real de la base de datos. Se actualiza **en el mismo PR** que la migración que modifica algo (ver `context.md`, sección 9.1). Consúltalo antes de escribir cualquier query, caso de uso o migración nueva — no asumas ni inventes columnas.
 
 ## Esquema `app`
 
@@ -11,18 +11,31 @@ Reemplaza a `auth.uid()` de Supabase Auth (que no se usa en este proyecto). Lee 
 
 ## Tablas
 
-_(Todavía no hay tablas de dominio creadas. Cada vez que se agregue una tabla nueva —`usuarios`, `solicitudes`, `documentos`, `domiciliarios`, `pedidos_entrega`, etc.— documéntala aquí con este formato:)_
+### `roles`
 
-### `<nombre_tabla>`
+Catálogo de roles del sistema. Fuente única de los códigos disponibles. **No** hay columna `usuarios.rol`; las asignaciones vivirán en `usuario_roles` (migración posterior).
 
 | Columna | Tipo | Notas |
 |---|---|---|
-| | | |
+| `id` | `uuid` | PK; default `gen_random_uuid()` |
+| `codigo` | `text` | `NOT NULL`; `UNIQUE`; `CHECK` solo `PACIENTE`, `DOMICILIARIO`, `ADMINISTRADOR`, `ROOT` |
+| `descripcion` | `text` | nullable |
+| `creado_en` | `timestamptz` | `NOT NULL`; default `now()` |
+
+**Códigos de catálogo (insertados en la misma migración):**
+- `PACIENTE`
+- `DOMICILIARIO`
+- `ADMINISTRADOR`
+- `ROOT`
 
 **Relaciones (FKs):**
--
+- Ninguna. Esta tabla no referencia otras tablas.
+
+**RLS:**
+- `ENABLE ROW LEVEL SECURITY`
+- `FORCE ROW LEVEL SECURITY`
 
 **Políticas RLS activas:**
--
+- `autenticado_lee_catalogo_roles` — `SELECT` cuando `app.current_user_id() IS NOT NULL`. No hay políticas INSERT/UPDATE/DELETE: el catálogo se administra por migraciones.
 
-**Migración:** `<archivo>.sql`
+**Migración:** `20260822172244_create_roles.sql`
