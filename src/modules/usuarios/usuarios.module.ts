@@ -19,8 +19,8 @@ import { UsuarioRepositoryPort } from './domain/ports/usuario.repository.port';
 import { BcryptPasswordHasher } from './infrastructure/adapters/bcrypt-password-hasher.adapter';
 import { CryptoCodigoRecuperacionAdapter } from './infrastructure/adapters/crypto-codigo-recuperacion.adapter';
 import { CryptoRefreshTokenAdapter } from './infrastructure/adapters/crypto-refresh-token.adapter';
-import { DesarrolloCorreoRecuperacionAdapter } from './infrastructure/adapters/desarrollo-correo-recuperacion.adapter';
 import { JwtAccessTokenAdapter } from './infrastructure/adapters/jwt-access-token.adapter';
+import { ResendCorreoRecuperacionAdapter } from './infrastructure/adapters/resend-correo-recuperacion.adapter';
 import { PostgresRecuperacionContrasenaRepository } from './infrastructure/adapters/postgres-recuperacion-contrasena.repository';
 import { PostgresSesionRepository } from './infrastructure/adapters/postgres-sesion.repository';
 import { PostgresUsuarioRepository } from './infrastructure/adapters/postgres-usuario.repository';
@@ -91,7 +91,7 @@ import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
     },
     {
       provide: CorreoRecuperacionPort,
-      useClass: DesarrolloCorreoRecuperacionAdapter,
+      useClass: ResendCorreoRecuperacionAdapter,
     },
   ],
 })

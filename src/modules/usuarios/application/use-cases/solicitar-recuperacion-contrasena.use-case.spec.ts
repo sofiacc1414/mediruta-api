@@ -66,6 +66,8 @@ describe('SolicitarRecuperacionContrasenaUseCase', () => {
       '000042',
     );
     expect(resultado).toEqual({ message: MENSAJE_RECUPERACION_SOLICITADA });
+    expect(resultado).not.toHaveProperty('codigo');
+    expect(JSON.stringify(resultado)).not.toContain('000042');
   });
 
   it('si el repositorio retorna false no envía correo y responde lo mismo', async () => {
@@ -84,8 +86,10 @@ describe('SolicitarRecuperacionContrasenaUseCase', () => {
       new Error('smtp-caido'),
     );
 
-    await expect(
-      useCase.execute({ correo: 'persona@mail.com' }),
-    ).resolves.toEqual({ message: MENSAJE_RECUPERACION_SOLICITADA });
+    const resultado = await useCase.execute({ correo: 'persona@mail.com' });
+
+    expect(resultado).toEqual({ message: MENSAJE_RECUPERACION_SOLICITADA });
+    expect(JSON.stringify(resultado)).not.toContain('000042');
+    expect(JSON.stringify(resultado)).not.toContain('smtp-caido');
   });
 });

@@ -189,6 +189,7 @@ Este documento es la arquitectura oficial del proyecto. Aplica igual sin importa
 | **Base de datos** | PostgreSQL vía **Supabase** | RLS obligatorio en toda tabla (sección 8). Migraciones versionadas con Supabase CLI (sección 9). |
 | **Autenticación** | **Propia (custom)**, construida por el equipo desde cero | Ningún componente de Supabase Auth (GoTrue). La API emite y valida su propio JWT. Supabase se usa aquí solo como Postgres + Storage gestionados (ver sección 4.1). |
 | **Almacenamiento de archivos** | Supabase Storage | Buckets con políticas de acceso equivalentes a RLS. |
+| **Correo transaccional** | **Resend** (SDK `resend`) | G05 recuperación de contraseña. La API depende de `CorreoRecuperacionPort`; el adaptador concreto no se importa desde los casos de uso. |
 | **Web (panel)** | React 18 + Vite 5 + TypeScript 5.8 (modo no-estricto) | Ver Parte A para el sistema visual. Estructura por entidad (sección 7). |
 | **App móvil** | Flutter + **Riverpod** | Estructura por entidad/feature (sección 11). |
 
@@ -291,6 +292,12 @@ set local app.current_user_id = '<uuid-del-usuario-del-jwt-ya-validado>';
 ```
 
 Las políticas RLS (sección 8) usan `app.current_user_id()` en vez de `auth.uid()` en todo el proyecto — sin excepciones, para que no haya políticas "mixtas" entre convenciones distintas.
+
+### 4.2 Correo de recuperación (G05)
+
+La recuperación de contraseña envía el OTP por correo mediante `CorreoRecuperacionPort`. El adaptador de infraestructura usa Resend (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`). El OTP nunca se loguea ni se devuelve por HTTP.
+
+`onboarding@resend.dev` es solo para pruebas: con el dominio `resend.dev` solo se puede enviar al correo asociado a la cuenta de Resend. En producción se requiere un dominio verificado y el mismo `RESEND_FROM_EMAIL` apuntando a ese remitente, sin cambiar código.
 
 ## 5. Un caso de uso por funcionalidad
 
