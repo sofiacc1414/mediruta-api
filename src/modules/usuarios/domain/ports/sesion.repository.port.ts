@@ -24,8 +24,14 @@ export type ValidarSesionInput = {
   sid: string;
 };
 
+export type RevocarSesionInput = {
+  usuarioId: string;
+  sid: string;
+};
+
 export abstract class SesionRepositoryPort {
   abstract crear(input: CrearSesionInput): Promise<string>;
   abstract rotar(input: RotarSesionInput): Promise<RotarSesionResultado | null>;
   abstract validar(input: ValidarSesionInput): Promise<boolean>;
+  abstract revocar(input: RevocarSesionInput): Promise<boolean>;
 }

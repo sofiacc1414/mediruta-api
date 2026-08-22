@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import {
   CrearSesionInput,
+  RevocarSesionInput,
   RotarSesionInput,
   RotarSesionResultado,
   SesionRepositoryPort,
@@ -61,6 +62,16 @@ export class PostgresSesionRepository extends SesionRepositoryPort {
         [input.usuarioId, input.sid],
       );
       return Boolean(result.rowCount);
+    });
+  }
+
+  revocar(input: RevocarSesionInput): Promise<boolean> {
+    return this.db.withAppRole(async (client) => {
+      const result = await client.query<{ revocada: boolean }>(
+        'select app.revocar_sesion($1, $2) as revocada',
+        [input.usuarioId, input.sid],
+      );
+      return result.rows[0].revocada;
     });
   }
 }

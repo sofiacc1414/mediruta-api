@@ -38,6 +38,7 @@ describe('IniciarSesionUseCase', () => {
     crear: jest.fn(),
     rotar: jest.fn(),
     validar: jest.fn(),
+    revocar: jest.fn(),
   };
   const accessTokens: AccessTokenPort = {
     sign: jest.fn(),

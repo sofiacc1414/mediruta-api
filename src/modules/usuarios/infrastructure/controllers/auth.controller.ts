@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { CerrarSesionUseCase } from '../../application/use-cases/cerrar-sesion.use-case';
 import { IniciarSesionUseCase } from '../../application/use-cases/iniciar-sesion.use-case';
 import { ObtenerSesionActualUseCase } from '../../application/use-cases/obtener-sesion-actual.use-case';
 import { RefrescarSesionUseCase } from '../../application/use-cases/refrescar-sesion.use-case';
@@ -30,6 +31,7 @@ export class AuthController {
     private readonly iniciarSesion: IniciarSesionUseCase,
     private readonly refrescarSesion: RefrescarSesionUseCase,
     private readonly obtenerSesionActual: ObtenerSesionActualUseCase,
+    private readonly cerrarSesion: CerrarSesionUseCase,
   ) {}
 
   @Post('registro')
@@ -77,6 +79,16 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   me(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
     return this.obtenerSesionActual.execute(identidad.usuarioId);
+  }
+
+  @Post('logout')
+  @UseGuards(AccessAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async logout(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
+    await this.cerrarSesion.execute({
+      usuarioId: identidad.usuarioId,
+      sid: identidad.sid,
+    });
   }
 }
 

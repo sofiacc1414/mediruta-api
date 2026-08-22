@@ -116,4 +116,45 @@ describe('PostgresSesionRepository', () => {
       }),
     ).resolves.toBe(false);
   });
+
+  it('revoca la sesión únicamente vía app.revocar_sesion', async () => {
+    const query = jest.fn().mockResolvedValue({
+      rows: [{ revocada: true }],
+    });
+    const withAppRole = jest.fn(async (callback) => callback({ query }));
+    const db = { withAppRole } as unknown as DatabaseService;
+
+    const repository = new PostgresSesionRepository(db);
+
+    await expect(
+      repository.revocar({
+        usuarioId: 'usuario-uuid',
+        sid: 'sid-uuid',
+      }),
+    ).resolves.toBe(true);
+
+    expect(withAppRole).toHaveBeenCalled();
+    expect(query).toHaveBeenCalledWith(
+      'select app.revocar_sesion($1, $2) as revocada',
+      ['usuario-uuid', 'sid-uuid'],
+    );
+  });
+
+  it('devuelve false cuando app.revocar_sesion no revoca ninguna fila', async () => {
+    const query = jest.fn().mockResolvedValue({
+      rows: [{ revocada: false }],
+    });
+    const db = {
+      withAppRole: jest.fn(async (callback) => callback({ query })),
+    } as unknown as DatabaseService;
+
+    const repository = new PostgresSesionRepository(db);
+
+    await expect(
+      repository.revocar({
+        usuarioId: 'usuario-uuid',
+        sid: 'sid-ya-revocado',
+      }),
+    ).resolves.toBe(false);
+  });
 });

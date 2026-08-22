@@ -32,6 +32,7 @@ describe('AccessAuthGuard', () => {
     crear: jest.fn(),
     rotar: jest.fn(),
     validar: jest.fn(),
+    revocar: jest.fn(),
   };
   const guard = new AccessAuthGuard(accessTokens, sesiones);
 

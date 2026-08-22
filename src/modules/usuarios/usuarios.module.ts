@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { CerrarSesionUseCase } from './application/use-cases/cerrar-sesion.use-case';
 import { IniciarSesionUseCase } from './application/use-cases/iniciar-sesion.use-case';
 import { ObtenerSesionActualUseCase } from './application/use-cases/obtener-sesion-actual.use-case';
 import { RefrescarSesionUseCase } from './application/use-cases/refrescar-sesion.use-case';
@@ -48,6 +49,7 @@ import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
     IniciarSesionUseCase,
     RefrescarSesionUseCase,
     ObtenerSesionActualUseCase,
+    CerrarSesionUseCase,
     AccessAuthGuard,
     {
       provide: PasswordHasherPort,
