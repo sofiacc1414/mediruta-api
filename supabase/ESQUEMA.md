@@ -71,3 +71,41 @@ Identidad de la cuenta, credenciales y estado general de acceso. **No** contiene
 - `usuario_lee_su_cuenta` — `SELECT` cuando `id = app.current_user_id()`. No hay políticas INSERT/UPDATE/DELETE.
 
 **Migración:** `20260822175133_create_usuarios.sql`
+
+### `usuario_roles`
+
+Asignación de uno o más roles del catálogo a una cuenta. Una persona tiene una sola cuenta y puede tener varios roles. **No** existe `usuarios.rol`.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` | PK; default `gen_random_uuid()` |
+| `usuario_id` | `uuid` | `NOT NULL`; FK a `usuarios.id` |
+| `rol_id` | `uuid` | `NOT NULL`; FK a `roles.id` |
+| `estado` | `text` | `NOT NULL`; `CHECK` solo `habilitado`, `pendiente_validacion`, `rechazado` |
+| `creado_en` | `timestamptz` | `NOT NULL`; default `now()` |
+| `actualizado_en` | `timestamptz` | `NOT NULL`; default `now()`; lo actualiza la API (sin trigger) |
+
+**Restricciones:**
+- PK: `id`
+- `usuario_roles_usuario_rol_key` — `UNIQUE (usuario_id, rol_id)` (un usuario no puede tener el mismo rol dos veces)
+- `usuario_roles_estado_check` — `habilitado` \| `pendiente_validacion` \| `rechazado`
+
+**Relaciones (FKs):**
+- `usuario_roles_usuario_id_fkey` — `usuario_id` → `usuarios.id` `ON DELETE CASCADE` (si la cuenta se elimina físicamente, no quedan asignaciones huérfanas; la desactivación normal usa `usuarios.estado_cuenta`, no DELETE)
+- `usuario_roles_rol_id_fkey` — `rol_id` → `roles.id` **sin** `ON DELETE CASCADE` (el catálogo es estructural y no se borra en cascada)
+
+**RLS:**
+- `ENABLE ROW LEVEL SECURITY`
+- `FORCE ROW LEVEL SECURITY`
+
+**Políticas RLS activas:**
+- `usuario_lee_sus_roles` — `SELECT` cuando `usuario_id = app.current_user_id()`. No hay políticas INSERT/UPDATE/DELETE ni política administrativa (`app.usuario_tiene_rol` se creará después).
+
+**Reglas de negocio HU-01 (las aplica la API en una transacción; no hay triggers ni inserts en esta migración):**
+- Registro PACIENTE: `PACIENTE` → `habilitado`
+- Registro DOMICILIARIO: `PACIENTE` → `habilitado` y `DOMICILIARIO` → `pendiente_validacion` (puede usar MediRuta como paciente mientras HU-08 valida el rol Domiciliario)
+- ADMINISTRADOR y ROOT no tienen registro público; se asignan solo por mecanismos internos/seeds autorizados
+
+`usuario_roles.estado` es el estado de la **asignación de rol**. Es distinto de `usuarios.estado_cuenta` (`activa` / `bloqueada` / `desactivada`).
+
+**Migración:** `20260822175639_create_usuario_roles.sql`
