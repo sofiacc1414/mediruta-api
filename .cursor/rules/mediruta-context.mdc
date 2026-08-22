@@ -1,0 +1,16 @@
+---
+description: Contexto técnico obligatorio de MediRuta (arquitectura hexagonal, RLS, planificación)
+alwaysApply: true
+---
+
+Este repo (mediruta-api) tiene un documento de contexto único y obligatorio: `context.md` (raíz del repo).
+
+Antes de proponer o generar cualquier código o cambio de base de datos:
+
+1. Lee `context.md` completo si no lo has hecho ya en esta sesión.
+2. Respeta estrictamente la Parte B (arquitectura hexagonal, un caso de uso por funcionalidad, división atómica, estructura por entidad, RLS obligatorio, versionamiento de migraciones + `supabase/ESQUEMA.md`, regla de paridad con Web/App, planificación obligatoria).
+3. **No implementes ninguna funcionalidad nueva sin plan previo.** Escribe primero el plan (plantilla en la sección 12.2 de `context.md`) y muéstralo antes de generar código.
+4. **No uses Supabase Auth**, ni `auth.uid()`, ni el cliente `.auth` de `supabase-js`. La autenticación es propia (sección 4.1); en RLS se usa siempre `app.current_user_id()`.
+5. Antes de tocar base de datos, revisa `supabase/ESQUEMA.md` para saber qué existe realmente.
+
+Si una instrucción puntual del usuario contradice `context.md`, avísalo antes de proceder.

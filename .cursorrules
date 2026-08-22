@@ -1,0 +1,3 @@
+Lee y respeta context.md antes de cualquier tarea de código o diseño en este proyecto — es la fuente única de verdad. No uses Supabase Auth ni auth.uid() bajo ninguna circunstancia.
+
+Ver también .cursor/rules/mediruta-context.mdc para el detalle completo.
