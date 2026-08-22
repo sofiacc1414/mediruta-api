@@ -162,7 +162,7 @@ Solicitudes de recuperación de contraseña de la autenticación propia de MediR
 | `codigo_hash` | `text` | `NOT NULL`; representación segura del OTP (nunca el código en claro; no hay columna `codigo`) |
 | `expira_en` | `timestamptz` | `NOT NULL`; debe ser posterior a `creado_en`; la API fija ~10 minutos |
 | `usado` | `boolean` | `NOT NULL`; default `false` |
-| `intentos` | `integer` | `NOT NULL`; default `0`; no negativos; el máximo lo impone la API |
+| `intentos` | `integer` | `NOT NULL`; default `0`; no negativos; máximo **5** (lo impone `app.restablecer_contrasena`) |
 | `creado_en` | `timestamptz` | `NOT NULL`; default `now()` |
 
 **Restricciones:**
@@ -180,13 +180,15 @@ Solicitudes de recuperación de contraseña de la autenticación propia de MediR
 - **Sin policies de forma intencional.** App y Web no consultan esta tabla ni leen `codigo_hash`, intentos ni expiración. No se expone por PostgREST (`REVOKE` a `anon` y `authenticated` solo sobre `public.recuperaciones_contrasena`).
 - No se almacenan OTP en claro, contraseñas ni tokens de sesión.
 
-**Reglas HU-01 (las aplica la API; no hay funciones, triggers ni envío de correo en esta migración):**
-- OTP numérico de 6 dígitos, generado criptográficamente y temporal.
-- Vigencia prevista ~10 minutos (`expira_en` lo establece la API; sin trigger).
-- Un solo uso: tras éxito, `usado = true` y el código no se acepta otra vez.
-- Cada validación incorrecta incrementa `intentos`; el tope lo impone la API (no hay máximo rígido en BD).
-- La solicitud de recuperación responde de forma genérica aunque el correo no exista (evita enumerar cuentas).
-- Restablecimiento exitoso (transaccional): nuevo `password_hash`, marcar el código usado y revocar sesiones según la política de HU-01.
+**Reglas HU-01 (G05; funciones `app.*` en migración posterior; el envío de correo lo hará la API):**
+- OTP numérico de 6 dígitos, generado criptográficamente por NestJS. **Nunca** se almacena el OTP real; solo `codigo_hash`.
+- Hash del OTP: HMAC-SHA256 con `PASSWORD_RECOVERY_PEPPER` (secreto de la API). No bcrypt, no JWT.
+- Vigencia prevista **10 minutos** (`expira_en` lo establece la API; la BD solo exige `expira_en > now()`).
+- Una solicitud nueva invalida las recuperaciones anteriores (`usado = true`) e inserta una con `intentos = 0`.
+- Un solo uso: tras éxito, `usado = true`.
+- Máximo **5** intentos incorrectos; al 5º la recuperación queda inutilizable (`usado = true`).
+- La solicitud futura responderá de forma genérica aunque el correo no exista (evita enumerar cuentas).
+- Restablecimiento exitoso (atómico): consume el código, actualiza `password_hash`, **no** cambia `estado_cuenta`, invalida otras recuperaciones pendientes y revoca **todas** las sesiones del usuario.
 
 **Migración:** `20260822181231_create_recuperaciones_contrasena.sql`
 
@@ -211,7 +213,7 @@ Rol **técnico** de PostgreSQL. **No** es un rol funcional de MediRuta (`PACIENT
 - `usuarios`: `SELECT` solo de `id`, `correo`, `estado_cuenta`, `creado_en`, `actualizado_en` — **sin** `password_hash`; **sin** INSERT/UPDATE/DELETE
 - `usuario_roles`: `SELECT` (RLS limita a las filas del usuario actual) — **sin** INSERT/UPDATE/DELETE
 - `sesiones`: **sin** acceso DML directo (ni SELECT/INSERT/UPDATE/DELETE). Crear, rotar, validar y revocar solo vía `EXECUTE` de `app.crear_sesion`, `app.rotar_sesion`, `app.validar_sesion` y `app.revocar_sesion`. Sin `SELECT` de `refresh_token_hash` ni `UPDATE` directo.
-- `recuperaciones_contrasena`: **sin** acceso DML directo
+- `recuperaciones_contrasena`: **sin** acceso DML directo (ni SELECT/INSERT/UPDATE/DELETE). Crear y restablecer solo vía `EXECUTE` de `app.crear_recuperacion_contrasena` y `app.restablecer_contrasena`. Sin `SELECT` de `codigo_hash`.
 
 RLS sigue siendo obligatorio (`ENABLE` + `FORCE` en las tablas). Las operaciones sensibles (hashes, alta de usuario, cambio de contraseña, sesiones, recuperación) usarán más adelante mecanismos internos de mínimo privilegio; no se salta RLS dejando de usar `mediruta_app`.
 
@@ -589,3 +591,92 @@ Tras revocar sid A:
 - `app.rotar_sesion` exige `revocada = false`, así que el refresh de A deja de servir
 
 **Migración:** `20260822201750_create_revoke_session_function.sql`
+
+## `app.crear_recuperacion_contrasena(...)`
+
+Puerta interna para `POST /auth/recuperar-contrasena` (NestJS, aún no implementado). Recibe el correo y el **hash** del OTP (nunca el código). `mediruta_app` no tiene INSERT/UPDATE sobre `recuperaciones_contrasena`. App/Web no llaman esta función.
+
+### Firma
+
+```text
+app.crear_recuperacion_contrasena(
+  p_correo text,
+  p_codigo_hash text,
+  p_expira_en timestamptz
+) → boolean
+```
+
+`true` si el usuario existe y se creó una recuperación nueva. `false` si no hay usuario con ese correo (sin excepción). El boolean es solo interno: la API enviará el OTP únicamente si es `true`, pero el HTTP será el mismo mensaje genérico en ambos casos (anti-enumeración).
+
+### Seguridad
+
+- `SECURITY DEFINER`
+- `search_path` vacío; objetos `public.usuarios` / `public.recuperaciones_contrasena`
+- sin SQL dinámico
+- `EXECUTE` únicamente para `mediruta_app`
+- `REVOKE ALL` de `PUBLIC`, `anon` y `authenticated`
+- no cambia RLS ni otorga permisos de tabla
+- no cambia `usuarios.estado_cuenta`
+
+### Comportamiento
+
+Correo canónico: `lower(btrim(...))`. Hash y expiración inválidos (NULL, hash vacío, `p_expira_en` NULL o no posterior a `now()`) → SQLSTATE `22023` (`parámetro inválido`), sin datos sensibles.
+
+Si el usuario existe (cualquier `estado_cuenta`):
+1. marca `usado = true` en todas sus recuperaciones con `usado = false`
+2. inserta una fila nueva: `codigo_hash` exacto, `p_expira_en`, `usado = false`, `intentos = 0`
+
+La API fija ~10 minutos en `p_expira_en`. Bloquea la fila del usuario (`FOR UPDATE`) para serializar solicitudes concurrentes.
+
+## `app.restablecer_contrasena(...)`
+
+Puerta interna para `POST /auth/restablecer-contrasena` (NestJS, aún no implementado). Recibe correo, hash del OTP y el **bcrypt** de la nueva contraseña. Nunca el OTP ni la contraseña en claro.
+
+### Firma
+
+```text
+app.restablecer_contrasena(
+  p_correo text,
+  p_codigo_hash text,
+  p_nuevo_password_hash text
+) → boolean
+```
+
+`true` si el código era válido, se consumió y se actualizó la contraseña. `false` (sin revelar el motivo) si: correo inexistente, sin recuperación activa, hash incorrecto, expirado, ya usado o 5 intentos agotados.
+
+Parámetros estructuralmente inválidos → SQLSTATE `22023` (`parámetro inválido`). `btrim` solo comprueba vacío; los hashes comparados/guardados no se recortan.
+
+### Recuperación candidata
+
+La más reciente (`creado_en DESC`, 1 fila) con `usado = false`, `expira_en > now()`, `intentos < 5`. Se bloquea con `FOR UPDATE` (y se revalidan las condiciones tras el lock) para que dos llamadas concurrentes no puedan ambas devolver `true`.
+
+### Código incorrecto
+
+Incrementa `intentos` en 1. Al llegar a 5 marca `usado = true`. Retorna `false`. No cambia `password_hash` ni sesiones.
+
+### Código correcto (atómico)
+
+1. `usado = true` en esa recuperación
+2. `usuarios.password_hash = p_nuevo_password_hash` y `actualizado_en = now()`
+3. **no** modifica `estado_cuenta`
+4. revoca **todas** las sesiones no revocadas de ese usuario (distinto de `app.revocar_sesion`, que solo cierra un `sid`)
+5. marca `usado = true` en cualquier otra recuperación pendiente del mismo usuario
+6. retorna `true`
+
+Sin bloques `EXCEPTION` que permitan un commit parcial. Si falla el UPDATE de contraseña, también hace rollback el consumo del código.
+
+Tras un reset exitoso, `app.validar_sesion` y `app.rotar_sesion` fallan para las sesiones anteriores. El usuario debe volver a iniciar sesión.
+
+### Respuestas HTTP previstas (NestJS, aún no implementado)
+
+```text
+POST /auth/recuperar-contrasena
+→ "Si el correo está registrado, recibirás un código de recuperación."
+  (exista o no el usuario; el correo OTP solo se envía si la función retornó true)
+
+POST /auth/restablecer-contrasena
+→ éxito: contraseña cambiada
+→ cualquier fallo de código/correo/expiración/intentos: mensaje genérico
+```
+
+**Migración:** `20260822204033_create_password_recovery_functions.sql`
