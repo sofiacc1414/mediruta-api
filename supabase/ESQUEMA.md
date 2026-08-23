@@ -464,11 +464,14 @@ Operación interna y atómica de la API para el registro público de HU-01. Inse
 app.registrar_usuario(
   p_correo text,
   p_password_hash text,
-  p_tipo_registro text
+  p_tipo_registro text,
+  p_alta_paciente boolean default true
 ) → uuid
 ```
 
 El `uuid` es el `id` del usuario nuevo. No recibe `rol_id`, `usuario_id`, estados, ni datos de perfil.
+
+`p_alta_paciente` **solo aplica cuando `p_tipo_registro = 'DOMICILIARIO'`** — un registro como PACIENTE siempre recibe ese rol (es el propio rol elegido, el parámetro no lo afecta). El default SQL es `true` por compatibilidad hacia atrás, pero la API (`RegistrarUsuarioDto.altaPaciente`) siempre manda el valor explícito y su propio default es `false` — opt-in, no automático.
 
 ### Seguridad
 
@@ -492,11 +495,13 @@ Registro DOMICILIARIO:
 
 ```text
 usuarios.estado_cuenta = activa
-PACIENTE = habilitado
 DOMICILIARIO = pendiente_validacion
+PACIENTE = habilitado   -- solo si p_alta_paciente = true
 ```
 
 Los IDs de rol se leen de `public.roles` por `codigo`. No se insertan roles ni se usan UUID fijos. Si falta un código de catálogo, la función falla.
+
+Una cuenta que no pidió el rol PACIENTE al registrarse como DOMICILIARIO (o viceversa) puede pedirlo después sin pasar por un registro nuevo — ver `app.solicitar_rol_paciente`/`app.solicitar_rol_domiciliario` más abajo.
 
 ### Prohibiciones
 
@@ -516,7 +521,39 @@ Se normaliza con `lower(btrim(...))`. Se rechaza vacío. La autoridad contra dup
 
 ### Migración
 
-`20260822183358_create_registro_usuario_function.sql`
+`20260822183358_create_registro_usuario_function.sql` (firma original),
+`20260823100000_alta_paciente_opcional_y_solicitar_rol.sql` (agrega
+`p_alta_paciente` — `CREATE OR REPLACE` sin `DROP` porque es un parámetro
+nuevo al final con default, no cambia los que ya existían).
+
+## `app.solicitar_rol_paciente(p_usuario_id)` / `app.solicitar_rol_domiciliario(p_usuario_id)`
+
+Agregan a una cuenta ya existente el rol que le falte, sin pasar por un
+registro nuevo (que además chocaría con el `UNIQUE` de `usuarios.correo`).
+Ambas devuelven `text`: `'agregado'` o `'ya_lo_tenia'` (idempotentes —
+pedir un rol que ya se tiene no es un error).
+
+- `solicitar_rol_paciente` → inserta `PACIENTE` en `habilitado`
+  directamente, mismo criterio que un registro directo como PACIENTE (el
+  perfil en sí se completa después, HU-02).
+- `solicitar_rol_domiciliario` → inserta `DOMICILIARIO` en
+  `pendiente_validacion`, mismo estado inicial que un registro directo
+  como DOMICILIARIO. No hizo falta cambiar `app.upsert_perfil_domiciliario`
+  ni ninguna otra función de HU-02/HU-08: ya exigían solo que la fila en
+  `usuario_roles` existiera, nunca `estado = 'habilitado'` — así que la
+  cuenta puede completar su perfil de Domiciliario de inmediato, sin
+  esperar aprobación ni volver a loguearse (los roles no viajan en el
+  JWT, se validan siempre en vivo contra la BD).
+
+### Seguridad
+
+Mismo patrón que el resto: `SECURITY DEFINER`, `search_path` vacío, sin
+SQL dinámico, `EXECUTE` solo para `mediruta_app`, `REVOKE ALL` de
+`PUBLIC`/`anon`/`authenticated`.
+
+### Migración
+
+`20260823100000_alta_paciente_opcional_y_solicitar_rol.sql`
 
 ## `app.obtener_credenciales_login(text)`
 

@@ -66,4 +66,24 @@ describe('RegistrarUsuarioDto', () => {
     expect(admin.some((error) => error.property === 'tipoRegistro')).toBe(true);
     expect(root.some((error) => error.property === 'tipoRegistro')).toBe(true);
   });
+
+  it('acepta altaPaciente ausente (opcional)', async () => {
+    await expect(validar(valido)).resolves.toHaveLength(0);
+  });
+
+  it('acepta altaPaciente true/false', async () => {
+    await expect(
+      validar({ ...valido, altaPaciente: true }),
+    ).resolves.toHaveLength(0);
+    await expect(
+      validar({ ...valido, altaPaciente: false }),
+    ).resolves.toHaveLength(0);
+  });
+
+  it('rechaza altaPaciente que no sea booleano', async () => {
+    const errores = await validar({ ...valido, altaPaciente: 'si' });
+    expect(errores.some((error) => error.property === 'altaPaciente')).toBe(
+      true,
+    );
+  });
 });

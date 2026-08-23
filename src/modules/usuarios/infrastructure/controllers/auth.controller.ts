@@ -57,6 +57,7 @@ export class AuthController {
       correo: dto.correo,
       password: dto.password,
       tipoRegistro: dto.tipoRegistro,
+      altaPaciente: dto.altaPaciente,
     });
   }
 

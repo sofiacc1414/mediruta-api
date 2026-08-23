@@ -8,6 +8,8 @@ describe('ObtenerSesionActualUseCase', () => {
     obtenerCredencialesLogin: jest.fn(),
     obtenerCuentaActual: jest.fn(),
     obtenerRoles: jest.fn(),
+    solicitarRolPaciente: jest.fn(),
+    solicitarRolDomiciliario: jest.fn(),
   };
   const useCase = new ObtenerSesionActualUseCase(usuarios);
 

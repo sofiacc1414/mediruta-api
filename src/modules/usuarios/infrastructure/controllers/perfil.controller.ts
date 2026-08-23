@@ -18,6 +18,8 @@ import { ActualizarPerfilDomiciliarioUseCase } from '../../application/use-cases
 import { ActualizarPerfilPacienteUseCase } from '../../application/use-cases/actualizar-perfil-paciente.use-case';
 import { DesactivarCuentaUseCase } from '../../application/use-cases/desactivar-cuenta.use-case';
 import { ObtenerPerfilUseCase } from '../../application/use-cases/obtener-perfil.use-case';
+import { SolicitarRolDomiciliarioUseCase } from '../../application/use-cases/solicitar-rol-domiciliario.use-case';
+import { SolicitarRolPacienteUseCase } from '../../application/use-cases/solicitar-rol-paciente.use-case';
 import { SubirDocumentoDomiciliarioUseCase } from '../../application/use-cases/subir-documento-domiciliario.use-case';
 import { SubirFotoCedulaPacienteUseCase } from '../../application/use-cases/subir-foto-cedula-paciente.use-case';
 import { SubirFotoPerfilUseCase } from '../../application/use-cases/subir-foto-perfil.use-case';
@@ -50,6 +52,8 @@ export class PerfilController {
     private readonly actualizarPerfilDomiciliario: ActualizarPerfilDomiciliarioUseCase,
     private readonly subirDocumentoDomiciliario: SubirDocumentoDomiciliarioUseCase,
     private readonly desactivarCuenta: DesactivarCuentaUseCase,
+    private readonly solicitarRolPaciente: SolicitarRolPacienteUseCase,
+    private readonly solicitarRolDomiciliario: SolicitarRolDomiciliarioUseCase,
   ) {}
 
   @Get()
@@ -143,6 +147,18 @@ export class PerfilController {
       contentType: archivo.mimetype,
       extension: extensionDesde(archivo.mimetype),
     });
+  }
+
+  @Post('paciente/solicitar')
+  @HttpCode(HttpStatus.OK)
+  solicitarPaciente(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
+    return this.solicitarRolPaciente.execute(identidad.usuarioId);
+  }
+
+  @Post('domiciliario/solicitar')
+  @HttpCode(HttpStatus.OK)
+  solicitarDomiciliario(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
+    return this.solicitarRolDomiciliario.execute(identidad.usuarioId);
   }
 
   @Post('desactivar')

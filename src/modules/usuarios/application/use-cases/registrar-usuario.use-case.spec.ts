@@ -14,6 +14,8 @@ describe('RegistrarUsuarioUseCase', () => {
     obtenerCredencialesLogin: jest.fn(),
     obtenerCuentaActual: jest.fn(),
     obtenerRoles: jest.fn(),
+    solicitarRolPaciente: jest.fn(),
+    solicitarRolDomiciliario: jest.fn(),
   };
 
   const useCase = new RegistrarUsuarioUseCase(passwordHasher, usuarios);
@@ -36,6 +38,7 @@ describe('RegistrarUsuarioUseCase', () => {
       correo: 'persona@mail.com',
       passwordHash: 'hash-bcrypt',
       tipoRegistro: TipoRegistro.PACIENTE,
+      altaPaciente: false,
     });
     expect(usuarios.registrar).not.toHaveBeenCalledWith(
       expect.objectContaining({ password: 'ClaveSegura1!' }),
@@ -60,8 +63,33 @@ describe('RegistrarUsuarioUseCase', () => {
       correo: 'domi@mail.com',
       passwordHash: 'hash-bcrypt',
       tipoRegistro: TipoRegistro.DOMICILIARIO,
+      altaPaciente: false,
     });
     expect(resultado.estadoDomiciliario).toBe('pendiente_validacion');
+  });
+
+  it('altaPaciente por defecto es false — no todos los domiciliarios quieren ser pacientes', async () => {
+    await useCase.execute({
+      correo: 'domi@mail.com',
+      password: 'ClaveSegura1!',
+      tipoRegistro: TipoRegistro.DOMICILIARIO,
+    });
+
+    const input = (usuarios.registrar as jest.Mock).mock.calls[0][0];
+    expect(input.altaPaciente).toBe(false);
+  });
+
+  it('propaga altaPaciente: true cuando el domiciliario lo pide explícitamente', async () => {
+    await useCase.execute({
+      correo: 'domi@mail.com',
+      password: 'ClaveSegura1!',
+      tipoRegistro: TipoRegistro.DOMICILIARIO,
+      altaPaciente: true,
+    });
+
+    expect(usuarios.registrar).toHaveBeenCalledWith(
+      expect.objectContaining({ altaPaciente: true }),
+    );
   });
 
   it('nunca envía la contraseña en texto plano al repositorio', async () => {

@@ -29,6 +29,8 @@ describe('IniciarSesionUseCase', () => {
     obtenerCredencialesLogin: jest.fn(),
     obtenerCuentaActual: jest.fn(),
     obtenerRoles: jest.fn(),
+    solicitarRolPaciente: jest.fn(),
+    solicitarRolDomiciliario: jest.fn(),
   };
   const refreshTokens: RefreshTokenPort = {
     generar: jest.fn(),

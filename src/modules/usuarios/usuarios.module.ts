@@ -14,6 +14,8 @@ import { RefrescarSesionUseCase } from './application/use-cases/refrescar-sesion
 import { RegistrarUsuarioUseCase } from './application/use-cases/registrar-usuario.use-case';
 import { RestablecerContrasenaUseCase } from './application/use-cases/restablecer-contrasena.use-case';
 import { SolicitarRecuperacionContrasenaUseCase } from './application/use-cases/solicitar-recuperacion-contrasena.use-case';
+import { SolicitarRolDomiciliarioUseCase } from './application/use-cases/solicitar-rol-domiciliario.use-case';
+import { SolicitarRolPacienteUseCase } from './application/use-cases/solicitar-rol-paciente.use-case';
 import { SubirDocumentoDomiciliarioUseCase } from './application/use-cases/subir-documento-domiciliario.use-case';
 import { SubirFotoCedulaPacienteUseCase } from './application/use-cases/subir-foto-cedula-paciente.use-case';
 import { SubirFotoPerfilUseCase } from './application/use-cases/subir-foto-perfil.use-case';
@@ -86,6 +88,8 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
     ActualizarPerfilDomiciliarioUseCase,
     SubirDocumentoDomiciliarioUseCase,
     DesactivarCuentaUseCase,
+    SolicitarRolPacienteUseCase,
+    SolicitarRolDomiciliarioUseCase,
     AccessAuthGuard,
     RolesGuard,
     {

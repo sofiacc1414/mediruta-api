@@ -5,6 +5,8 @@ import { ActualizarPerfilDomiciliarioUseCase } from '../../application/use-cases
 import { ActualizarPerfilPacienteUseCase } from '../../application/use-cases/actualizar-perfil-paciente.use-case';
 import { DesactivarCuentaUseCase } from '../../application/use-cases/desactivar-cuenta.use-case';
 import { ObtenerPerfilUseCase } from '../../application/use-cases/obtener-perfil.use-case';
+import { SolicitarRolDomiciliarioUseCase } from '../../application/use-cases/solicitar-rol-domiciliario.use-case';
+import { SolicitarRolPacienteUseCase } from '../../application/use-cases/solicitar-rol-paciente.use-case';
 import { SubirDocumentoDomiciliarioUseCase } from '../../application/use-cases/subir-documento-domiciliario.use-case';
 import { SubirFotoCedulaPacienteUseCase } from '../../application/use-cases/subir-foto-cedula-paciente.use-case';
 import { SubirFotoPerfilUseCase } from '../../application/use-cases/subir-foto-perfil.use-case';
@@ -33,6 +35,8 @@ function crearController(overrides?: {
   actualizarPerfilDomiciliario?: { execute: jest.Mock };
   subirDocumentoDomiciliario?: { execute: jest.Mock };
   desactivarCuenta?: { execute: jest.Mock };
+  solicitarRolPaciente?: { execute: jest.Mock };
+  solicitarRolDomiciliario?: { execute: jest.Mock };
 }) {
   return new PerfilController(
     (overrides?.obtenerPerfil ?? {
@@ -59,6 +63,12 @@ function crearController(overrides?: {
     (overrides?.desactivarCuenta ?? {
       execute: jest.fn(),
     }) as unknown as DesactivarCuentaUseCase,
+    (overrides?.solicitarRolPaciente ?? {
+      execute: jest.fn(),
+    }) as unknown as SolicitarRolPacienteUseCase,
+    (overrides?.solicitarRolDomiciliario ?? {
+      execute: jest.fn(),
+    }) as unknown as SolicitarRolDomiciliarioUseCase,
   );
 }
 
@@ -189,6 +199,32 @@ describe('PerfilController', () => {
       contentType: 'application/pdf',
       extension: 'pdf',
     });
+  });
+
+  it('POST /perfil/paciente/solicitar usa la identidad autenticada', async () => {
+    const solicitarRolPaciente = {
+      execute: jest.fn().mockResolvedValue({ message: 'ok' }),
+    };
+    const controller = crearController({ solicitarRolPaciente });
+
+    await controller.solicitarPaciente(identidad);
+
+    expect(solicitarRolPaciente.execute).toHaveBeenCalledWith(
+      'usuario-desde-guard',
+    );
+  });
+
+  it('POST /perfil/domiciliario/solicitar usa la identidad autenticada', async () => {
+    const solicitarRolDomiciliario = {
+      execute: jest.fn().mockResolvedValue({ message: 'ok' }),
+    };
+    const controller = crearController({ solicitarRolDomiciliario });
+
+    await controller.solicitarDomiciliario(identidad);
+
+    expect(solicitarRolDomiciliario.execute).toHaveBeenCalledWith(
+      'usuario-desde-guard',
+    );
   });
 
   it('POST /perfil/desactivar usa la identidad autenticada y responde 204', async () => {

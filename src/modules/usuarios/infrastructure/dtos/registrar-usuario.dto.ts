@@ -1,5 +1,14 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsEnum, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { TipoRegistro } from '../../domain/value-objects/tipo-registro';
 import {
   PASSWORD_MAX_LENGTH,
@@ -29,4 +38,12 @@ export class RegistrarUsuarioDto {
     message: 'El tipo de registro solo puede ser PACIENTE o DOMICILIARIO.',
   })
   tipoRegistro: TipoRegistro;
+
+  /** Solo tiene efecto cuando `tipoRegistro = DOMICILIARIO` — si es
+   * PACIENTE, ese rol se otorga siempre (es el propio rol elegido).
+   * Opt-in a propósito (default `false` si no se manda): no todos los
+   * domiciliarios van a querer ser también pacientes. */
+  @IsOptional()
+  @IsBoolean()
+  altaPaciente?: boolean;
 }

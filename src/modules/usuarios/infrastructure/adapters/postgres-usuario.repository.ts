@@ -5,6 +5,7 @@ import {
   CredencialesLogin,
   CuentaActual,
   RegistrarUsuarioInput,
+  ResultadoSolicitarRol,
   UsuarioRepositoryPort,
   UsuarioRol,
 } from '../../domain/ports/usuario.repository.port';
@@ -20,8 +21,13 @@ export class PostgresUsuarioRepository extends UsuarioRepositoryPort {
     try {
       return await this.db.withAppRole(async (client) => {
         const result = await client.query<{ id: string }>(
-          'select app.registrar_usuario($1, $2, $3) as id',
-          [input.correo, input.passwordHash, input.tipoRegistro],
+          'select app.registrar_usuario($1, $2, $3, $4) as id',
+          [
+            input.correo,
+            input.passwordHash,
+            input.tipoRegistro,
+            input.altaPaciente ?? true,
+          ],
         );
         return result.rows[0].id;
       });
@@ -92,6 +98,27 @@ export class PostgresUsuarioRepository extends UsuarioRepositoryPort {
         [usuarioId],
       );
       return result.rows;
+    });
+  }
+
+  solicitarRolPaciente(usuarioId: string): Promise<ResultadoSolicitarRol> {
+    return this.db.withUserContext(usuarioId, async (client) => {
+      const result = await client.query<{ solicitar_rol_paciente: ResultadoSolicitarRol }>(
+        'select app.solicitar_rol_paciente($1) as solicitar_rol_paciente',
+        [usuarioId],
+      );
+      return result.rows[0].solicitar_rol_paciente;
+    });
+  }
+
+  solicitarRolDomiciliario(usuarioId: string): Promise<ResultadoSolicitarRol> {
+    return this.db.withUserContext(usuarioId, async (client) => {
+      const result = await client.query<{
+        solicitar_rol_domiciliario: ResultadoSolicitarRol;
+      }>('select app.solicitar_rol_domiciliario($1) as solicitar_rol_domiciliario', [
+        usuarioId,
+      ]);
+      return result.rows[0].solicitar_rol_domiciliario;
     });
   }
 }

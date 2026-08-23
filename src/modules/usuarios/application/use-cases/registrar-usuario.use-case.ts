@@ -11,6 +11,8 @@ export type RegistrarUsuarioCommand = {
   correo: string;
   password: string;
   tipoRegistro: string;
+  /** Solo aplica si `tipoRegistro === DOMICILIARIO`. */
+  altaPaciente?: boolean;
 };
 
 export type RegistrarUsuarioResultado = {
@@ -41,6 +43,7 @@ export class RegistrarUsuarioUseCase {
       correo,
       passwordHash,
       tipoRegistro,
+      altaPaciente: command.altaPaciente ?? false,
     });
 
     return {

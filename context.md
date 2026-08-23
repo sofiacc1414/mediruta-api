@@ -269,7 +269,9 @@ Una persona tiene **una sola cuenta por correo**. Un usuario **puede tener múlt
 - Un Domiciliario puede ser simultáneamente Paciente.
 - La selección de “modo Paciente/Domiciliario” en la App es únicamente una decisión de presentación; los permisos reales los determina la API consultando la BD (`usuario_roles` + `roles`), no un claim del JWT ni una columna en `usuarios`.
 
-Registro público únicamente como `PACIENTE` o `DOMICILIARIO`. Un paciente nuevo recibe `PACIENTE` → `habilitado`. Un domiciliario nuevo recibe `PACIENTE` → `habilitado` y `DOMICILIARIO` → `pendiente_validacion`. `ADMINISTRADOR` y `ROOT` no tienen registro público; `ROOT` es una cuenta técnica/interna.
+Registro público únicamente como `PACIENTE` o `DOMICILIARIO`. Un paciente nuevo recibe `PACIENTE` → `habilitado`. Un domiciliario nuevo recibe `DOMICILIARIO` → `pendiente_validacion` y, **opcionalmente** (`altaPaciente: boolean` en el registro, `false` si no se manda — no todos los domiciliarios van a querer ser también pacientes), `PACIENTE` → `habilitado`. `ADMINISTRADOR` y `ROOT` no tienen registro público; `ROOT` es una cuenta técnica/interna.
+
+Una cuenta ya existente puede pedir el rol que le falta sin pasar por un registro nuevo (que además chocaría con el `UNIQUE` de correo): `POST /perfil/paciente/solicitar` agrega `PACIENTE` → `habilitado` sin validación; `POST /perfil/domiciliario/solicitar` agrega `DOMICILIARIO` → `pendiente_validacion` y de ahí en más sigue el mismo camino que un domiciliario recién registrado (completar perfil/documentos, aprobación del admin) — ninguna otra función necesitó cambiar, ya no exigían `estado = 'habilitado'`, solo que la fila en `usuario_roles` existiera. Ambas son idempotentes (pedir un rol que ya se tiene no es un error).
 
 La autorización por rol consulta siempre `usuario_roles` + `roles`. En RLS, la identidad es `app.current_user_id()`; si hace falta privilegio administrativo en SQL, se usa `app.usuario_tiene_rol('ADMINISTRADOR')` o `app.usuario_tiene_rol('ROOT')` — nunca `usuarios.rol`, nunca `auth.uid()`, nunca Supabase Auth.
 

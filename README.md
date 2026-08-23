@@ -67,6 +67,7 @@ npm run lint       # eslint --fix
 
 - `POST /auth/registro`, `POST /auth/login`, `POST /auth/refrescar`, `POST /auth/logout`, `POST /auth/recuperar-contrasena`, `POST /auth/restablecer-contrasena`, `POST /auth/cambiar-contrasena` — access JWT corto + refresh opaco (hash guardado, nunca el token real), autenticación propia (no Supabase Auth).
 - **Sesión única por usuario**: iniciar sesión en un dispositivo nuevo revoca cualquier sesión previa que siguiera activa de esa cuenta (mismo criterio que ya se aplicaba al cambiar la contraseña). Como cada request autenticado revalida contra la sesión en BD (no solo la firma del JWT), el dispositivo viejo queda deslogueado en su siguiente request — no hay que esperar a que expire su access token. Si en ese momento intenta refrescar en cambio, también falla (401): la App ya trata cualquier refresh fallido como sesión terminada y fuerza el login, es el mismo camino que "el refresh token ya no sirve" por cualquier otro motivo.
+- **No todos los domiciliarios son pacientes**: registrarse como DOMICILIARIO ya no otorga el rol PACIENTE de forma automática — es opcional (`altaPaciente` en el body de `POST /auth/registro`, `false` si no se manda). Una cuenta ya existente (de cualquier rol) puede pedir después el que le falte, sin pasar por un registro nuevo: `POST /perfil/paciente/solicitar` (instantáneo) y `POST /perfil/domiciliario/solicitar` (`pendiente_validacion`, sigue el mismo camino de completar perfil + aprobación del admin que ya existía). Ambas idempotentes.
 
 ### HU-02 — qué incluye
 
