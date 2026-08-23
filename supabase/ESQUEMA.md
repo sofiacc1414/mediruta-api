@@ -155,14 +155,17 @@ Sesiones revocables de la autenticación propia de MediRuta (access JWT corto + 
 
 **Uso conceptual (lo implementa la API; crear, rotar, validar y revocar ya existen como funciones `app.*`):**
 - Sesión utilizable solo si pertenece al usuario, `revocada = false`, `expira_en > now()` y la cuenta sigue `activa`.
-- Crear: `app.crear_sesion` (login). Rotar: `app.rotar_sesion` (refresh). Ambas reciben solo hashes, nunca el refresh token real.
+- **Sesión única por usuario**: `app.crear_sesion` (login) revoca cualquier sesión previa que siguiera activa de esa cuenta antes de crear la nueva — un usuario nunca tiene más de una sesión viva a la vez, sin importar cuántos dispositivos usó para loguearse. Mismo criterio que ya usaba `app.cambiar_contrasena_autenticada` (revoca las demás sesiones al cambiar la contraseña), aplicado ahora también al login mismo. Como `app.validar_sesion` corre en cada request, el dispositivo viejo queda deslogueado en su siguiente request — no hace falta esperar a que expire su access token.
+- Crear: `app.crear_sesion` (login). Rotar: `app.rotar_sesion` (refresh, misma sesión — no dispara la revocación anterior). Ambas reciben solo hashes, nunca el refresh token real.
 - Validar access JWT: `app.validar_sesion(usuarioId, sid)` — NestJS verifica firma/`exp`; PostgreSQL verifica el estado actual de sesión y cuenta.
 - Logout de la sesión actual: `app.revocar_sesion(usuarioId, sid)` — `revocada = true` sin borrar la fila. No cierra las demás sesiones del usuario. Tras eso, `app.validar_sesion` devolverá 0 filas y `app.rotar_sesion` no podrá consumir ese refresh.
 - G05 restablecimiento (sin sesión): `app.restablecer_contrasena` revoca **todas** las sesiones.
 - G06 cambio autenticado: `app.cambiar_contrasena_autenticada` **mantiene** el `sid` actual y revoca las demás.
 - Operaciones posteriores (aún no creadas): `POST /auth/cambiar-contrasena` en NestJS.
 
-**Migración:** `20260822180351_create_sesiones.sql`
+**Migraciones:** `20260822180351_create_sesiones.sql`,
+`20260823090000_sesion_unica_por_usuario.sql` (agrega la revocación de sesiones
+previas dentro de `app.crear_sesion`).
 
 ### `recuperaciones_contrasena`
 
@@ -578,6 +581,7 @@ El `uuid` es `sesiones.id` y será el claim `sid` del access JWT (`sub` = usuari
 - Rechaza hash NULL, vacío o solo espacios (`length(btrim(...)) > 0`).
 - Rechaza `p_expira_en` NULL o no posterior a `now()`.
 - `user_agent` e `ip` (`inet`) son opcionales.
+- **Sesión única**: antes de insertar, revoca (`revocada = true`) cualquier fila de `sesiones` de ese `usuario_id` que siguiera con `revocada = false` — sin importar de qué dispositivo/rotación viniera. Un login nuevo siempre termina con exactamente una sesión activa por usuario.
 - Inserta `revocada = false`. UNIQUE de `refresh_token_hash` es la autoridad ante duplicados (sin `SELECT` previo).
 
 ## Flujo de login (API; no implementado en esta migración)

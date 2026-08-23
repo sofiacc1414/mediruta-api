@@ -63,6 +63,11 @@ npm run lint       # eslint --fix
 | **HU-05** — Gestión de documentos de la solicitud | 🔜 Próxima | — |
 | **HU-09** — Asignación automática de domiciliario | 🔜 Próxima | — |
 
+### HU-01 — qué incluye
+
+- `POST /auth/registro`, `POST /auth/login`, `POST /auth/refrescar`, `POST /auth/logout`, `POST /auth/recuperar-contrasena`, `POST /auth/restablecer-contrasena`, `POST /auth/cambiar-contrasena` — access JWT corto + refresh opaco (hash guardado, nunca el token real), autenticación propia (no Supabase Auth).
+- **Sesión única por usuario**: iniciar sesión en un dispositivo nuevo revoca cualquier sesión previa que siguiera activa de esa cuenta (mismo criterio que ya se aplicaba al cambiar la contraseña). Como cada request autenticado revalida contra la sesión en BD (no solo la firma del JWT), el dispositivo viejo queda deslogueado en su siguiente request — no hay que esperar a que expire su access token. Si en ese momento intenta refrescar en cambio, también falla (401): la App ya trata cualquier refresh fallido como sesión terminada y fuerza el login, es el mismo camino que "el refresh token ya no sirve" por cualquier otro motivo.
+
 ### HU-02 — qué incluye
 
 - `GET /perfil` — datos comunes + sección Paciente y/o Domiciliario según los roles de la cuenta. Fotos y documentos se devuelven como **URLs firmadas** de Supabase Storage (1h de expiración), nunca como paths internos.
