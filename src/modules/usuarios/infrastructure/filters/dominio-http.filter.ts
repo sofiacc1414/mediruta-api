@@ -12,6 +12,7 @@ import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
 import { NuevaContrasenaIgualError } from '../../domain/errors/nueva-contrasena-igual.error';
 import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-invalida.error';
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
+import { RolNoAutorizadoError } from '../../domain/errors/rol-no-autorizado.error';
 import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-invalido.error';
 
 @Catch(
@@ -23,6 +24,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   RecuperacionInvalidaError,
   CambioContrasenaInvalidoError,
   NuevaContrasenaIgualError,
+  RolNoAutorizadoError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -43,6 +45,14 @@ export class DominioHttpFilter implements ExceptionFilter {
     ) {
       response.status(HttpStatus.UNAUTHORIZED).json({
         statusCode: HttpStatus.UNAUTHORIZED,
+        message: exception.message,
+      });
+      return;
+    }
+
+    if (exception instanceof RolNoAutorizadoError) {
+      response.status(HttpStatus.FORBIDDEN).json({
+        statusCode: HttpStatus.FORBIDDEN,
         message: exception.message,
       });
       return;

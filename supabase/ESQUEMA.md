@@ -42,7 +42,7 @@ Catálogo de roles del sistema. Fuente única de los códigos disponibles. **No*
 
 ### `usuarios`
 
-Identidad de la cuenta, credenciales y estado general de acceso. **No** contiene roles (eso irá en `usuario_roles`). **No** contiene información de perfil (HU-02 y siguientes). `password_hash` almacena únicamente el hash generado por la API; nunca la contraseña en texto plano.
+Identidad de la cuenta, credenciales y estado general de acceso. **No** contiene roles (eso irá en `usuario_roles`). `password_hash` almacena únicamente el hash generado por la API; nunca la contraseña en texto plano. Desde HU-02 sí contiene los datos de perfil **comunes a cualquier rol** (`nombre_completo`, `telefono`); los datos específicos de rol viven en `perfil_paciente`/`perfil_domiciliario`.
 
 | Columna | Tipo | Notas |
 |---|---|---|
@@ -50,6 +50,8 @@ Identidad de la cuenta, credenciales y estado general de acceso. **No** contiene
 | `correo` | `text` | `NOT NULL`; `UNIQUE`; formato canónico (`lower(btrim(...))`); no vacío |
 | `password_hash` | `text` | `NOT NULL`; hash de contraseña (nunca texto plano) |
 | `estado_cuenta` | `text` | `NOT NULL`; default `'activa'`; `CHECK` solo `activa`, `bloqueada`, `desactivada` |
+| `nombre_completo` | `text` | nullable (HU-02); se completa después del registro |
+| `telefono` | `text` | nullable (HU-02); se completa después del registro |
 | `creado_en` | `timestamptz` | `NOT NULL`; default `now()` |
 | `actualizado_en` | `timestamptz` | `NOT NULL`; default `now()`; lo actualiza la API (sin trigger) |
 
@@ -59,6 +61,12 @@ Identidad de la cuenta, credenciales y estado general de acceso. **No** contiene
 - `usuarios_correo_canonico_check` — `correo = lower(btrim(correo))`
 - `usuarios_correo_no_vacio_check` — `length(correo) > 0`
 - `usuarios_estado_cuenta_check` — `activa` \| `bloqueada` \| `desactivada`
+- `usuarios_nombre_completo_no_vacio_check` — si no es NULL, no vacío tras `btrim`
+- `usuarios_telefono_no_vacio_check` — si no es NULL, no vacío tras `btrim`
+
+`mediruta_app` **no** tiene SELECT/UPDATE directo sobre `nombre_completo`/`telefono` — igual que `password_hash`, solo salen a través de `app.obtener_perfil` / `app.actualizar_datos_comunes` (HU-02).
+
+**Migración columnas de perfil:** `20260823010000_add_datos_comunes_usuarios.sql`
 
 **Relaciones (FKs):**
 - Ninguna en esta tabla. La relación con `roles` se incorporará mediante `usuario_roles` en una migración posterior.
@@ -192,6 +200,83 @@ Solicitudes de recuperación de contraseña de la autenticación propia de MediR
 - Restablecimiento exitoso (atómico): consume el código, actualiza `password_hash`, **no** cambia `estado_cuenta`, invalida otras recuperaciones pendientes y revoca **todas** las sesiones del usuario.
 
 **Migración:** `20260822181231_create_recuperaciones_contrasena.sql`
+
+### `perfil_paciente`
+
+Datos de perfil específicos del rol PACIENTE (HU-02). Tabla aparte de `usuarios` (no columnas ahí) porque el modelo es multirrol: un Domiciliario que también es Paciente necesita `perfil_paciente` **y** `perfil_domiciliario` simultáneamente, no uno u otro.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `usuario_id` | `uuid` | PK; FK a `usuarios.id` |
+| `direccion` | `text` | nullable; dirección de entrega |
+| `fecha_nacimiento` | `date` | nullable |
+| `foto_cedula_path` | `text` | nullable; **solo la ruta** dentro del bucket privado `perfiles` — nunca la imagen ni una URL pública |
+| `creado_en` | `timestamptz` | `NOT NULL`; default `now()` |
+| `actualizado_en` | `timestamptz` | `NOT NULL`; default `now()`; lo actualiza la API |
+
+**Restricciones:**
+- PK: `usuario_id`
+- `perfil_paciente_direccion_no_vacia_check` — si no es NULL, no vacía tras `btrim`
+- `perfil_paciente_fecha_nacimiento_pasada_check` — si no es NULL, `< current_date`
+
+**Relaciones (FKs):**
+- `usuario_id` → `usuarios.id` `ON DELETE CASCADE`
+
+**RLS:**
+- `ENABLE ROW LEVEL SECURITY` + `FORCE ROW LEVEL SECURITY`
+- **Sin policies**, mismo patrón que `sesiones`/`recuperaciones_contrasena`: todo el acceso pasa por `app.obtener_perfil`, `app.upsert_perfil_paciente`, `app.actualizar_foto_cedula_paciente`.
+
+**Migración:** `20260823010500_create_perfil_paciente.sql`
+
+### `perfil_domiciliario`
+
+Datos de perfil específicos del rol DOMICILIARIO (HU-02) — incluye los documentos de validación. Es la **misma tabla** que usará HU-08 (Validación de domiciliarios, futura) para el flujo de aprobación del administrador; HU-02 la crea y el propio Domiciliario sube aquí sus datos/documentos, HU-08 agrega columnas/flujo de revisión sobre estas mismas filas, no una tabla paralela.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `usuario_id` | `uuid` | PK; FK a `usuarios.id` |
+| `direccion` | `text` | nullable |
+| `vehiculo_tipo` | `text` | nullable |
+| `vehiculo_placa` | `text` | nullable |
+| `cedula_path` | `text` | nullable; ruta en el bucket `perfiles` |
+| `licencia_path` | `text` | nullable; ruta en el bucket `perfiles` |
+| `soat_path` | `text` | nullable; ruta en el bucket `perfiles` |
+| `tecnicomecanica_path` | `text` | nullable; ruta en el bucket `perfiles` |
+| `creado_en` | `timestamptz` | `NOT NULL`; default `now()` |
+| `actualizado_en` | `timestamptz` | `NOT NULL`; default `now()`; lo actualiza la API |
+
+**Restricciones:**
+- PK: `usuario_id`
+- `perfil_domiciliario_direccion_no_vacia_check`, `perfil_domiciliario_vehiculo_tipo_no_vacio_check`, `perfil_domiciliario_vehiculo_placa_no_vacia_check` — si no son NULL, no vacíos tras `btrim`
+
+**Relaciones (FKs):**
+- `usuario_id` → `usuarios.id` `ON DELETE CASCADE`
+
+**RLS:**
+- `ENABLE ROW LEVEL SECURITY` + `FORCE ROW LEVEL SECURITY`
+- **Sin policies** — todo el acceso pasa por `app.obtener_perfil`, `app.upsert_perfil_domiciliario`, `app.actualizar_documento_domiciliario`.
+
+**Migración:** `20260823011000_create_perfil_domiciliario.sql`
+
+## Supabase Storage — bucket `perfiles`
+
+Bucket **privado** (`public = false`) para fotos/documentos de perfil (cédula de Paciente; cédula/licencia/SOAT/tecnicomecánica de Domiciliario). Sin políticas sobre `storage.objects` a propósito: la API es la única que lo toca, usando `SUPABASE_SERVICE_ROLE_KEY` (igual que `DATABASE_URL` es la conexión administrativa a Postgres — el service role bypassea RLS). App/Web **nunca** hablan con Supabase Storage directamente ni reciben la service role key; la API sube el archivo y devuelve URLs firmadas de corta duración cuando hace falta mostrarlo.
+
+**Migración:** `20260823011500_create_perfil_bucket.sql`
+
+## Funciones de perfil (HU-02)
+
+Mismo patrón de seguridad que el resto de la API: `SECURITY DEFINER`, `search_path` vacío, sin SQL dinámico, `EXECUTE` solo para `mediruta_app`, `REVOKE ALL` de `PUBLIC`/`anon`/`authenticated`. App/Web nunca las llaman directamente.
+
+- **`app.obtener_perfil(p_usuario_id)`** → una fila con los datos comunes (`nombre_completo`, `telefono`) más los de `perfil_paciente`/`perfil_domiciliario` si el usuario tiene esos roles (columnas `NULL` si no aplica). Exige `estado_cuenta = 'activa'`. `LANGUAGE sql STABLE`, sin mutaciones.
+- **`app.actualizar_datos_comunes(p_usuario_id, p_nombre_completo, p_telefono)`** → `boolean`. Ambos campos obligatorios juntos (una sola acción). Exige cuenta `activa`.
+- **`app.upsert_perfil_paciente(p_usuario_id, p_direccion, p_fecha_nacimiento)`** → `boolean`. Exige rol `PACIENTE` en `usuario_roles` (cualquier estado de esa asignación). `fecha_nacimiento` debe ser anterior a hoy.
+- **`app.actualizar_foto_cedula_paciente(p_usuario_id, p_path)`** → `boolean`. Separada del anterior porque la llama la API después de subir el archivo a Storage (dos pasos); no exige que ya exista fila (upsert), para no forzar orden de llenado del perfil. Exige rol `PACIENTE`.
+- **`app.upsert_perfil_domiciliario(p_usuario_id, p_direccion, p_vehiculo_tipo, p_vehiculo_placa)`** → `boolean`. Exige rol `DOMICILIARIO` (aunque esté `pendiente_validacion`).
+- **`app.actualizar_documento_domiciliario(p_usuario_id, p_tipo, p_path)`** → `boolean`. `p_tipo` restringido a `cedula`\|`licencia`\|`soat`\|`tecnicomecanica`, resuelto con `CASE` (no SQL dinámico) para no repetir 4 funciones casi idénticas. Exige rol `DOMICILIARIO`.
+- **`app.desactivar_cuenta(p_usuario_id, p_sid)`** → `boolean` (G05). Exige sesión válida (mismo chequeo que `app.obtener_password_hash_cambio_contrasena`). Cambia `estado_cuenta` a `'desactivada'` (nunca `DELETE` — "conservar la información para trazabilidad") y revoca **todas** las sesiones del usuario (a diferencia de `app.revocar_sesion`, que solo cierra la sesión actual — desactivar la cuenta cierra todo).
+
+**Migración:** `20260823012000_create_perfil_functions.sql`
 
 ## Rol PostgreSQL interno `mediruta_app`
 

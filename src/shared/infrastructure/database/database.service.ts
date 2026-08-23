@@ -1,6 +1,13 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Pool, PoolClient } from 'pg';
+import { Pool, PoolClient, types } from 'pg';
+
+// OID 1082 = tipo `date` de Postgres. Por defecto `pg` lo parsea como
+// `Date` de JS a medianoche, que al serializar a JSON como ISO puede
+// desplazar el día según la zona horaria del proceso (HU-02:
+// fecha_nacimiento). Se devuelve el string 'YYYY-MM-DD' tal cual —
+// es una fecha de calendario, no un instante, no debería tener hora.
+types.setTypeParser(1082, (value: string) => value);
 
 /**
  * Acceso directo a Postgres (no se usa el SDK de Supabase ni PostgREST).

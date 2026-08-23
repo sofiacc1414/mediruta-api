@@ -1,0 +1,74 @@
+import { RolNoAutorizadoError } from '../../domain/errors/rol-no-autorizado.error';
+import { AlmacenamientoArchivosPort } from '../../domain/ports/almacenamiento-archivos.port';
+import { PerfilRepositoryPort } from '../../domain/ports/perfil.repository.port';
+import {
+  BUCKET_PERFILES,
+  MENSAJE_FOTO_CEDULA_ACTUALIZADA,
+  SubirFotoCedulaPacienteUseCase,
+} from './subir-foto-cedula-paciente.use-case';
+
+describe('SubirFotoCedulaPacienteUseCase', () => {
+  const perfiles: PerfilRepositoryPort = {
+    obtenerPerfil: jest.fn(),
+    actualizarDatosComunes: jest.fn(),
+    upsertPerfilPaciente: jest.fn(),
+    actualizarFotoCedulaPaciente: jest.fn(),
+    upsertPerfilDomiciliario: jest.fn(),
+    actualizarDocumentoDomiciliario: jest.fn(),
+    desactivarCuenta: jest.fn(),
+  };
+  const almacenamiento: AlmacenamientoArchivosPort = {
+    subir: jest.fn(),
+    obtenerUrlFirmada: jest.fn(),
+  };
+
+  const useCase = new SubirFotoCedulaPacienteUseCase(perfiles, almacenamiento);
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    (almacenamiento.subir as jest.Mock).mockResolvedValue(
+      'paciente/usuario-uuid/cedula.jpg',
+    );
+  });
+
+  it('G01/G03 — sube el archivo a Storage y persiste el path', async () => {
+    (perfiles.actualizarFotoCedulaPaciente as jest.Mock).mockResolvedValue(
+      true,
+    );
+    const contenido = Buffer.from('foto');
+
+    const resultado = await useCase.execute({
+      usuarioId: 'usuario-uuid',
+      contenido,
+      contentType: 'image/jpeg',
+      extension: 'jpg',
+    });
+
+    expect(almacenamiento.subir).toHaveBeenCalledWith(
+      BUCKET_PERFILES,
+      'paciente/usuario-uuid/cedula.jpg',
+      contenido,
+      'image/jpeg',
+    );
+    expect(perfiles.actualizarFotoCedulaPaciente).toHaveBeenCalledWith(
+      'usuario-uuid',
+      'paciente/usuario-uuid/cedula.jpg',
+    );
+    expect(resultado).toEqual({ message: MENSAJE_FOTO_CEDULA_ACTUALIZADA });
+  });
+
+  it('lanza RolNoAutorizadoError si la cuenta no tiene rol PACIENTE', async () => {
+    (perfiles.actualizarFotoCedulaPaciente as jest.Mock).mockResolvedValue(
+      false,
+    );
+
+    await expect(
+      useCase.execute({
+        usuarioId: 'usuario-uuid',
+        contenido: Buffer.from('foto'),
+        contentType: 'image/jpeg',
+        extension: 'jpg',
+      }),
+    ).rejects.toBeInstanceOf(RolNoAutorizadoError);
+  });
+});
