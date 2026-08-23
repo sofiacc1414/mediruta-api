@@ -42,6 +42,7 @@ describe('ObtenerSolicitudUseCase', () => {
   it('G03 — resuelve receta y cédula a URLs firmadas, e incluye medicamentos e historial', async () => {
     const detalle: SolicitudDetalle = {
       id: 'solicitud-uuid',
+      codigoPedido: 'MR-000123',
       estado: 'borrador',
       recetaPath: 'solicitud/solicitud-uuid/receta.jpg',
       recetaFechaVencimiento: '2026-08-01',
@@ -71,6 +72,7 @@ describe('ObtenerSolicitudUseCase', () => {
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
+    expect(resultado.codigoPedido).toBe('MR-000123');
     expect(resultado.recetaUrl).toBe(
       'https://firmada.test/solicitud/solicitud-uuid/receta.jpg',
     );
@@ -89,6 +91,7 @@ describe('ObtenerSolicitudUseCase', () => {
   it('recetaUrl/cedulaUrl quedan null si no hay path', async () => {
     (solicitudes.obtener as jest.Mock).mockResolvedValue({
       id: 'solicitud-uuid',
+      codigoPedido: null,
       estado: 'borrador',
       recetaPath: null,
       recetaFechaVencimiento: null,

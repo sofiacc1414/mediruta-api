@@ -23,6 +23,7 @@ describe('ListarSolicitudesUseCase', () => {
     const lista = [
       {
         id: 'solicitud-uuid',
+        codigoPedido: null,
         estado: 'borrador' as const,
         creadoEn: '2026-08-20T10:00:00.000Z',
       },

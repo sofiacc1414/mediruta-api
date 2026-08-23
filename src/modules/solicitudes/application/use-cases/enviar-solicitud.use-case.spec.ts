@@ -24,14 +24,18 @@ describe('EnviarSolicitudUseCase', () => {
     jest.resetAllMocks();
   });
 
-  it('G05 — envía y devuelve el mensaje de éxito', async () => {
+  it('G05 — envía y devuelve el mensaje de éxito y el código de pedido', async () => {
     (solicitudes.enviar as jest.Mock).mockResolvedValue({
       resultado: 'enviada',
+      codigoPedido: 'MR-000123',
     });
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
-    expect(resultado).toEqual({ message: MENSAJE_SOLICITUD_ENVIADA });
+    expect(resultado).toEqual({
+      message: MENSAJE_SOLICITUD_ENVIADA,
+      codigoPedido: 'MR-000123',
+    });
     expect(solicitudes.enviar).toHaveBeenCalledWith(
       'paciente-uuid',
       'solicitud-uuid',

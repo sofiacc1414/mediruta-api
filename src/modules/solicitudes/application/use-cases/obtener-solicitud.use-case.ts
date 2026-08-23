@@ -14,6 +14,7 @@ import {
 
 export type ObtenerSolicitudResultado = {
   id: string;
+  codigoPedido: string | null;
   estado: EstadoSolicitud;
   recetaUrl: string | null;
   recetaFechaVencimiento: string | null;
@@ -61,6 +62,7 @@ export class ObtenerSolicitudUseCase {
 
     return {
       id: detalle.id,
+      codigoPedido: detalle.codigoPedido,
       estado: detalle.estado,
       recetaUrl,
       recetaFechaVencimiento: detalle.recetaFechaVencimiento,

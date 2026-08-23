@@ -14,12 +14,15 @@ export class EnviarSolicitudUseCase {
   async execute(
     pacienteId: string,
     solicitudId: string,
-  ): Promise<{ message: string }> {
+  ): Promise<{ message: string; codigoPedido: string }> {
     const resultado = await this.solicitudes.enviar(pacienteId, solicitudId);
 
     switch (resultado.resultado) {
       case 'enviada':
-        return { message: MENSAJE_SOLICITUD_ENVIADA };
+        return {
+          message: MENSAJE_SOLICITUD_ENVIADA,
+          codigoPedido: resultado.codigoPedido,
+        };
       case 'incompleta':
         throw new SolicitudIncompletaError(resultado.faltantes);
       case 'no_encontrada':

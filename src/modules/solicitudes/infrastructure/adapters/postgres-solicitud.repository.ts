@@ -12,10 +12,16 @@ import {
   SolicitudResumen,
 } from '../../domain/ports/solicitud.repository.port';
 
-type FilaResumen = { id: string; estado: EstadoSolicitud; creado_en: string };
+type FilaResumen = {
+  id: string;
+  codigo_pedido: string | null;
+  estado: EstadoSolicitud;
+  creado_en: string;
+};
 
 type FilaDetalle = {
   id: string;
+  codigo_pedido: string | null;
   estado: EstadoSolicitud;
   receta_path: string | null;
   receta_fecha_vencimiento: string | null;
@@ -38,7 +44,11 @@ type FilaHistorial = { estado: EstadoSolicitud; creado_en: string };
 
 type FilaCrear = { resultado: string; id: string | null };
 
-type FilaEnviar = { resultado: string; faltantes: string[] | null };
+type FilaEnviar = {
+  resultado: string;
+  faltantes: string[] | null;
+  codigo_pedido: string | null;
+};
 
 /** Todo acotado al paciente dueño (nunca a otra cuenta) — pacienteId
  * siempre es identidad.usuarioId del JWT, no algo que mande el cliente.
@@ -96,6 +106,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       );
       return result.rows.map((fila) => ({
         id: fila.id,
+        codigoPedido: fila.codigo_pedido,
         estado: fila.estado,
         creadoEn: fila.creado_en,
       }));
@@ -119,6 +130,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       const fila = result.rows[0];
       return {
         id: fila.id,
+        codigoPedido: fila.codigo_pedido,
         estado: fila.estado,
         recetaPath: fila.receta_path,
         recetaFechaVencimiento: fila.receta_fecha_vencimiento,
@@ -216,8 +228,11 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       if (fila.resultado === 'incompleta') {
         return { resultado: 'incompleta', faltantes: fila.faltantes ?? [] };
       }
-      if (fila.resultado === 'enviada' || fila.resultado === 'no_encontrada') {
-        return { resultado: fila.resultado };
+      if (fila.resultado === 'no_encontrada') {
+        return { resultado: 'no_encontrada' };
+      }
+      if (fila.resultado === 'enviada' && fila.codigo_pedido) {
+        return { resultado: 'enviada', codigoPedido: fila.codigo_pedido };
       }
       throw new Error(
         `Resultado inesperado de app.enviar_solicitud: ${fila.resultado}`,

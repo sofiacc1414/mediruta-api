@@ -16,12 +16,16 @@ export type DatosSolicitud = {
 
 export type SolicitudResumen = {
   id: string;
+  /** Solo existe una vez enviada (G05) — nulo mientras está en
+   * Borrador, todavía no es un "pedido". */
+  codigoPedido: string | null;
   estado: EstadoSolicitud;
   creadoEn: string;
 };
 
 export type SolicitudDetalle = {
   id: string;
+  codigoPedido: string | null;
   estado: EstadoSolicitud;
   recetaPath: string | null;
   recetaFechaVencimiento: string | null;
@@ -45,7 +49,7 @@ export type ResultadoCrear =
   | { resultado: 'sin_cedula' };
 
 export type ResultadoEnviar =
-  | { resultado: 'enviada' }
+  | { resultado: 'enviada'; codigoPedido: string }
   | { resultado: 'incompleta'; faltantes: string[] }
   | { resultado: 'no_encontrada' };
 
