@@ -13,6 +13,7 @@ describe('SolicitarRolDomiciliarioUseCase', () => {
     obtenerRoles: jest.fn(),
     solicitarRolPaciente: jest.fn(),
     solicitarRolDomiciliario: jest.fn(),
+    enviarSolicitudDomiciliario: jest.fn(),
   };
   const useCase = new SolicitarRolDomiciliarioUseCase(usuarios);
 

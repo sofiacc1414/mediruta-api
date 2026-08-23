@@ -7,6 +7,7 @@ import { ActualizarPerfilPacienteUseCase } from './application/use-cases/actuali
 import { CambiarContrasenaUseCase } from './application/use-cases/cambiar-contrasena.use-case';
 import { CerrarSesionUseCase } from './application/use-cases/cerrar-sesion.use-case';
 import { DesactivarCuentaUseCase } from './application/use-cases/desactivar-cuenta.use-case';
+import { EnviarSolicitudDomiciliarioUseCase } from './application/use-cases/enviar-solicitud-domiciliario.use-case';
 import { IniciarSesionUseCase } from './application/use-cases/iniciar-sesion.use-case';
 import { ObtenerPerfilUseCase } from './application/use-cases/obtener-perfil.use-case';
 import { ObtenerSesionActualUseCase } from './application/use-cases/obtener-sesion-actual.use-case';
@@ -90,6 +91,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
     DesactivarCuentaUseCase,
     SolicitarRolPacienteUseCase,
     SolicitarRolDomiciliarioUseCase,
+    EnviarSolicitudDomiciliarioUseCase,
     AccessAuthGuard,
     RolesGuard,
     {

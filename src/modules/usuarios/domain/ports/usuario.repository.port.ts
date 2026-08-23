@@ -13,6 +13,11 @@ export type RegistrarUsuarioInput = {
 
 export type ResultadoSolicitarRol = 'agregado' | 'ya_lo_tenia';
 
+export type ResultadoEnviarSolicitudDomiciliario =
+  | { resultado: 'enviada' }
+  | { resultado: 'incompleta'; faltantes: string[] }
+  | { resultado: 'no_encontrada' };
+
 export type EstadoCuenta = 'activa' | 'bloqueada' | 'desactivada';
 
 export type CredencialesLogin = {
@@ -24,7 +29,15 @@ export type CredencialesLogin = {
 
 export type CodigoRol = 'PACIENTE' | 'DOMICILIARIO' | 'ADMINISTRADOR' | 'ROOT';
 
-export type EstadoRol = 'habilitado' | 'pendiente_validacion' | 'rechazado';
+/** `borrador` — solo DOMICILIARIO: rol ya otorgado pero la solicitud de
+ * validación todavía no se envió (invisible para el admin hasta
+ * `enviar_solicitud_domiciliario`). PACIENTE nunca pasa por `borrador`
+ * ni por `pendiente_validacion` — se otorga directo en `habilitado`. */
+export type EstadoRol =
+  | 'borrador'
+  | 'habilitado'
+  | 'pendiente_validacion'
+  | 'rechazado';
 
 export type UsuarioRol = {
   codigo: CodigoRol;
@@ -49,10 +62,18 @@ export abstract class UsuarioRepositoryPort {
    * validación (mismo criterio que un registro directo como PACIENTE). */
   abstract solicitarRolPaciente(usuarioId: string): Promise<ResultadoSolicitarRol>;
 
-  /** Agrega el rol DOMICILIARIO en `pendiente_validacion` a una cuenta
-   * que todavía no lo tiene. De ahí en más usa el flujo ya existente de
-   * completar perfil (HU-02) y aprobación del admin (HU-08). */
+  /** Agrega el rol DOMICILIARIO en `borrador` a una cuenta que todavía
+   * no lo tiene — invisible para el admin hasta que se envíe la
+   * solicitud con `enviarSolicitudDomiciliario`. */
   abstract solicitarRolDomiciliario(
     usuarioId: string,
   ): Promise<ResultadoSolicitarRol>;
+
+  /** G01 — envía la solicitud de validación: `borrador` ->
+   * `pendiente_validacion`. Exige los mismos 7 campos obligatorios que
+   * ya exigía `aprobar_domiciliario` (HU-08) — ahora se piden antes, al
+   * enviar, no recién cuando el admin intenta aprobar. */
+  abstract enviarSolicitudDomiciliario(
+    usuarioId: string,
+  ): Promise<ResultadoEnviarSolicitudDomiciliario>;
 }

@@ -18,6 +18,7 @@ import { ActualizarPerfilDomiciliarioUseCase } from '../../application/use-cases
 import { ActualizarPerfilPacienteUseCase } from '../../application/use-cases/actualizar-perfil-paciente.use-case';
 import { DesactivarCuentaUseCase } from '../../application/use-cases/desactivar-cuenta.use-case';
 import { ObtenerPerfilUseCase } from '../../application/use-cases/obtener-perfil.use-case';
+import { EnviarSolicitudDomiciliarioUseCase } from '../../application/use-cases/enviar-solicitud-domiciliario.use-case';
 import { SolicitarRolDomiciliarioUseCase } from '../../application/use-cases/solicitar-rol-domiciliario.use-case';
 import { SolicitarRolPacienteUseCase } from '../../application/use-cases/solicitar-rol-paciente.use-case';
 import { SubirDocumentoDomiciliarioUseCase } from '../../application/use-cases/subir-documento-domiciliario.use-case';
@@ -54,6 +55,7 @@ export class PerfilController {
     private readonly desactivarCuenta: DesactivarCuentaUseCase,
     private readonly solicitarRolPaciente: SolicitarRolPacienteUseCase,
     private readonly solicitarRolDomiciliario: SolicitarRolDomiciliarioUseCase,
+    private readonly enviarSolicitudDomiciliario: EnviarSolicitudDomiciliarioUseCase,
   ) {}
 
   @Get()
@@ -159,6 +161,14 @@ export class PerfilController {
   @HttpCode(HttpStatus.OK)
   solicitarDomiciliario(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
     return this.solicitarRolDomiciliario.execute(identidad.usuarioId);
+  }
+
+  @Post('domiciliario/enviar-solicitud')
+  @HttpCode(HttpStatus.OK)
+  enviarSolicitudDomiciliarioAction(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+  ) {
+    return this.enviarSolicitudDomiciliario.execute(identidad.usuarioId);
   }
 
   @Post('desactivar')

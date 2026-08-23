@@ -4,6 +4,7 @@ import { ActualizarDatosComunesUseCase } from '../../application/use-cases/actua
 import { ActualizarPerfilDomiciliarioUseCase } from '../../application/use-cases/actualizar-perfil-domiciliario.use-case';
 import { ActualizarPerfilPacienteUseCase } from '../../application/use-cases/actualizar-perfil-paciente.use-case';
 import { DesactivarCuentaUseCase } from '../../application/use-cases/desactivar-cuenta.use-case';
+import { EnviarSolicitudDomiciliarioUseCase } from '../../application/use-cases/enviar-solicitud-domiciliario.use-case';
 import { ObtenerPerfilUseCase } from '../../application/use-cases/obtener-perfil.use-case';
 import { SolicitarRolDomiciliarioUseCase } from '../../application/use-cases/solicitar-rol-domiciliario.use-case';
 import { SolicitarRolPacienteUseCase } from '../../application/use-cases/solicitar-rol-paciente.use-case';
@@ -37,6 +38,7 @@ function crearController(overrides?: {
   desactivarCuenta?: { execute: jest.Mock };
   solicitarRolPaciente?: { execute: jest.Mock };
   solicitarRolDomiciliario?: { execute: jest.Mock };
+  enviarSolicitudDomiciliario?: { execute: jest.Mock };
 }) {
   return new PerfilController(
     (overrides?.obtenerPerfil ?? {
@@ -69,6 +71,9 @@ function crearController(overrides?: {
     (overrides?.solicitarRolDomiciliario ?? {
       execute: jest.fn(),
     }) as unknown as SolicitarRolDomiciliarioUseCase,
+    (overrides?.enviarSolicitudDomiciliario ?? {
+      execute: jest.fn(),
+    }) as unknown as EnviarSolicitudDomiciliarioUseCase,
   );
 }
 
@@ -223,6 +228,19 @@ describe('PerfilController', () => {
     await controller.solicitarDomiciliario(identidad);
 
     expect(solicitarRolDomiciliario.execute).toHaveBeenCalledWith(
+      'usuario-desde-guard',
+    );
+  });
+
+  it('POST /perfil/domiciliario/enviar-solicitud usa la identidad autenticada', async () => {
+    const enviarSolicitudDomiciliario = {
+      execute: jest.fn().mockResolvedValue({ message: 'ok' }),
+    };
+    const controller = crearController({ enviarSolicitudDomiciliario });
+
+    await controller.enviarSolicitudDomiciliarioAction(identidad);
+
+    expect(enviarSolicitudDomiciliario.execute).toHaveBeenCalledWith(
       'usuario-desde-guard',
     );
   });

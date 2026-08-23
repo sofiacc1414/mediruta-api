@@ -206,4 +206,25 @@ describe('PostgresUsuarioRepository', () => {
     );
     expect(resultado).toBe('ya_lo_tenia');
   });
+
+  it('enviarSolicitudDomiciliario() mapea faltantes con withUserContext', async () => {
+    const query = jest.fn().mockResolvedValue({
+      rows: [{ resultado: 'incompleta', faltantes: ['Cédula'] }],
+    });
+    const withUserContext = jest.fn(async (_id, callback) => callback({ query }));
+    const db = { withUserContext } as unknown as DatabaseService;
+
+    const repository = new PostgresUsuarioRepository(db);
+    const resultado = await repository.enviarSolicitudDomiciliario('usuario-uuid');
+
+    expect(withUserContext).toHaveBeenCalledWith(
+      'usuario-uuid',
+      expect.any(Function),
+    );
+    expect(query).toHaveBeenCalledWith(
+      'select * from app.enviar_solicitud_domiciliario($1)',
+      ['usuario-uuid'],
+    );
+    expect(resultado).toEqual({ resultado: 'incompleta', faltantes: ['Cédula'] });
+  });
 });

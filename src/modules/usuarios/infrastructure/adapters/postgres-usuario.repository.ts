@@ -5,6 +5,7 @@ import {
   CredencialesLogin,
   CuentaActual,
   RegistrarUsuarioInput,
+  ResultadoEnviarSolicitudDomiciliario,
   ResultadoSolicitarRol,
   UsuarioRepositoryPort,
   UsuarioRol,
@@ -119,6 +120,28 @@ export class PostgresUsuarioRepository extends UsuarioRepositoryPort {
         usuarioId,
       ]);
       return result.rows[0].solicitar_rol_domiciliario;
+    });
+  }
+
+  enviarSolicitudDomiciliario(
+    usuarioId: string,
+  ): Promise<ResultadoEnviarSolicitudDomiciliario> {
+    return this.db.withUserContext(usuarioId, async (client) => {
+      const result = await client.query<{
+        resultado: string;
+        faltantes: string[] | null;
+      }>('select * from app.enviar_solicitud_domiciliario($1)', [usuarioId]);
+      const fila = result.rows[0];
+
+      if (fila.resultado === 'incompleta') {
+        return { resultado: 'incompleta', faltantes: fila.faltantes ?? [] };
+      }
+      if (fila.resultado === 'enviada' || fila.resultado === 'no_encontrada') {
+        return { resultado: fila.resultado };
+      }
+      throw new Error(
+        `Resultado inesperado de app.enviar_solicitud_domiciliario: ${fila.resultado}`,
+      );
     });
   }
 }

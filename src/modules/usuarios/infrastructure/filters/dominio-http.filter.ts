@@ -7,6 +7,7 @@ import {
 import { Response } from 'express';
 import { DocumentacionIncompletaError } from '../../../domiciliarios/domain/errors/documentacion-incompleta.error';
 import { DomiciliarioNoEncontradoError } from '../../../domiciliarios/domain/errors/domiciliario-no-encontrado.error';
+import { NoHayBorradorDomiciliarioError } from '../../../domiciliarios/domain/errors/no-hay-borrador-domiciliario.error';
 import { PerfilIncompletoError } from '../../../solicitudes/domain/errors/perfil-incompleto.error';
 import { SolicitudIncompletaError } from '../../../solicitudes/domain/errors/solicitud-incompleta.error';
 import { SolicitudNoEncontradaError } from '../../../solicitudes/domain/errors/solicitud-no-encontrada.error';
@@ -32,6 +33,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   RolNoAutorizadoError,
   DocumentacionIncompletaError,
   DomiciliarioNoEncontradoError,
+  NoHayBorradorDomiciliarioError,
   SolicitudIncompletaError,
   SolicitudNoEncontradaError,
   PerfilIncompletoError,
@@ -73,6 +75,7 @@ export class DominioHttpFilter implements ExceptionFilter {
 
     if (
       exception instanceof DomiciliarioNoEncontradoError ||
+      exception instanceof NoHayBorradorDomiciliarioError ||
       exception instanceof SolicitudNoEncontradaError
     ) {
       response.status(HttpStatus.NOT_FOUND).json({

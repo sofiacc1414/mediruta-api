@@ -16,6 +16,7 @@ describe('RegistrarUsuarioUseCase', () => {
     obtenerRoles: jest.fn(),
     solicitarRolPaciente: jest.fn(),
     solicitarRolDomiciliario: jest.fn(),
+    enviarSolicitudDomiciliario: jest.fn(),
   };
 
   const useCase = new RegistrarUsuarioUseCase(passwordHasher, usuarios);

@@ -317,13 +317,35 @@ verifican (defensa en profundidad, además del `RolesGuard` de la API) que tenga
 crean una tabla de documentos paralela: leen `perfil_domiciliario` (HU-02) tal cual.
 
 - **`app.usuario_tiene_rol_habilitado(p_usuario_id, p_codigo_rol)`** → `boolean`. Helper reutilizable (`LANGUAGE sql STABLE`), no específico de HU-08.
-- **`app.listar_domiciliarios_pendientes(p_admin_id)`** → filas de domiciliarios con `usuario_roles.estado = 'pendiente_validacion'`, más antiguos primero (G01). Vacío (no error) si `p_admin_id` no es admin.
+- **`app.listar_domiciliarios_pendientes(p_admin_id)`** → filas de domiciliarios con `usuario_roles.estado = 'pendiente_validacion'`, más antiguos primero (G01). Vacío (no error) si `p_admin_id` no es admin. **Nunca incluye `borrador`** — un domiciliario que todavía no envió su solicitud (`app.enviar_solicitud_domiciliario`, más abajo) es invisible acá aunque ya haya cargado datos.
 - **`app.obtener_detalle_domiciliario(p_admin_id, p_domiciliario_id)`** → datos comunes + `perfil_domiciliario` completo + estado (G02).
 - **`app.listar_validaciones_domiciliario(p_admin_id, p_domiciliario_id)`** → historial de `validaciones_domiciliario` para ese domiciliario, más reciente primero (G06). Aparte de la de detalle porque es 0..N filas — se evita agregación JSON, no se usa en ningún otro lado de este esquema.
 - **`app.aprobar_domiciliario(p_admin_id, p_domiciliario_id)`** → `(resultado text, faltantes text[])`. `resultado` es uno de `aprobado`\|`incompleto`\|`no_encontrado`\|`no_autorizado`. `incompleto` (G05) no modifica nada — calcula `faltantes` con un `array_remove(array[case when ... ], null)` fijo, sin SQL dinámico. `aprobado` actualiza `usuario_roles.estado` e inserta en `validaciones_domiciliario`.
 - **`app.rechazar_domiciliario(p_admin_id, p_domiciliario_id, p_motivo)`** → `text`, mismo enum de resultado que aprobar salvo que el éxito es `'rechazado'` (G04). `p_motivo` obligatorio (lo valida también el DTO de la API antes de llegar acá).
 
 **Migración:** `20260823030500_create_domiciliarios_admin_functions.sql`
+
+### `borrador` → `pendiente_validacion`: enviar la solicitud (corrección)
+
+Originalmente el rol DOMICILIARIO se otorgaba directo en `pendiente_validacion`
+(registro o `app.solicitar_rol_domiciliario`) — el admin lo veía en su lista incluso
+sin haber cargado un solo dato. Se agregó el estado `borrador`
+(`usuario_roles_estado_check` ahora acepta `'borrador' | 'habilitado' |
+'pendiente_validacion' | 'rechazado'`): el domiciliario nuevo arranca ahí, invisible
+para el admin, completa su perfil/documentos (HU-02, sin cambios — ya exigían solo que
+la fila en `usuario_roles` existiera, no un `estado` puntual) y recién pasa a
+`pendiente_validacion` al enviar.
+
+- **`app.enviar_solicitud_domiciliario(p_usuario_id)`** → `(resultado text, faltantes
+  text[])`. `resultado`: `'enviada'` (pasa a `pendiente_validacion`) \|
+  `'incompleta'` (mismos 7 campos obligatorios que ya exigía `aprobar_domiciliario` —
+  se piden ahora al enviar, no recién al aprobar) \| `'no_encontrada'` (no hay
+  DOMICILIARIO en `borrador` para esa cuenta: no tiene el rol, o ya lo había enviado
+  antes).
+
+**Migración:** `20260823120000_domiciliario_enviar_solicitud.sql` (agrega `borrador`
+al `CHECK`, redefine `app.registrar_usuario`/`app.solicitar_rol_domiciliario` para
+arrancar ahí en vez de `pendiente_validacion`, crea `app.enviar_solicitud_domiciliario`).
 
 ## Tablas `solicitudes`, `solicitud_medicamentos` y `historial_solicitud` (HU-03)
 
@@ -536,11 +558,13 @@ pedir un rol que ya se tiene no es un error).
 - `solicitar_rol_paciente` → inserta `PACIENTE` en `habilitado`
   directamente, mismo criterio que un registro directo como PACIENTE (el
   perfil en sí se completa después, HU-02).
-- `solicitar_rol_domiciliario` → inserta `DOMICILIARIO` en
-  `pendiente_validacion`, mismo estado inicial que un registro directo
-  como DOMICILIARIO. No hizo falta cambiar `app.upsert_perfil_domiciliario`
-  ni ninguna otra función de HU-02/HU-08: ya exigían solo que la fila en
-  `usuario_roles` existiera, nunca `estado = 'habilitado'` — así que la
+- `solicitar_rol_domiciliario` → inserta `DOMICILIARIO` en `borrador`
+  (**no** `pendiente_validacion` — corregido, ver más abajo: hace falta
+  el paso explícito de `app.enviar_solicitud_domiciliario` antes de que
+  el admin lo vea), mismo estado inicial que un registro directo como
+  DOMICILIARIO. No hizo falta cambiar `app.upsert_perfil_domiciliario`
+  ni ninguna otra función de HU-02: ya exigían solo que la fila en
+  `usuario_roles` existiera, nunca un `estado` puntual — así que la
   cuenta puede completar su perfil de Domiciliario de inmediato, sin
   esperar aprobación ni volver a loguearse (los roles no viajan en el
   JWT, se validan siempre en vivo contra la BD).
@@ -576,9 +600,12 @@ SQL dinámico, `EXECUTE` solo para `mediruta_app`, `REVOKE ALL` de
 ### Migraciones
 
 `20260823100000_alta_paciente_opcional_y_solicitar_rol.sql` (firma
-original, sin reutilización de datos),
+original, sin reutilización de datos, `solicitar_rol_domiciliario` todavía
+otorgaba `pendiente_validacion` directo),
 `20260823110000_solicitar_rol_reusa_datos.sql` (agrega la copia de
-`direccion`/foto de cédula entre perfiles).
+`direccion`/foto de cédula entre perfiles),
+`20260823120000_domiciliario_enviar_solicitud.sql` (`solicitar_rol_domiciliario`
+pasa a otorgar `borrador`, no `pendiente_validacion`).
 
 ## `app.obtener_credenciales_login(text)`
 
