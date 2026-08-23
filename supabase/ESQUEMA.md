@@ -52,6 +52,7 @@ Identidad de la cuenta, credenciales y estado general de acceso. **No** contiene
 | `estado_cuenta` | `text` | `NOT NULL`; default `'activa'`; `CHECK` solo `activa`, `bloqueada`, `desactivada` |
 | `nombre_completo` | `text` | nullable (HU-02); se completa después del registro |
 | `telefono` | `text` | nullable (HU-02); se completa después del registro |
+| `foto_perfil_path` | `text` | nullable (HU-02); solo la ruta dentro del bucket privado `perfiles` — nunca la imagen ni una URL pública |
 | `creado_en` | `timestamptz` | `NOT NULL`; default `now()` |
 | `actualizado_en` | `timestamptz` | `NOT NULL`; default `now()`; lo actualiza la API (sin trigger) |
 
@@ -63,8 +64,11 @@ Identidad de la cuenta, credenciales y estado general de acceso. **No** contiene
 - `usuarios_estado_cuenta_check` — `activa` \| `bloqueada` \| `desactivada`
 - `usuarios_nombre_completo_no_vacio_check` — si no es NULL, no vacío tras `btrim`
 - `usuarios_telefono_no_vacio_check` — si no es NULL, no vacío tras `btrim`
+- `usuarios_foto_perfil_path_no_vacio_check` — si no es NULL, no vacío tras `btrim`
 
-`mediruta_app` **no** tiene SELECT/UPDATE directo sobre `nombre_completo`/`telefono` — igual que `password_hash`, solo salen a través de `app.obtener_perfil` / `app.actualizar_datos_comunes` (HU-02).
+`mediruta_app` **no** tiene SELECT/UPDATE directo sobre `nombre_completo`/`telefono`/`foto_perfil_path` — igual que `password_hash`, solo salen a través de `app.obtener_perfil` / `app.actualizar_datos_comunes` / `app.actualizar_foto_perfil` (HU-02).
+
+**Migración `foto_perfil_path`:** `20260823020000_add_foto_perfil_usuarios.sql`
 
 **Migración columnas de perfil:** `20260823010000_add_datos_comunes_usuarios.sql`
 
@@ -268,10 +272,11 @@ Bucket **privado** (`public = false`) para fotos/documentos de perfil (cédula d
 
 Mismo patrón de seguridad que el resto de la API: `SECURITY DEFINER`, `search_path` vacío, sin SQL dinámico, `EXECUTE` solo para `mediruta_app`, `REVOKE ALL` de `PUBLIC`/`anon`/`authenticated`. App/Web nunca las llaman directamente.
 
-- **`app.obtener_perfil(p_usuario_id)`** → una fila con los datos comunes (`nombre_completo`, `telefono`) más los de `perfil_paciente`/`perfil_domiciliario` si el usuario tiene esos roles (columnas `NULL` si no aplica). Exige `estado_cuenta = 'activa'`. `LANGUAGE sql STABLE`, sin mutaciones.
+- **`app.obtener_perfil(p_usuario_id)`** → una fila con los datos comunes (`nombre_completo`, `telefono`, `foto_perfil_path`) más los de `perfil_paciente`/`perfil_domiciliario` si el usuario tiene esos roles (columnas `NULL` si no aplica). Exige `estado_cuenta = 'activa'`. `LANGUAGE sql STABLE`, sin mutaciones. Redefinida en `20260823020500_add_foto_perfil_functions.sql` (con `DROP FUNCTION` previo — Postgres no permite `CREATE OR REPLACE` cuando cambia el `RETURNS TABLE`) para agregar `foto_perfil_path`.
 - **`app.actualizar_datos_comunes(p_usuario_id, p_nombre_completo, p_telefono)`** → `boolean`. Ambos campos obligatorios juntos (una sola acción). Exige cuenta `activa`.
 - **`app.upsert_perfil_paciente(p_usuario_id, p_direccion, p_fecha_nacimiento)`** → `boolean`. Exige rol `PACIENTE` en `usuario_roles` (cualquier estado de esa asignación). `fecha_nacimiento` debe ser anterior a hoy.
 - **`app.actualizar_foto_cedula_paciente(p_usuario_id, p_path)`** → `boolean`. Separada del anterior porque la llama la API después de subir el archivo a Storage (dos pasos); no exige que ya exista fila (upsert), para no forzar orden de llenado del perfil. Exige rol `PACIENTE`.
+- **`app.actualizar_foto_perfil(p_usuario_id, p_path)`** → `boolean`. Foto de perfil (avatar), común a cualquier rol — sin restricción de rol, a diferencia de `actualizar_foto_cedula_paciente`/`actualizar_documento_domiciliario`. Exige cuenta `activa`. Migración: `20260823020500_add_foto_perfil_functions.sql`.
 - **`app.upsert_perfil_domiciliario(p_usuario_id, p_direccion, p_vehiculo_tipo, p_vehiculo_placa)`** → `boolean`. Exige rol `DOMICILIARIO` (aunque esté `pendiente_validacion`).
 - **`app.actualizar_documento_domiciliario(p_usuario_id, p_tipo, p_path)`** → `boolean`. `p_tipo` restringido a `cedula`\|`licencia`\|`soat`\|`tecnicomecanica`, resuelto con `CASE` (no SQL dinámico) para no repetir 4 funciones casi idénticas. Exige rol `DOMICILIARIO`.
 - **`app.desactivar_cuenta(p_usuario_id, p_sid)`** → `boolean` (G05). Exige sesión válida (mismo chequeo que `app.obtener_password_hash_cambio_contrasena`). Cambia `estado_cuenta` a `'desactivada'` (nunca `DELETE` — "conservar la información para trazabilidad") y revoca **todas** las sesiones del usuario (a diferencia de `app.revocar_sesion`, que solo cierra la sesión actual — desactivar la cuenta cierra todo).

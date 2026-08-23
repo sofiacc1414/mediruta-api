@@ -20,6 +20,7 @@ import { DesactivarCuentaUseCase } from '../../application/use-cases/desactivar-
 import { ObtenerPerfilUseCase } from '../../application/use-cases/obtener-perfil.use-case';
 import { SubirDocumentoDomiciliarioUseCase } from '../../application/use-cases/subir-documento-domiciliario.use-case';
 import { SubirFotoCedulaPacienteUseCase } from '../../application/use-cases/subir-foto-cedula-paciente.use-case';
+import { SubirFotoPerfilUseCase } from '../../application/use-cases/subir-foto-perfil.use-case';
 import type { IdentidadAutenticada } from '../../domain/identidad-autenticada';
 import { UsuarioAutenticado } from '../decorators/usuario-autenticado.decorator';
 import { ActualizarDatosComunesDto } from '../dtos/actualizar-datos-comunes.dto';
@@ -45,6 +46,7 @@ export class PerfilController {
     private readonly actualizarDatosComunes: ActualizarDatosComunesUseCase,
     private readonly actualizarPerfilPaciente: ActualizarPerfilPacienteUseCase,
     private readonly subirFotoCedulaPaciente: SubirFotoCedulaPacienteUseCase,
+    private readonly subirFotoPerfil: SubirFotoPerfilUseCase,
     private readonly actualizarPerfilDomiciliario: ActualizarPerfilDomiciliarioUseCase,
     private readonly subirDocumentoDomiciliario: SubirDocumentoDomiciliarioUseCase,
     private readonly desactivarCuenta: DesactivarCuentaUseCase,
@@ -90,6 +92,21 @@ export class PerfilController {
     @UploadedFile(VALIDADOR_ARCHIVO) archivo: Express.Multer.File,
   ) {
     return this.subirFotoCedulaPaciente.execute({
+      usuarioId: identidad.usuarioId,
+      contenido: archivo.buffer,
+      contentType: archivo.mimetype,
+      extension: extensionDesde(archivo.mimetype),
+    });
+  }
+
+  @Post('foto')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('archivo'))
+  subirFoto(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @UploadedFile(VALIDADOR_ARCHIVO) archivo: Express.Multer.File,
+  ) {
+    return this.subirFotoPerfil.execute({
       usuarioId: identidad.usuarioId,
       contenido: archivo.buffer,
       contentType: archivo.mimetype,

@@ -8,6 +8,7 @@ describe('DesactivarCuentaUseCase', () => {
     actualizarDatosComunes: jest.fn(),
     upsertPerfilPaciente: jest.fn(),
     actualizarFotoCedulaPaciente: jest.fn(),
+    actualizarFotoPerfil: jest.fn(),
     upsertPerfilDomiciliario: jest.fn(),
     actualizarDocumentoDomiciliario: jest.fn(),
     desactivarCuenta: jest.fn(),

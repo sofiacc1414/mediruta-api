@@ -1,98 +1,70 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# MediRuta API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend de MediRuta (plataforma de domicilios de medicamentos) — NestJS + Postgres de Supabase, arquitectura hexagonal. Sirve a la App (Paciente/Domiciliario) y al panel Web (Administrador/Root).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+La fuente única de verdad del proyecto (reglas de arquitectura, RLS, versionamiento, paridad entre superficies) es **[context.md](./context.md)** — cualquier duda de "cómo se hace acá" empieza ahí, no en este README.
 
-## Description
+## Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **NestJS 11** + TypeScript.
+- **Postgres de Supabase**, acceso directo vía `pg` (no PostgREST ni Supabase Auth) — ver context.md Parte B, sección 3.
+- Autenticación propia con **JWT** (access token corto + refresh token opaco revocable en tabla `sesiones`), no Supabase Auth.
+- RLS con `app.current_user_id()` (variable de sesión propia), nunca `auth.uid()`.
+- **Supabase Storage** (bucket privado `perfiles`) para fotos/documentos, accedido solo por la API con la service role key — nunca expuesto directo a App/Web.
+- `class-validator` para DTOs, `multer` + `FileTypeValidator` (valida por contenido real del archivo, no por extensión/header) para subida de archivos.
+- Jest para tests (un `.spec.ts` por caso de uso, con fakes escritos a mano — sin librerías de mocking).
 
-## Project setup
+## Arquitectura
 
-```bash
-$ npm install
-```
+Hexagonal por módulo (`src/modules/<módulo>/{domain,application,infrastructure}`):
 
-## Compile and run the project
+- **domain**: entidades, puertos (interfaces), errores de dominio.
+- **application**: casos de uso — uno por acción de negocio.
+- **infrastructure**: controllers, adaptadores Postgres/Storage, DTOs, guards.
+
+La base de datos vive como funciones Postgres `SECURITY DEFINER` (`app.*`), versionadas en `supabase/migrations/`. La API nunca hace `INSERT`/`UPDATE`/`DELETE` directo sobre las tablas — todo pasa por esas funciones, parametrizadas (`$1, $2...`), sin SQL dinámico.
+
+## Configuración local
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
+cp .env.example .env   # completar con los valores reales — .env nunca se commitea
 ```
 
-## Run tests
+Variables requeridas en `.env`: `DATABASE_URL` (connection string de Postgres del proyecto Supabase), `JWT_SECRET`/`JWT_REFRESH_SECRET`, `PASSWORD_RECOVERY_PEPPER`, `RESEND_API_KEY`/`RESEND_FROM_EMAIL` (envío de correos), `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` (Storage), `CORS_ORIGINS` (orígenes permitidos para el panel Web). Ver comentarios en `.env.example` para el detalle de cada una.
+
+**Antes de tocar cualquier historia que toque base de datos**, sincronizá y aplicá las migraciones pendientes en tu Supabase local/del proyecto (`supabase migration up` / `supabase db push`) — nunca se trabaja contra un esquema desactualizado.
+
+## Levantar en desarrollo
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:dev   # watch mode, puerto 3000 por defecto (PORT en .env)
 ```
 
-## Deployment
+Health check: `GET /health`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Tests
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm test          # unit tests (jest)
+npm run test:cov  # con cobertura
+npm run lint       # eslint --fix
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Estado del proyecto
 
-## Resources
+| Historia | Estado | Notas |
+|---|---|---|
+| **HU-01** — Gestión de acceso (registro, login, refresh, cambio/recuperación de contraseña, logout) | ✅ Completa | Endpoints bajo `/auth`. |
+| **HU-02** — Administración del perfil de usuario | ✅ Completa | Endpoints bajo `/perfil`. Ver detalle abajo. |
+| **HU-08** — Validación de domiciliarios (revisión/aprobación de documentos por el Administrador) | 🔜 Próxima | Reutiliza las mismas filas de `perfil_domiciliario` que crea HU-02 — no una tabla paralela. |
 
-Check out a few resources that may come in handy when working with NestJS:
+### HU-02 — qué incluye
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- `GET /perfil` — datos comunes + sección Paciente y/o Domiciliario según los roles de la cuenta. Fotos y documentos se devuelven como **URLs firmadas** de Supabase Storage (1h de expiración), nunca como paths internos.
+- `PATCH /perfil`, `PATCH /perfil/paciente`, `PATCH /perfil/domiciliario` — actualización de datos por sección.
+- `POST /perfil/paciente/foto-cedula`, `POST /perfil/domiciliario/documentos` (cédula/licencia/SOAT/tecnomecánica), `POST /perfil/foto` (foto de perfil/avatar, común a cualquier rol) — multipart, validados por **contenido real del archivo** (magic numbers vía `file-type`, no por extensión ni `Content-Type` del cliente) más límite de 5MB.
+- `POST /perfil/desactivar` — desactiva la cuenta y revoca todas las sesiones, sin borrar datos (trazabilidad).
+- Completar el perfil de Domiciliario dispara la validación pendiente del Administrador (`usuario_roles.estado = 'pendiente_validacion'`, ya seteado desde el registro en HU-01); el de Paciente no requiere aprobación.
 
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+192/192 tests pasando.

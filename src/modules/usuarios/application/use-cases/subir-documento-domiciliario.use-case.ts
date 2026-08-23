@@ -5,7 +5,10 @@ import {
   PerfilRepositoryPort,
   TipoDocumentoDomiciliario,
 } from '../../domain/ports/perfil.repository.port';
-import { BUCKET_PERFILES } from './subir-foto-cedula-paciente.use-case';
+import {
+  BUCKET_PERFILES,
+  URL_FIRMADA_EXPIRA_SEGUNDOS,
+} from './subir-foto-cedula-paciente.use-case';
 
 export const MENSAJE_DOCUMENTO_ACTUALIZADO = 'Tu documento fue actualizado.';
 
@@ -19,10 +22,12 @@ export type SubirDocumentoDomiciliarioCommand = {
 
 export type SubirDocumentoDomiciliarioResultado = {
   message: string;
+  url: string;
 };
 
 /** G01/G03 — sube un documento del Domiciliario (cédula/licencia/SOAT/
- * tecnicomecánica) a Storage y persiste el path. */
+ * tecnicomecánica) a Storage y persiste el path. Devuelve una URL
+ * firmada para que la App pueda mostrar la miniatura sin otro round-trip. */
 @Injectable()
 export class SubirDocumentoDomiciliarioUseCase {
   constructor(
@@ -51,6 +56,12 @@ export class SubirDocumentoDomiciliarioUseCase {
       throw new RolNoAutorizadoError();
     }
 
-    return { message: MENSAJE_DOCUMENTO_ACTUALIZADO };
+    const url = await this.almacenamiento.obtenerUrlFirmada(
+      BUCKET_PERFILES,
+      path,
+      URL_FIRMADA_EXPIRA_SEGUNDOS,
+    );
+
+    return { message: MENSAJE_DOCUMENTO_ACTUALIZADO, url };
   }
 }

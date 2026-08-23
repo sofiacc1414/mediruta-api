@@ -16,6 +16,7 @@ import { RestablecerContrasenaUseCase } from './application/use-cases/restablece
 import { SolicitarRecuperacionContrasenaUseCase } from './application/use-cases/solicitar-recuperacion-contrasena.use-case';
 import { SubirDocumentoDomiciliarioUseCase } from './application/use-cases/subir-documento-domiciliario.use-case';
 import { SubirFotoCedulaPacienteUseCase } from './application/use-cases/subir-foto-cedula-paciente.use-case';
+import { SubirFotoPerfilUseCase } from './application/use-cases/subir-foto-perfil.use-case';
 import { AccessTokenPort } from './domain/ports/access-token.port';
 import { AlmacenamientoArchivosPort } from './domain/ports/almacenamiento-archivos.port';
 import { CambioContrasenaRepositoryPort } from './domain/ports/cambio-contrasena.repository.port';
@@ -80,6 +81,7 @@ import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
     ActualizarDatosComunesUseCase,
     ActualizarPerfilPacienteUseCase,
     SubirFotoCedulaPacienteUseCase,
+    SubirFotoPerfilUseCase,
     ActualizarPerfilDomiciliarioUseCase,
     SubirDocumentoDomiciliarioUseCase,
     DesactivarCuentaUseCase,

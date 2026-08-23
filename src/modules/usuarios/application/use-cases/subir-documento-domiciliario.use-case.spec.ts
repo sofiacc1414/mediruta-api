@@ -13,6 +13,7 @@ describe('SubirDocumentoDomiciliarioUseCase', () => {
     actualizarDatosComunes: jest.fn(),
     upsertPerfilPaciente: jest.fn(),
     actualizarFotoCedulaPaciente: jest.fn(),
+    actualizarFotoPerfil: jest.fn(),
     upsertPerfilDomiciliario: jest.fn(),
     actualizarDocumentoDomiciliario: jest.fn(),
     desactivarCuenta: jest.fn(),
@@ -32,9 +33,12 @@ describe('SubirDocumentoDomiciliarioUseCase', () => {
     (almacenamiento.subir as jest.Mock).mockResolvedValue(
       'domiciliario/usuario-uuid/soat.pdf',
     );
+    (almacenamiento.obtenerUrlFirmada as jest.Mock).mockResolvedValue(
+      'https://firmada.test/domiciliario/usuario-uuid/soat.pdf',
+    );
   });
 
-  it('G01/G03 — sube el documento a Storage y persiste el path por tipo', async () => {
+  it('G01/G03 — sube el documento a Storage, persiste el path por tipo y devuelve la URL firmada', async () => {
     (perfiles.actualizarDocumentoDomiciliario as jest.Mock).mockResolvedValue(
       true,
     );
@@ -59,7 +63,10 @@ describe('SubirDocumentoDomiciliarioUseCase', () => {
       'soat',
       'domiciliario/usuario-uuid/soat.pdf',
     );
-    expect(resultado).toEqual({ message: MENSAJE_DOCUMENTO_ACTUALIZADO });
+    expect(resultado).toEqual({
+      message: MENSAJE_DOCUMENTO_ACTUALIZADO,
+      url: 'https://firmada.test/domiciliario/usuario-uuid/soat.pdf',
+    });
   });
 
   it('lanza RolNoAutorizadoError si la cuenta no tiene rol DOMICILIARIO', async () => {

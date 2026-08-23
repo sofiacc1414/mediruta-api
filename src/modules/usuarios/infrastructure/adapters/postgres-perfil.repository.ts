@@ -9,6 +9,7 @@ import {
 type FilaPerfil = {
   nombre_completo: string | null;
   telefono: string | null;
+  foto_perfil_path: string | null;
   pac_direccion: string | null;
   pac_fecha_nacimiento: string | null;
   pac_foto_cedula_path: string | null;
@@ -55,6 +56,7 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
       return {
         nombreCompleto: fila.nombre_completo,
         telefono: fila.telefono,
+        fotoPerfilPath: fila.foto_perfil_path,
         paciente: tienePaciente
           ? {
               direccion: fila.pac_direccion,
@@ -117,6 +119,16 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
         [usuarioId, path],
       );
       return result.rows[0].actualizar_foto_cedula_paciente;
+    });
+  }
+
+  actualizarFotoPerfil(usuarioId: string, path: string): Promise<boolean> {
+    return this.db.withUserContext(usuarioId, async (client) => {
+      const result = await client.query<{ actualizar_foto_perfil: boolean }>(
+        'select app.actualizar_foto_perfil($1, $2) as actualizar_foto_perfil',
+        [usuarioId, path],
+      );
+      return result.rows[0].actualizar_foto_perfil;
     });
   }
 

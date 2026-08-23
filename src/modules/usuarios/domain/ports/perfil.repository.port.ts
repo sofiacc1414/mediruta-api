@@ -17,6 +17,7 @@ export type PerfilDomiciliario = {
 export type Perfil = {
   nombreCompleto: string | null;
   telefono: string | null;
+  fotoPerfilPath: string | null;
   paciente: PerfilPaciente | null;
   domiciliario: PerfilDomiciliario | null;
 };
@@ -44,6 +45,12 @@ export abstract class PerfilRepositoryPort {
 
   /** G01/G03 — foto de cédula del Paciente (ya subida a Storage). */
   abstract actualizarFotoCedulaPaciente(
+    usuarioId: string,
+    path: string,
+  ): Promise<boolean>;
+
+  /** Foto de perfil (avatar), común a cualquier rol (ya subida a Storage). */
+  abstract actualizarFotoPerfil(
     usuarioId: string,
     path: string,
   ): Promise<boolean>;

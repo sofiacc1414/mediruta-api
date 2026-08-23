@@ -1,13 +1,13 @@
-import { RolNoAutorizadoError } from '../../domain/errors/rol-no-autorizado.error';
+import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
 import { AlmacenamientoArchivosPort } from '../../domain/ports/almacenamiento-archivos.port';
 import { PerfilRepositoryPort } from '../../domain/ports/perfil.repository.port';
+import { BUCKET_PERFILES } from './subir-foto-cedula-paciente.use-case';
 import {
-  BUCKET_PERFILES,
-  MENSAJE_FOTO_CEDULA_ACTUALIZADA,
-  SubirFotoCedulaPacienteUseCase,
-} from './subir-foto-cedula-paciente.use-case';
+  MENSAJE_FOTO_PERFIL_ACTUALIZADA,
+  SubirFotoPerfilUseCase,
+} from './subir-foto-perfil.use-case';
 
-describe('SubirFotoCedulaPacienteUseCase', () => {
+describe('SubirFotoPerfilUseCase', () => {
   const perfiles: PerfilRepositoryPort = {
     obtenerPerfil: jest.fn(),
     actualizarDatosComunes: jest.fn(),
@@ -23,22 +23,20 @@ describe('SubirFotoCedulaPacienteUseCase', () => {
     obtenerUrlFirmada: jest.fn(),
   };
 
-  const useCase = new SubirFotoCedulaPacienteUseCase(perfiles, almacenamiento);
+  const useCase = new SubirFotoPerfilUseCase(perfiles, almacenamiento);
 
   beforeEach(() => {
     jest.resetAllMocks();
     (almacenamiento.subir as jest.Mock).mockResolvedValue(
-      'paciente/usuario-uuid/cedula.jpg',
+      'perfil/usuario-uuid/foto.jpg',
     );
     (almacenamiento.obtenerUrlFirmada as jest.Mock).mockResolvedValue(
-      'https://firmada.test/paciente/usuario-uuid/cedula.jpg',
+      'https://firmada.test/perfil/usuario-uuid/foto.jpg',
     );
   });
 
-  it('G01/G03 — sube el archivo a Storage, persiste el path y devuelve la URL firmada', async () => {
-    (perfiles.actualizarFotoCedulaPaciente as jest.Mock).mockResolvedValue(
-      true,
-    );
+  it('sube la foto a Storage, persiste el path y devuelve la URL firmada', async () => {
+    (perfiles.actualizarFotoPerfil as jest.Mock).mockResolvedValue(true);
     const contenido = Buffer.from('foto');
 
     const resultado = await useCase.execute({
@@ -50,24 +48,22 @@ describe('SubirFotoCedulaPacienteUseCase', () => {
 
     expect(almacenamiento.subir).toHaveBeenCalledWith(
       BUCKET_PERFILES,
-      'paciente/usuario-uuid/cedula.jpg',
+      'perfil/usuario-uuid/foto.jpg',
       contenido,
       'image/jpeg',
     );
-    expect(perfiles.actualizarFotoCedulaPaciente).toHaveBeenCalledWith(
+    expect(perfiles.actualizarFotoPerfil).toHaveBeenCalledWith(
       'usuario-uuid',
-      'paciente/usuario-uuid/cedula.jpg',
+      'perfil/usuario-uuid/foto.jpg',
     );
     expect(resultado).toEqual({
-      message: MENSAJE_FOTO_CEDULA_ACTUALIZADA,
-      url: 'https://firmada.test/paciente/usuario-uuid/cedula.jpg',
+      message: MENSAJE_FOTO_PERFIL_ACTUALIZADA,
+      url: 'https://firmada.test/perfil/usuario-uuid/foto.jpg',
     });
   });
 
-  it('lanza RolNoAutorizadoError si la cuenta no tiene rol PACIENTE', async () => {
-    (perfiles.actualizarFotoCedulaPaciente as jest.Mock).mockResolvedValue(
-      false,
-    );
+  it('lanza NoAutorizadoError si la cuenta no está activa', async () => {
+    (perfiles.actualizarFotoPerfil as jest.Mock).mockResolvedValue(false);
 
     await expect(
       useCase.execute({
@@ -76,6 +72,6 @@ describe('SubirFotoCedulaPacienteUseCase', () => {
         contentType: 'image/jpeg',
         extension: 'jpg',
       }),
-    ).rejects.toBeInstanceOf(RolNoAutorizadoError);
+    ).rejects.toBeInstanceOf(NoAutorizadoError);
   });
 });

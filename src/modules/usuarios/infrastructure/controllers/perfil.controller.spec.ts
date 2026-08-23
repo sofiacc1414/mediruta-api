@@ -7,6 +7,7 @@ import { DesactivarCuentaUseCase } from '../../application/use-cases/desactivar-
 import { ObtenerPerfilUseCase } from '../../application/use-cases/obtener-perfil.use-case';
 import { SubirDocumentoDomiciliarioUseCase } from '../../application/use-cases/subir-documento-domiciliario.use-case';
 import { SubirFotoCedulaPacienteUseCase } from '../../application/use-cases/subir-foto-cedula-paciente.use-case';
+import { SubirFotoPerfilUseCase } from '../../application/use-cases/subir-foto-perfil.use-case';
 import { AccessAuthGuard } from '../guards/access-auth.guard';
 import { PerfilController } from './perfil.controller';
 
@@ -28,6 +29,7 @@ function crearController(overrides?: {
   actualizarDatosComunes?: { execute: jest.Mock };
   actualizarPerfilPaciente?: { execute: jest.Mock };
   subirFotoCedulaPaciente?: { execute: jest.Mock };
+  subirFotoPerfil?: { execute: jest.Mock };
   actualizarPerfilDomiciliario?: { execute: jest.Mock };
   subirDocumentoDomiciliario?: { execute: jest.Mock };
   desactivarCuenta?: { execute: jest.Mock };
@@ -45,6 +47,9 @@ function crearController(overrides?: {
     (overrides?.subirFotoCedulaPaciente ?? {
       execute: jest.fn(),
     }) as unknown as SubirFotoCedulaPacienteUseCase,
+    (overrides?.subirFotoPerfil ?? {
+      execute: jest.fn(),
+    }) as unknown as SubirFotoPerfilUseCase,
     (overrides?.actualizarPerfilDomiciliario ?? {
       execute: jest.fn(),
     }) as unknown as ActualizarPerfilDomiciliarioUseCase,
@@ -122,6 +127,25 @@ describe('PerfilController', () => {
     await controller.subirFotoCedula(identidad, archivo);
 
     expect(subirFotoCedulaPaciente.execute).toHaveBeenCalledWith({
+      usuarioId: 'usuario-desde-guard',
+      contenido: archivo.buffer,
+      contentType: 'image/png',
+      extension: 'png',
+    });
+  });
+
+  it('POST /perfil/foto deriva la extensión del mimetype', async () => {
+    const subirFotoPerfil = {
+      execute: jest
+        .fn()
+        .mockResolvedValue({ message: 'ok', url: 'https://firmada.test' }),
+    };
+    const controller = crearController({ subirFotoPerfil });
+    const archivo = archivoFalso({ mimetype: 'image/png' });
+
+    await controller.subirFoto(identidad, archivo);
+
+    expect(subirFotoPerfil.execute).toHaveBeenCalledWith({
       usuarioId: 'usuario-desde-guard',
       contenido: archivo.buffer,
       contentType: 'image/png',
