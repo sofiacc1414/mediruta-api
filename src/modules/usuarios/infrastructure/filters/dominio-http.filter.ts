@@ -5,6 +5,8 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { DocumentacionIncompletaError } from '../../../domiciliarios/domain/errors/documentacion-incompleta.error';
+import { DomiciliarioNoEncontradoError } from '../../../domiciliarios/domain/errors/domiciliario-no-encontrado.error';
 import { CambioContrasenaInvalidoError } from '../../domain/errors/cambio-contrasena-invalido.error';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
@@ -25,6 +27,8 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   CambioContrasenaInvalidoError,
   NuevaContrasenaIgualError,
   RolNoAutorizadoError,
+  DocumentacionIncompletaError,
+  DomiciliarioNoEncontradoError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -54,6 +58,23 @@ export class DominioHttpFilter implements ExceptionFilter {
       response.status(HttpStatus.FORBIDDEN).json({
         statusCode: HttpStatus.FORBIDDEN,
         message: exception.message,
+      });
+      return;
+    }
+
+    if (exception instanceof DomiciliarioNoEncontradoError) {
+      response.status(HttpStatus.NOT_FOUND).json({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: exception.message,
+      });
+      return;
+    }
+
+    if (exception instanceof DocumentacionIncompletaError) {
+      response.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
+        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+        message: exception.message,
+        faltantes: exception.faltantes,
       });
       return;
     }

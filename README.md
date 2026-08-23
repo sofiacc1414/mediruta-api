@@ -57,7 +57,8 @@ npm run lint       # eslint --fix
 |---|---|---|
 | **HU-01** — Gestión de acceso (registro, login, refresh, cambio/recuperación de contraseña, logout) | ✅ Completa | Endpoints bajo `/auth`. |
 | **HU-02** — Administración del perfil de usuario | ✅ Completa | Endpoints bajo `/perfil`. Ver detalle abajo. |
-| **HU-08** — Validación de domiciliarios (revisión/aprobación de documentos por el Administrador) | 🔜 Próxima | Reutiliza las mismas filas de `perfil_domiciliario` que crea HU-02 — no una tabla paralela. |
+| **HU-08** — Validación de domiciliarios (revisión/aprobación por el Administrador) | ✅ Completa | Endpoints bajo `/admin/domiciliarios`. Ver detalle abajo. |
+| **HU-09** — Asignación automática de domiciliario | 🔜 Próxima | — |
 
 ### HU-02 — qué incluye
 
@@ -67,4 +68,14 @@ npm run lint       # eslint --fix
 - `POST /perfil/desactivar` — desactiva la cuenta y revoca todas las sesiones, sin borrar datos (trazabilidad).
 - Completar el perfil de Domiciliario dispara la validación pendiente del Administrador (`usuario_roles.estado = 'pendiente_validacion'`, ya seteado desde el registro en HU-01); el de Paciente no requiere aprobación.
 
-192/192 tests pasando.
+### HU-08 — qué incluye
+
+- `GET /admin/domiciliarios/pendientes` — domiciliarios con validación pendiente, más antiguos primero.
+- `GET /admin/domiciliarios/:id` — detalle (datos comunes, vehículo, los 4 documentos como URLs firmadas) + historial de decisiones previas.
+- `POST /admin/domiciliarios/:id/aprobar` — pasa a `habilitado`. Si falta algún documento/dato obligatorio, responde `422` con la lista exacta de qué falta (nunca aprueba a medias).
+- `POST /admin/domiciliarios/:id/rechazar` — pasa a `rechazado`, con `motivo` obligatorio (5-500 caracteres).
+- Toda decisión queda en `validaciones_domiciliario` (insert-only: quién, cuándo, qué decidió) — no reemplaza `usuario_roles.estado`, lo audita.
+- Reutiliza las mismas filas de `perfil_domiciliario` que crea HU-02 — no hay tabla de documentos paralela.
+- Primer endpoint restringido por rol de la API: `RolesGuard` + `@Roles('ADMINISTRADOR', 'ROOT')`, reutilizable para futuras historias de Administrador. Verificado en vivo que bloquea con `403` a cualquier cuenta sin ese rol (incluida la del propio domiciliario) y con `401` sin sesión.
+
+214/214 tests pasando.

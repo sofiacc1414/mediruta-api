@@ -262,6 +262,29 @@ Datos de perfil específicos del rol DOMICILIARIO (HU-02) — incluye los docume
 
 **Migración:** `20260823011000_create_perfil_domiciliario.sql`
 
+## Tabla `validaciones_domiciliario` (HU-08)
+
+Historial insert-only de decisiones del Administrador sobre domiciliarios (G06 —
+trazabilidad). No reemplaza `usuario_roles.estado` (que sigue siendo el estado
+"actual"): esta tabla registra **cómo** se llegó ahí, con quién decidió y cuándo, y
+sobrevive aunque el domiciliario sea rechazado y vuelto a evaluar más adelante.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `id` | `uuid` PK | `gen_random_uuid()` |
+| `domiciliario_id` | `uuid` | FK → `usuarios.id` `ON DELETE CASCADE` |
+| `admin_id` | `uuid` | FK → `usuarios.id` `ON DELETE RESTRICT` (no se pierde la trazabilidad si el admin se desactiva) |
+| `decision` | `text` | check `in ('aprobado', 'rechazado')` |
+| `motivo` | `text` | nullable a nivel de columna; el caso de uso de rechazo exige que no esté vacío (el de aprobación no usa este campo) |
+| `creado_en` | `timestamptz` | `default now()` |
+
+**RLS:** `ENABLE`+`FORCE`, sin policies — un admin necesita ver el historial de
+*cualquier* domiciliario, no solo filas propias, así que una policy de
+`usuario_id = current_user_id()` no alcanzaría. Todo el acceso pasa por
+`app.listar_validaciones_domiciliario`.
+
+**Migración:** `20260823030000_create_validaciones_domiciliario.sql`
+
 ## Supabase Storage — bucket `perfiles`
 
 Bucket **privado** (`public = false`) para fotos/documentos de perfil (cédula de Paciente; cédula/licencia/SOAT/tecnicomecánica de Domiciliario). Sin políticas sobre `storage.objects` a propósito: la API es la única que lo toca, usando `SUPABASE_SERVICE_ROLE_KEY` (igual que `DATABASE_URL` es la conexión administrativa a Postgres — el service role bypassea RLS). App/Web **nunca** hablan con Supabase Storage directamente ni reciben la service role key; la API sube el archivo y devuelve URLs firmadas de corta duración cuando hace falta mostrarlo.
@@ -282,6 +305,22 @@ Mismo patrón de seguridad que el resto de la API: `SECURITY DEFINER`, `search_p
 - **`app.desactivar_cuenta(p_usuario_id, p_sid)`** → `boolean` (G05). Exige sesión válida (mismo chequeo que `app.obtener_password_hash_cambio_contrasena`). Cambia `estado_cuenta` a `'desactivada'` (nunca `DELETE` — "conservar la información para trazabilidad") y revoca **todas** las sesiones del usuario (a diferencia de `app.revocar_sesion`, que solo cierra la sesión actual — desactivar la cuenta cierra todo).
 
 **Migración:** `20260823012000_create_perfil_functions.sql`
+
+## Funciones de validación de domiciliarios (HU-08)
+
+Mismo patrón de seguridad que el resto de la API. Todas reciben `p_admin_id` y
+verifican (defensa en profundidad, además del `RolesGuard` de la API) que tenga rol
+`ADMINISTRADOR`/`ROOT` habilitado vía el helper `app.usuario_tiene_rol_habilitado`. No
+crean una tabla de documentos paralela: leen `perfil_domiciliario` (HU-02) tal cual.
+
+- **`app.usuario_tiene_rol_habilitado(p_usuario_id, p_codigo_rol)`** → `boolean`. Helper reutilizable (`LANGUAGE sql STABLE`), no específico de HU-08.
+- **`app.listar_domiciliarios_pendientes(p_admin_id)`** → filas de domiciliarios con `usuario_roles.estado = 'pendiente_validacion'`, más antiguos primero (G01). Vacío (no error) si `p_admin_id` no es admin.
+- **`app.obtener_detalle_domiciliario(p_admin_id, p_domiciliario_id)`** → datos comunes + `perfil_domiciliario` completo + estado (G02).
+- **`app.listar_validaciones_domiciliario(p_admin_id, p_domiciliario_id)`** → historial de `validaciones_domiciliario` para ese domiciliario, más reciente primero (G06). Aparte de la de detalle porque es 0..N filas — se evita agregación JSON, no se usa en ningún otro lado de este esquema.
+- **`app.aprobar_domiciliario(p_admin_id, p_domiciliario_id)`** → `(resultado text, faltantes text[])`. `resultado` es uno de `aprobado`\|`incompleto`\|`no_encontrado`\|`no_autorizado`. `incompleto` (G05) no modifica nada — calcula `faltantes` con un `array_remove(array[case when ... ], null)` fijo, sin SQL dinámico. `aprobado` actualiza `usuario_roles.estado` e inserta en `validaciones_domiciliario`.
+- **`app.rechazar_domiciliario(p_admin_id, p_domiciliario_id, p_motivo)`** → `text`, mismo enum de resultado que aprobar salvo que el éxito es `'rechazado'` (G04). `p_motivo` obligatorio (lo valida también el DTO de la API antes de llegar acá).
+
+**Migración:** `20260823030500_create_domiciliarios_admin_functions.sql`
 
 ## Rol PostgreSQL interno `mediruta_app`
 

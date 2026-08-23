@@ -42,6 +42,7 @@ import { SupabaseAlmacenamientoAdapter } from './infrastructure/adapters/supabas
 import { AuthController } from './infrastructure/controllers/auth.controller';
 import { PerfilController } from './infrastructure/controllers/perfil.controller';
 import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
+import { RolesGuard } from './infrastructure/guards/roles.guard';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
     SubirDocumentoDomiciliarioUseCase,
     DesactivarCuentaUseCase,
     AccessAuthGuard,
+    RolesGuard,
     {
       provide: PasswordHasherPort,
       useClass: BcryptPasswordHasher,
@@ -130,6 +132,18 @@ import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
       provide: AlmacenamientoArchivosPort,
       useClass: SupabaseAlmacenamientoAdapter,
     },
+  ],
+  exports: [
+    AccessAuthGuard,
+    RolesGuard,
+    UsuarioRepositoryPort,
+    AlmacenamientoArchivosPort,
+    // AccessAuthGuard/RolesGuard son clases instanciadas por Nest en el
+    // injector del módulo que las usa (DomiciliariosModule, vía
+    // @UseGuards) — para que resuelvan sus propias dependencias ahí,
+    // esas dependencias también deben estar exportadas, no solo el guard.
+    AccessTokenPort,
+    SesionRepositoryPort,
   ],
 })
 export class UsuariosModule {}
