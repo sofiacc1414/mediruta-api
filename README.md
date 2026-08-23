@@ -12,6 +12,7 @@ La fuente única de verdad del proyecto (reglas de arquitectura, RLS, versionami
 - RLS con `app.current_user_id()` (variable de sesión propia), nunca `auth.uid()`.
 - **Supabase Storage** (bucket privado `perfiles`) para fotos/documentos, accedido solo por la API con la service role key — nunca expuesto directo a App/Web.
 - `class-validator` para DTOs, `multer` + `FileTypeValidator` (valida por contenido real del archivo, no por extensión/header) para subida de archivos.
+- **Todo mensaje de error que llega al cliente responde en español** — los de dominio (`DominioHttpFilter`) ya nacen en español en cada `Error` propio; los de validación de DTO (`ValidationPipe` global) usan un `exceptionFactory` propio (`shared/infrastructure/pipes/mensajes-validacion.ts`) que traduce los mensajes default de `class-validator` (en inglés) sin pisar los que un decorator ya personalizó (`Matches`, `IsEnum`, `IsIn`, `EsFechaPasada`, que ya declaran su propio `message` en español).
 - Jest para tests (un `.spec.ts` por caso de uso, con fakes escritos a mano — sin librerías de mocking).
 
 ## Arquitectura

@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { exceptionFactoryEnEspanol } from './shared/infrastructure/pipes/mensajes-validacion';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -27,6 +28,10 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      // class-validator arma sus mensajes default en inglés — todo el
+      // resto de la API responde en español, esto traduce esa única
+      // fuente que quedaba afuera (ver mensajes-validacion.ts).
+      exceptionFactory: exceptionFactoryEnEspanol,
     }),
   );
 
