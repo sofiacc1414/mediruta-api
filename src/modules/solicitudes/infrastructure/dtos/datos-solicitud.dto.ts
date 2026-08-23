@@ -35,4 +35,11 @@ export class DatosSolicitudDto {
   @IsString()
   @MaxLength(200)
   direccionEntrega?: string;
+
+  /** Dónde el domiciliario retira el medicamento (farmacia), distinta de
+   * `direccionEntrega` (dónde se lo lleva al paciente). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  direccionFarmacia?: string;
 }

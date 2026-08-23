@@ -335,9 +335,13 @@ foto — **no** es la fecha de expedición; `app.enviar_solicitud` bloquea el en
 pasó).
 `direccion_entrega` se precarga desde `perfil_paciente.direccion` (HU-02) pero es un
 valor propio de la solicitud, no una referencia viva — si el perfil cambia después, la
-solicitud ya creada conserva la dirección que tenía. **La cédula del paciente NO es
-una columna acá** — es una referencia viva a `perfil_paciente.foto_cedula_path`,
-resuelta al consultar el detalle (`app.obtener_solicitud`, `LEFT JOIN`).
+solicitud ya creada conserva la dirección que tenía. `direccion_farmacia` es la
+dirección donde el domiciliario retira el medicamento — **un punto distinto** de
+`direccion_entrega` (adónde se lo lleva al paciente), no un duplicado ni algo
+precargado: la escribe el paciente a mano, es propia de cada solicitud. **La cédula del
+paciente NO es una columna acá** — es una referencia viva a
+`perfil_paciente.foto_cedula_path`, resuelta al consultar el detalle
+(`app.obtener_solicitud`, `LEFT JOIN`).
 
 `codigo_pedido` — nullable, se completa recién en `app.enviar_solicitud` (formato
 `MR-000001`, secuencial vía `public.solicitudes_codigo_pedido_seq`, consecutivo para
@@ -374,7 +378,8 @@ columnas de medicamento/receta tipeada, ADD `receta_path`),
 `receta_fecha_expedicion` → `receta_fecha_vencimiento`, el dato que hacía falta era
 la fecha hasta la que la receta es válida, no la de emisión),
 `20260823070000_add_codigo_pedido.sql` (agrega `codigo_pedido` + la secuencia que lo
-genera).
+genera), `20260823080000_add_direccion_farmacia.sql` (agrega `direccion_farmacia`, dato
+que faltaba: dónde se retira el medicamento).
 
 ## Funciones de solicitudes (HU-03)
 
@@ -386,14 +391,14 @@ el admin consulta sobre *otra* cuenta), acá `p_paciente_id` es siempre
 medicamentos viajan como `jsonb` (array), descompuestos con `jsonb_to_recordset` — sin
 SQL dinámico.
 
-- **`app.crear_solicitud(p_paciente_id, p_medicamentos jsonb, p_receta_path, p_receta_fecha_vencimiento, p_direccion_entrega)`** → `(resultado text, id uuid)`, `resultado` en `creada`\|`no_autorizado`\|**`sin_cedula`** (G01) — bloqueo nuevo: si `perfil_paciente.foto_cedula_path` es `NULL`, no crea nada. Inserta la solicitud + sus medicamentos + primera fila en `historial_solicitud`.
+- **`app.crear_solicitud(p_paciente_id, p_medicamentos jsonb, p_receta_path, p_receta_fecha_vencimiento, p_direccion_entrega, p_direccion_farmacia)`** → `(resultado text, id uuid)`, `resultado` en `creada`\|`no_autorizado`\|**`sin_cedula`** (G01) — bloqueo nuevo: si `perfil_paciente.foto_cedula_path` es `NULL`, no crea nada. Inserta la solicitud + sus medicamentos + primera fila en `historial_solicitud`.
 - **`app.listar_solicitudes(p_paciente_id)`** → resumen (id, codigo_pedido, estado, creado_en) de las propias, más recientes primero (G02) — `codigo_pedido` nulo mientras siga en Borrador. Ya no trae datos de medicamento, eso vive en el detalle.
-- **`app.obtener_solicitud(p_paciente_id, p_solicitud_id)`** → fila completa + `cedula_path` (`LEFT JOIN perfil_paciente`, referencia viva); el `WHERE paciente_id = p_paciente_id` es la verificación de dueño (G03).
+- **`app.obtener_solicitud(p_paciente_id, p_solicitud_id)`** → fila completa (incluye `direccion_farmacia`) + `cedula_path` (`LEFT JOIN perfil_paciente`, referencia viva); el `WHERE paciente_id = p_paciente_id` es la verificación de dueño (G03).
 - **`app.listar_medicamentos_solicitud(p_paciente_id, p_solicitud_id)`** → medicamentos de la solicitud, en el orden en que se cargaron (G03) — aparte del detalle porque es 0..N filas.
 - **`app.listar_historial_solicitud(p_paciente_id, p_solicitud_id)`** → eventos de `historial_solicitud`, más antiguo primero (G03).
-- **`app.actualizar_solicitud(p_paciente_id, p_solicitud_id, p_medicamentos jsonb, p_receta_fecha_vencimiento, p_direccion_entrega)`** → `boolean`. Solo si `estado='borrador'` y es del dueño (G04). Reemplaza todos los medicamentos (`DELETE` + `INSERT`) por los del array recibido.
+- **`app.actualizar_solicitud(p_paciente_id, p_solicitud_id, p_medicamentos jsonb, p_receta_fecha_vencimiento, p_direccion_entrega, p_direccion_farmacia)`** → `boolean`. Solo si `estado='borrador'` y es del dueño (G04). Reemplaza todos los medicamentos (`DELETE` + `INSERT`) por los del array recibido.
 - **`app.actualizar_receta_solicitud(p_paciente_id, p_solicitud_id, p_path)`** → `boolean`. Sube/reemplaza la foto de la receta — aparte de `actualizar_solicitud` porque la sube la API después de subir el archivo a Storage (dos pasos, mismo patrón que `actualizar_foto_cedula_paciente` de HU-02).
-- **`app.enviar_solicitud(p_paciente_id, p_solicitud_id)`** → `(resultado text, faltantes text[], codigo_pedido text)`, `resultado` en `enviada`\|`incompleta`\|`no_encontrada` (G05). `incompleta` exige: al menos un medicamento con sus 5 campos completos, foto de receta, fecha de vencimiento y dirección, **y que la receta no esté ya vencida** (`receta_fecha_vencimiento < current_date` agrega `'La receta está vencida...'` a `faltantes`) — la cédula NO se revisa acá, ya se exigió en `crear_solicitud`. Si `resultado='enviada'`, genera y guarda `codigo_pedido` (`MR-000001`, ...) — es el único momento en que se genera.
+- **`app.enviar_solicitud(p_paciente_id, p_solicitud_id)`** → `(resultado text, faltantes text[], codigo_pedido text)`, `resultado` en `enviada`\|`incompleta`\|`no_encontrada` (G05). `incompleta` exige: al menos un medicamento con sus 5 campos completos, foto de receta, fecha de vencimiento, **dirección de la farmacia**, dirección de entrega, **y que la receta no esté ya vencida** (`receta_fecha_vencimiento < current_date` agrega `'La receta está vencida...'` a `faltantes`) — la cédula NO se revisa acá, ya se exigió en `crear_solicitud`. Si `resultado='enviada'`, genera y guarda `codigo_pedido` (`MR-000001`, ...) — es el único momento en que se genera.
 
 **Migraciones:** `20260823051000_update_solicitudes_functions.sql`,
 `20260823060000_alter_solicitudes_receta_vencimiento.sql` (rename de columna/parámetro

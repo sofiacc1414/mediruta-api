@@ -12,6 +12,9 @@ export type DatosSolicitud = {
   medicamentos: Medicamento[];
   recetaFechaVencimiento: string | null;
   direccionEntrega: string | null;
+  /** Dónde el domiciliario retira el medicamento — distinta de
+   * `direccionEntrega` (dónde se lo lleva al paciente). */
+  direccionFarmacia: string | null;
 };
 
 export type SolicitudResumen = {
@@ -30,6 +33,7 @@ export type SolicitudDetalle = {
   recetaPath: string | null;
   recetaFechaVencimiento: string | null;
   direccionEntrega: string | null;
+  direccionFarmacia: string | null;
   creadoEn: string;
   enviadoEn: string | null;
   canceladoEn: string | null;
@@ -68,6 +72,7 @@ export abstract class SolicitudRepositoryPort {
     recetaPath: string | null,
     recetaFechaVencimiento: string | null,
     direccionEntrega: string | null,
+    direccionFarmacia: string | null,
   ): Promise<ResultadoCrear>;
 
   /** G02. */
@@ -99,6 +104,7 @@ export abstract class SolicitudRepositoryPort {
     medicamentos: Medicamento[],
     recetaFechaVencimiento: string | null,
     direccionEntrega: string | null,
+    direccionFarmacia: string | null,
   ): Promise<boolean>;
 
   /** Sube/reemplaza la foto de la receta (ya subida a Storage). */

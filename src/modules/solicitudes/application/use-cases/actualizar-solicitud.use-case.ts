@@ -11,6 +11,7 @@ export type ActualizarSolicitudCommand = {
   medicamentos: Medicamento[];
   recetaFechaVencimiento: string | null;
   direccionEntrega: string | null;
+  direccionFarmacia: string | null;
 };
 
 export const MENSAJE_SOLICITUD_ACTUALIZADA = 'Tu solicitud fue actualizada.';
@@ -31,6 +32,7 @@ export class ActualizarSolicitudUseCase {
       command.medicamentos,
       command.recetaFechaVencimiento,
       command.direccionEntrega,
+      command.direccionFarmacia,
     );
     if (!actualizado) {
       throw new SolicitudNoEncontradaError();

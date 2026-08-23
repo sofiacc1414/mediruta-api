@@ -45,12 +45,14 @@ describe('CrearSolicitudUseCase', () => {
       medicamentos: [],
       recetaFechaVencimiento: null,
       direccionEntrega: null,
+      direccionFarmacia: null,
     });
 
     expect(resultado).toEqual({ id: 'solicitud-uuid' });
     expect(solicitudes.crear).toHaveBeenCalledWith(
       'paciente-uuid',
       [],
+      null,
       null,
       null,
       null,
@@ -68,6 +70,7 @@ describe('CrearSolicitudUseCase', () => {
       medicamentos: UN_MEDICAMENTO,
       recetaFechaVencimiento: '2026-08-01',
       direccionEntrega: 'Calle 1 #2-3',
+      direccionFarmacia: 'Carrera 5 #6-7',
     });
 
     expect(solicitudes.crear).toHaveBeenCalledWith(
@@ -76,6 +79,7 @@ describe('CrearSolicitudUseCase', () => {
       null,
       '2026-08-01',
       'Calle 1 #2-3',
+      'Carrera 5 #6-7',
     );
   });
 
@@ -90,6 +94,7 @@ describe('CrearSolicitudUseCase', () => {
         medicamentos: [],
         recetaFechaVencimiento: null,
         direccionEntrega: null,
+        direccionFarmacia: null,
       }),
     ).rejects.toBeInstanceOf(RolNoAutorizadoError);
   });
@@ -105,6 +110,7 @@ describe('CrearSolicitudUseCase', () => {
         medicamentos: [],
         recetaFechaVencimiento: null,
         direccionEntrega: null,
+        direccionFarmacia: null,
       }),
     ).rejects.toBeInstanceOf(PerfilIncompletoError);
   });

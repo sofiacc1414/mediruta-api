@@ -47,6 +47,7 @@ describe('ObtenerSolicitudUseCase', () => {
       recetaPath: 'solicitud/solicitud-uuid/receta.jpg',
       recetaFechaVencimiento: '2026-08-01',
       direccionEntrega: 'Calle 1 #2-3',
+      direccionFarmacia: 'Carrera 5 #6-7',
       creadoEn: '2026-08-20T10:00:00.000Z',
       enviadoEn: null,
       canceladoEn: null,

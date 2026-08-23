@@ -89,6 +89,7 @@ export class SolicitudesController {
       medicamentos: medicamentosDesde(dto.medicamentos),
       recetaFechaVencimiento: dto.recetaFechaVencimiento ?? null,
       direccionEntrega: dto.direccionEntrega ?? null,
+      direccionFarmacia: dto.direccionFarmacia ?? null,
     });
   }
 
@@ -120,6 +121,7 @@ export class SolicitudesController {
       medicamentos: medicamentosDesde(dto.medicamentos),
       recetaFechaVencimiento: dto.recetaFechaVencimiento ?? null,
       direccionEntrega: dto.direccionEntrega ?? null,
+      direccionFarmacia: dto.direccionFarmacia ?? null,
     });
   }
 

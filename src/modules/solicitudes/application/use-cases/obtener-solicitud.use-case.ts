@@ -19,6 +19,7 @@ export type ObtenerSolicitudResultado = {
   recetaUrl: string | null;
   recetaFechaVencimiento: string | null;
   direccionEntrega: string | null;
+  direccionFarmacia: string | null;
   creadoEn: string;
   enviadoEn: string | null;
   canceladoEn: string | null;
@@ -67,6 +68,7 @@ export class ObtenerSolicitudUseCase {
       recetaUrl,
       recetaFechaVencimiento: detalle.recetaFechaVencimiento,
       direccionEntrega: detalle.direccionEntrega,
+      direccionFarmacia: detalle.direccionFarmacia,
       creadoEn: detalle.creadoEn,
       enviadoEn: detalle.enviadoEn,
       canceladoEn: detalle.canceladoEn,

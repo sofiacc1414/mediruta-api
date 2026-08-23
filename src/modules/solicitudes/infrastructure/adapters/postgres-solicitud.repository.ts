@@ -26,6 +26,7 @@ type FilaDetalle = {
   receta_path: string | null;
   receta_fecha_vencimiento: string | null;
   direccion_entrega: string | null;
+  direccion_farmacia: string | null;
   creado_en: string;
   enviado_en: string | null;
   cancelado_en: string | null;
@@ -69,16 +70,18 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     recetaPath: string | null,
     recetaFechaVencimiento: string | null,
     direccionEntrega: string | null,
+    direccionFarmacia: string | null,
   ): Promise<ResultadoCrear> {
     return this.db.withUserContext(pacienteId, async (client) => {
       const result = await client.query<FilaCrear>(
-        `select * from app.crear_solicitud($1, $2::jsonb, $3, $4, $5)`,
+        `select * from app.crear_solicitud($1, $2::jsonb, $3, $4, $5, $6)`,
         [
           pacienteId,
           JSON.stringify(medicamentos),
           recetaPath,
           recetaFechaVencimiento,
           direccionEntrega,
+          direccionFarmacia,
         ],
       );
       const fila = result.rows[0];
@@ -135,6 +138,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         recetaPath: fila.receta_path,
         recetaFechaVencimiento: fila.receta_fecha_vencimiento,
         direccionEntrega: fila.direccion_entrega,
+        direccionFarmacia: fila.direccion_farmacia,
         creadoEn: fila.creado_en,
         enviadoEn: fila.enviado_en,
         canceladoEn: fila.cancelado_en,
@@ -184,10 +188,11 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     medicamentos: Medicamento[],
     recetaFechaVencimiento: string | null,
     direccionEntrega: string | null,
+    direccionFarmacia: string | null,
   ): Promise<boolean> {
     return this.db.withUserContext(pacienteId, async (client) => {
       const result = await client.query<{ actualizar_solicitud: boolean }>(
-        `select app.actualizar_solicitud($1, $2, $3::jsonb, $4, $5)
+        `select app.actualizar_solicitud($1, $2, $3::jsonb, $4, $5, $6)
            as actualizar_solicitud`,
         [
           pacienteId,
@@ -195,6 +200,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
           JSON.stringify(medicamentos),
           recetaFechaVencimiento,
           direccionEntrega,
+          direccionFarmacia,
         ],
       );
       return result.rows[0].actualizar_solicitud;

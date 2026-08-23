@@ -45,6 +45,7 @@ describe('ActualizarSolicitudUseCase', () => {
       medicamentos: MEDICAMENTOS,
       recetaFechaVencimiento: '2026-08-01',
       direccionEntrega: 'Calle 1 #2-3',
+      direccionFarmacia: 'Carrera 5 #6-7',
     });
 
     expect(resultado).toEqual({ message: MENSAJE_SOLICITUD_ACTUALIZADA });
@@ -54,6 +55,7 @@ describe('ActualizarSolicitudUseCase', () => {
       MEDICAMENTOS,
       '2026-08-01',
       'Calle 1 #2-3',
+      'Carrera 5 #6-7',
     );
   });
 
@@ -67,6 +69,7 @@ describe('ActualizarSolicitudUseCase', () => {
         medicamentos: [],
         recetaFechaVencimiento: null,
         direccionEntrega: null,
+        direccionFarmacia: null,
       }),
     ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
   });

@@ -19,6 +19,7 @@ const DATOS_VACIOS = {
   medicamentos: [],
   recetaFechaVencimiento: null,
   direccionEntrega: null,
+  direccionFarmacia: null,
 };
 
 function archivoFalso(): Express.Multer.File {
@@ -110,6 +111,7 @@ describe('SolicitudesController', () => {
       ],
       recetaFechaVencimiento: null,
       direccionEntrega: null,
+      direccionFarmacia: null,
     });
   });
 

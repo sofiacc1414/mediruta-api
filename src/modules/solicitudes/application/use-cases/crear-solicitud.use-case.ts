@@ -11,6 +11,7 @@ export type CrearSolicitudCommand = {
   medicamentos: Medicamento[];
   recetaFechaVencimiento: string | null;
   direccionEntrega: string | null;
+  direccionFarmacia: string | null;
 };
 
 export type CrearSolicitudResultado = { id: string };
@@ -33,6 +34,7 @@ export class CrearSolicitudUseCase {
       null,
       command.recetaFechaVencimiento,
       command.direccionEntrega,
+      command.direccionFarmacia,
     );
 
     switch (resultado.resultado) {
