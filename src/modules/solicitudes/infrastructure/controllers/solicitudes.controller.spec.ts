@@ -8,6 +8,7 @@ import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicit
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
 import { ListarSolicitudesUseCase } from '../../application/use-cases/listar-solicitudes.use-case';
 import { ObtenerSolicitudUseCase } from '../../application/use-cases/obtener-solicitud.use-case';
+import { SubirRecetaUseCase } from '../../application/use-cases/subir-receta.use-case';
 import { DatosSolicitudDto } from '../dtos/datos-solicitud.dto';
 import { SolicitudesController } from './solicitudes.controller';
 
@@ -15,23 +16,25 @@ const identidad = { usuarioId: 'paciente-desde-guard', sid: 'sid-desde-guard' };
 
 const DTO_VACIO: DatosSolicitudDto = {};
 const DATOS_VACIOS = {
-  medicamentoNombre: null,
-  medicamentoConcentracion: null,
-  medicamentoFormaFarmaceutica: null,
-  medicamentoCantidad: null,
-  medicamentoPosologia: null,
-  recetaMedicoNombre: null,
-  recetaMedicoRegistro: null,
-  recetaIps: null,
+  medicamentos: [],
   recetaFechaExpedicion: null,
   direccionEntrega: null,
 };
+
+function archivoFalso(): Express.Multer.File {
+  return {
+    buffer: Buffer.from('contenido'),
+    mimetype: 'image/jpeg',
+    originalname: 'receta.jpg',
+  } as Express.Multer.File;
+}
 
 function crearController(overrides?: {
   crearSolicitud?: { execute: jest.Mock };
   listarSolicitudes?: { execute: jest.Mock };
   obtenerSolicitud?: { execute: jest.Mock };
   actualizarSolicitud?: { execute: jest.Mock };
+  subirReceta?: { execute: jest.Mock };
   enviarSolicitud?: { execute: jest.Mock };
   cancelarSolicitud?: { execute: jest.Mock };
 }) {
@@ -48,6 +51,9 @@ function crearController(overrides?: {
     (overrides?.actualizarSolicitud ?? {
       execute: jest.fn(),
     }) as unknown as ActualizarSolicitudUseCase,
+    (overrides?.subirReceta ?? {
+      execute: jest.fn(),
+    }) as unknown as SubirRecetaUseCase,
     (overrides?.enviarSolicitud ?? {
       execute: jest.fn(),
     }) as unknown as EnviarSolicitudUseCase,
@@ -78,6 +84,32 @@ describe('SolicitudesController', () => {
     expect(crearSolicitud.execute).toHaveBeenCalledWith({
       pacienteId: 'paciente-desde-guard',
       ...DATOS_VACIOS,
+    });
+  });
+
+  it('POST /solicitudes mapea los medicamentos del DTO', async () => {
+    const crearSolicitud = {
+      execute: jest.fn().mockResolvedValue({ id: 'solicitud-uuid' }),
+    };
+    const controller = crearController({ crearSolicitud });
+
+    await controller.crear(identidad, {
+      medicamentos: [{ nombre: 'Acetaminofén' }],
+    });
+
+    expect(crearSolicitud.execute).toHaveBeenCalledWith({
+      pacienteId: 'paciente-desde-guard',
+      medicamentos: [
+        {
+          nombre: 'Acetaminofén',
+          concentracion: null,
+          formaFarmaceutica: null,
+          cantidad: null,
+          posologia: null,
+        },
+      ],
+      recetaFechaExpedicion: null,
+      direccionEntrega: null,
     });
   });
 
@@ -116,6 +148,24 @@ describe('SolicitudesController', () => {
       pacienteId: 'paciente-desde-guard',
       solicitudId: 'solicitud-uuid',
       ...DATOS_VACIOS,
+    });
+  });
+
+  it('POST /solicitudes/:id/receta deriva la extensión del mimetype', async () => {
+    const subirReceta = {
+      execute: jest.fn().mockResolvedValue({ message: 'ok', url: 'https://x' }),
+    };
+    const controller = crearController({ subirReceta });
+    const archivo = archivoFalso();
+
+    await controller.subirFotoReceta(identidad, 'solicitud-uuid', archivo);
+
+    expect(subirReceta.execute).toHaveBeenCalledWith({
+      pacienteId: 'paciente-desde-guard',
+      solicitudId: 'solicitud-uuid',
+      contenido: archivo.buffer,
+      contentType: 'image/jpeg',
+      extension: 'jpg',
     });
   });
 

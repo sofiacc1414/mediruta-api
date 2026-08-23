@@ -83,14 +83,20 @@ npm run lint       # eslint --fix
 
 ### HU-03 — qué incluye
 
-- `POST /solicitudes` — crea en `borrador`. Acepta campos vacíos a propósito: un Borrador puede estar incompleto, se completa de a poco.
+Reworkeada tras revisión en vivo de la primera versión (una fórmula real trae varios
+medicamentos, y la receta se sube como foto, no se tipea):
+
+- `POST /solicitudes` — crea en `borrador`. Bloquea con `403` si el perfil del paciente todavía no tiene foto de cédula cargada (HU-02) — no se puede ni empezar una solicitud sin eso. Acepta medicamentos vacíos/incompletos a propósito: un Borrador puede estar incompleto, se completa de a poco.
 - `GET /solicitudes` — "Mis solicitudes" (solo las propias).
-- `GET /solicitudes/:id` — detalle + historial de cambios de estado.
-- `PATCH /solicitudes/:id` — editar, solo mientras está en `borrador`.
-- `POST /solicitudes/:id/enviar` — pasa a `pendiente_revision` y bloquea la edición. Si falta algún campo obligatorio (medicamento + receta + dirección de entrega), responde `422` con la lista exacta de qué falta.
+- `GET /solicitudes/:id` — detalle (medicamentos, receta y **cédula del paciente** como URLs firmadas) + historial de cambios de estado.
+- `PATCH /solicitudes/:id` — editar, solo mientras está en `borrador`. Reemplaza todos los medicamentos por los recibidos (la App reenvía la lista completa en cada guardado).
+- `POST /solicitudes/:id/receta` — sube/reemplaza la **foto** de la fórmula médica completa (multipart, misma validación por contenido real que HU-02).
+- `POST /solicitudes/:id/enviar` — pasa a `pendiente_revision` y bloquea la edición. Si falta algún medicamento completo, la foto de receta, la fecha de expedición o la dirección, responde `422` con la lista exacta de qué falta.
 - `POST /solicitudes/:id/cancelar` — pasa a `cancelada`.
-- Campos de medicamento y receta médica definidos investigando qué exige una fórmula válida en Colombia — la foto/escaneo de la receta es HU-05, el OCR es HU-04; acá los datos se tipean.
+- **Varios medicamentos por solicitud** (`solicitud_medicamentos`, tabla hija) — una fórmula real casi nunca trae uno solo.
+- **Receta = foto**, no texto — de los campos tipeados originales solo queda `receta_fecha_expedicion` (para detectar recetas vencidas sin abrir la foto); médico/registro médico/IPS se eliminaron, ya están legibles en la foto.
+- **Cédula del paciente = referencia viva** a `perfil_paciente.foto_cedula_path` (HU-02) — nunca se copia a la solicitud.
 - `direccion_entrega` se precarga del perfil del Paciente (HU-02) pero es un valor propio de cada solicitud, no una referencia viva.
 - Segundo uso de `RolesGuard` (`@Roles('PACIENTE')`), después de HU-08.
 
-233/233 tests pasando.
+240/240 tests pasando.

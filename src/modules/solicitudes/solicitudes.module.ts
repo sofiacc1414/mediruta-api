@@ -6,6 +6,7 @@ import { CrearSolicitudUseCase } from './application/use-cases/crear-solicitud.u
 import { EnviarSolicitudUseCase } from './application/use-cases/enviar-solicitud.use-case';
 import { ListarSolicitudesUseCase } from './application/use-cases/listar-solicitudes.use-case';
 import { ObtenerSolicitudUseCase } from './application/use-cases/obtener-solicitud.use-case';
+import { SubirRecetaUseCase } from './application/use-cases/subir-receta.use-case';
 import { SolicitudRepositoryPort } from './domain/ports/solicitud.repository.port';
 import { PostgresSolicitudRepository } from './infrastructure/adapters/postgres-solicitud.repository';
 import { SolicitudesController } from './infrastructure/controllers/solicitudes.controller';
@@ -21,6 +22,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     ListarSolicitudesUseCase,
     ObtenerSolicitudUseCase,
     ActualizarSolicitudUseCase,
+    SubirRecetaUseCase,
     EnviarSolicitudUseCase,
     CancelarSolicitudUseCase,
     {

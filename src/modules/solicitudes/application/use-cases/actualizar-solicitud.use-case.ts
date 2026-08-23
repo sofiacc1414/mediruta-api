@@ -1,18 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import {
-  DatosSolicitud,
+  Medicamento,
   SolicitudRepositoryPort,
 } from '../../domain/ports/solicitud.repository.port';
 
-export type ActualizarSolicitudCommand = DatosSolicitud & {
+export type ActualizarSolicitudCommand = {
   pacienteId: string;
   solicitudId: string;
+  medicamentos: Medicamento[];
+  recetaFechaExpedicion: string | null;
+  direccionEntrega: string | null;
 };
 
 export const MENSAJE_SOLICITUD_ACTUALIZADA = 'Tu solicitud fue actualizada.';
 
-/** G04 — editar. Solo si sigue en Borrador y es del dueño. */
+/** G04 — editar. Solo si sigue en Borrador y es del dueño. Reemplaza
+ * todos los medicamentos por los recibidos (la App reenvía la lista
+ * completa en cada guardado). */
 @Injectable()
 export class ActualizarSolicitudUseCase {
   constructor(private readonly solicitudes: SolicitudRepositoryPort) {}
@@ -20,11 +25,12 @@ export class ActualizarSolicitudUseCase {
   async execute(
     command: ActualizarSolicitudCommand,
   ): Promise<{ message: string }> {
-    const { pacienteId, solicitudId, ...datos } = command;
     const actualizado = await this.solicitudes.actualizar(
-      pacienteId,
-      solicitudId,
-      datos,
+      command.pacienteId,
+      command.solicitudId,
+      command.medicamentos,
+      command.recetaFechaExpedicion,
+      command.direccionEntrega,
     );
     if (!actualizado) {
       throw new SolicitudNoEncontradaError();

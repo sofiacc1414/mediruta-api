@@ -6,8 +6,10 @@ describe('ListarSolicitudesUseCase', () => {
     crear: jest.fn(),
     listar: jest.fn(),
     obtener: jest.fn(),
+    listarMedicamentos: jest.fn(),
     listarHistorial: jest.fn(),
     actualizar: jest.fn(),
+    actualizarReceta: jest.fn(),
     enviar: jest.fn(),
     cancelar: jest.fn(),
   };
@@ -21,7 +23,6 @@ describe('ListarSolicitudesUseCase', () => {
     const lista = [
       {
         id: 'solicitud-uuid',
-        medicamentoNombre: 'Acetaminofén',
         estado: 'borrador' as const,
         creadoEn: '2026-08-20T10:00:00.000Z',
       },

@@ -1,5 +1,11 @@
+import { AlmacenamientoArchivosPort } from '../../../usuarios/domain/ports/almacenamiento-archivos.port';
+import {
+  BUCKET_PERFILES,
+  URL_FIRMADA_EXPIRA_SEGUNDOS,
+} from '../../../usuarios/application/use-cases/subir-foto-cedula-paciente.use-case';
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import {
+  Medicamento,
   SolicitudDetalle,
   SolicitudRepositoryPort,
 } from '../../domain/ports/solicitud.repository.port';
@@ -10,57 +16,98 @@ describe('ObtenerSolicitudUseCase', () => {
     crear: jest.fn(),
     listar: jest.fn(),
     obtener: jest.fn(),
+    listarMedicamentos: jest.fn(),
     listarHistorial: jest.fn(),
     actualizar: jest.fn(),
+    actualizarReceta: jest.fn(),
     enviar: jest.fn(),
     cancelar: jest.fn(),
   };
-  const useCase = new ObtenerSolicitudUseCase(solicitudes);
+  const almacenamiento: AlmacenamientoArchivosPort = {
+    subir: jest.fn(),
+    obtenerUrlFirmada: jest.fn(),
+  };
+  const useCase = new ObtenerSolicitudUseCase(solicitudes, almacenamiento);
 
   beforeEach(() => {
     jest.resetAllMocks();
+    (almacenamiento.obtenerUrlFirmada as jest.Mock).mockImplementation(
+      (_bucket: string, path: string) =>
+        Promise.resolve(`https://firmada.test/${path}`),
+    );
+    (solicitudes.listarMedicamentos as jest.Mock).mockResolvedValue([]);
+    (solicitudes.listarHistorial as jest.Mock).mockResolvedValue([]);
   });
 
-  it('G03 — devuelve el detalle con el historial de estados', async () => {
+  it('G03 — resuelve receta y cédula a URLs firmadas, e incluye medicamentos e historial', async () => {
     const detalle: SolicitudDetalle = {
       id: 'solicitud-uuid',
       estado: 'borrador',
-      medicamentoNombre: 'Acetaminofén',
-      medicamentoConcentracion: '500mg',
-      medicamentoFormaFarmaceutica: 'Tableta',
-      medicamentoCantidad: '30 tabletas',
-      medicamentoPosologia: 'Cada 8 horas por 7 días',
-      recetaMedicoNombre: 'Dra. Ana Pérez',
-      recetaMedicoRegistro: 'RM12345',
-      recetaIps: 'IPS Central',
+      recetaPath: 'solicitud/solicitud-uuid/receta.jpg',
       recetaFechaExpedicion: '2026-08-01',
       direccionEntrega: 'Calle 1 #2-3',
       creadoEn: '2026-08-20T10:00:00.000Z',
       enviadoEn: null,
       canceladoEn: null,
+      cedulaPath: 'paciente/usuario-uuid/cedula.jpg',
     };
+    const medicamentos: Medicamento[] = [
+      {
+        nombre: 'Acetaminofén',
+        concentracion: '500mg',
+        formaFarmaceutica: 'Tableta',
+        cantidad: '30 tabletas',
+        posologia: 'Cada 8 horas por 7 días',
+      },
+    ];
     const historial = [
       { estado: 'borrador' as const, creadoEn: '2026-08-20T10:00:00.000Z' },
     ];
     (solicitudes.obtener as jest.Mock).mockResolvedValue(detalle);
+    (solicitudes.listarMedicamentos as jest.Mock).mockResolvedValue(
+      medicamentos,
+    );
     (solicitudes.listarHistorial as jest.Mock).mockResolvedValue(historial);
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
-    expect(resultado).toEqual({ ...detalle, historial });
-    expect(solicitudes.obtener).toHaveBeenCalledWith(
-      'paciente-uuid',
-      'solicitud-uuid',
+    expect(resultado.recetaUrl).toBe(
+      'https://firmada.test/solicitud/solicitud-uuid/receta.jpg',
     );
-    expect(solicitudes.listarHistorial).toHaveBeenCalledWith(
-      'paciente-uuid',
-      'solicitud-uuid',
+    expect(resultado.cedulaUrl).toBe(
+      'https://firmada.test/paciente/usuario-uuid/cedula.jpg',
     );
+    expect(resultado.medicamentos).toBe(medicamentos);
+    expect(resultado.historial).toBe(historial);
+    expect(almacenamiento.obtenerUrlFirmada).toHaveBeenCalledWith(
+      BUCKET_PERFILES,
+      'solicitud/solicitud-uuid/receta.jpg',
+      URL_FIRMADA_EXPIRA_SEGUNDOS,
+    );
+  });
+
+  it('recetaUrl/cedulaUrl quedan null si no hay path', async () => {
+    (solicitudes.obtener as jest.Mock).mockResolvedValue({
+      id: 'solicitud-uuid',
+      estado: 'borrador',
+      recetaPath: null,
+      recetaFechaExpedicion: null,
+      direccionEntrega: null,
+      creadoEn: '2026-08-20T10:00:00.000Z',
+      enviadoEn: null,
+      canceladoEn: null,
+      cedulaPath: null,
+    });
+
+    const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
+
+    expect(resultado.recetaUrl).toBeNull();
+    expect(resultado.cedulaUrl).toBeNull();
+    expect(almacenamiento.obtenerUrlFirmada).not.toHaveBeenCalled();
   });
 
   it('lanza SolicitudNoEncontradaError si no existe o no es del dueño', async () => {
     (solicitudes.obtener as jest.Mock).mockResolvedValue(null);
-    (solicitudes.listarHistorial as jest.Mock).mockResolvedValue([]);
 
     await expect(
       useCase.execute('paciente-uuid', 'solicitud-uuid'),

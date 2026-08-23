@@ -1,50 +1,25 @@
-import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsDateString,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 import { EsFechaPasada } from '../../../usuarios/infrastructure/dtos/es-fecha-pasada.validator';
+import { MedicamentoDto } from './medicamento.dto';
 
-/** Se usa tanto para crear (G01) como para editar (G04) una solicitud —
- * mismos 10 campos en los dos casos. Todos opcionales a propósito: un
- * Borrador puede estar incompleto (se completa de a poco); la
- * obligatoriedad recién se exige al enviar (G05, del lado de la BD). */
+/** Se usa tanto para crear (G01) como para editar (G04) una solicitud.
+ * La foto de la receta NO va acá — tiene su propio endpoint multipart
+ * (POST /solicitudes/:id/receta), mismo patrón que las fotos de HU-02.
+ * Todo opcional a propósito: un Borrador puede estar incompleto. */
 export class DatosSolicitudDto {
   @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  medicamentoNombre?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  medicamentoConcentracion?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  medicamentoFormaFarmaceutica?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  medicamentoCantidad?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(500)
-  medicamentoPosologia?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  recetaMedicoNombre?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  recetaMedicoRegistro?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  recetaIps?: string;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MedicamentoDto)
+  medicamentos?: MedicamentoDto[];
 
   @IsOptional()
   @IsDateString()

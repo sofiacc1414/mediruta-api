@@ -7,6 +7,7 @@ import {
 import { Response } from 'express';
 import { DocumentacionIncompletaError } from '../../../domiciliarios/domain/errors/documentacion-incompleta.error';
 import { DomiciliarioNoEncontradoError } from '../../../domiciliarios/domain/errors/domiciliario-no-encontrado.error';
+import { PerfilIncompletoError } from '../../../solicitudes/domain/errors/perfil-incompleto.error';
 import { SolicitudIncompletaError } from '../../../solicitudes/domain/errors/solicitud-incompleta.error';
 import { SolicitudNoEncontradaError } from '../../../solicitudes/domain/errors/solicitud-no-encontrada.error';
 import { CambioContrasenaInvalidoError } from '../../domain/errors/cambio-contrasena-invalido.error';
@@ -33,6 +34,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   DomiciliarioNoEncontradoError,
   SolicitudIncompletaError,
   SolicitudNoEncontradaError,
+  PerfilIncompletoError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -58,7 +60,10 @@ export class DominioHttpFilter implements ExceptionFilter {
       return;
     }
 
-    if (exception instanceof RolNoAutorizadoError) {
+    if (
+      exception instanceof RolNoAutorizadoError ||
+      exception instanceof PerfilIncompletoError
+    ) {
       response.status(HttpStatus.FORBIDDEN).json({
         statusCode: HttpStatus.FORBIDDEN,
         message: exception.message,

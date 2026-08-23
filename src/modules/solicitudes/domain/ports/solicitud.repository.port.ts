@@ -1,37 +1,48 @@
 export type EstadoSolicitud = 'borrador' | 'pendiente_revision' | 'cancelada';
 
+export type Medicamento = {
+  nombre: string | null;
+  concentracion: string | null;
+  formaFarmaceutica: string | null;
+  cantidad: string | null;
+  posologia: string | null;
+};
+
 export type DatosSolicitud = {
-  medicamentoNombre: string | null;
-  medicamentoConcentracion: string | null;
-  medicamentoFormaFarmaceutica: string | null;
-  medicamentoCantidad: string | null;
-  medicamentoPosologia: string | null;
-  recetaMedicoNombre: string | null;
-  recetaMedicoRegistro: string | null;
-  recetaIps: string | null;
+  medicamentos: Medicamento[];
   recetaFechaExpedicion: string | null;
   direccionEntrega: string | null;
 };
 
 export type SolicitudResumen = {
   id: string;
-  medicamentoNombre: string | null;
   estado: EstadoSolicitud;
   creadoEn: string;
 };
 
-export type SolicitudDetalle = DatosSolicitud & {
+export type SolicitudDetalle = {
   id: string;
   estado: EstadoSolicitud;
+  recetaPath: string | null;
+  recetaFechaExpedicion: string | null;
+  direccionEntrega: string | null;
   creadoEn: string;
   enviadoEn: string | null;
   canceladoEn: string | null;
+  /** Referencia viva a `perfil_paciente.foto_cedula_path` (HU-02) —
+   * nunca se copia a la solicitud. */
+  cedulaPath: string | null;
 };
 
 export type EventoHistorial = {
   estado: EstadoSolicitud;
   creadoEn: string;
 };
+
+export type ResultadoCrear =
+  | { resultado: 'creada'; id: string }
+  | { resultado: 'no_autorizado' }
+  | { resultado: 'sin_cedula' };
 
 export type ResultadoEnviar =
   | { resultado: 'enviada' }
@@ -45,11 +56,15 @@ export type ResultadoCancelar = 'cancelada' | 'no_encontrada';
  * expone la de otro paciente) — ver comentarios de las funciones app.*
  * en la migración. */
 export abstract class SolicitudRepositoryPort {
-  /** G01. `null` si la cuenta no tiene rol PACIENTE. */
+  /** G01. `sin_cedula` si el perfil del paciente no tiene foto de
+   * cédula cargada todavía (HU-02) — no se puede crear sin eso. */
   abstract crear(
     pacienteId: string,
-    datos: DatosSolicitud,
-  ): Promise<string | null>;
+    medicamentos: Medicamento[],
+    recetaPath: string | null,
+    recetaFechaExpedicion: string | null,
+    direccionEntrega: string | null,
+  ): Promise<ResultadoCrear>;
 
   /** G02. */
   abstract listar(pacienteId: string): Promise<SolicitudResumen[]>;
@@ -60,17 +75,33 @@ export abstract class SolicitudRepositoryPort {
     solicitudId: string,
   ): Promise<SolicitudDetalle | null>;
 
+  /** G03 — medicamentos de la solicitud, en el orden en que se cargaron. */
+  abstract listarMedicamentos(
+    pacienteId: string,
+    solicitudId: string,
+  ): Promise<Medicamento[]>;
+
   /** G03 — historial de estados, más antiguo primero. */
   abstract listarHistorial(
     pacienteId: string,
     solicitudId: string,
   ): Promise<EventoHistorial[]>;
 
-  /** G04 — solo si está en Borrador y es del dueño. */
+  /** G04 — solo si está en Borrador y es del dueño. Reemplaza todos los
+   * medicamentos por los recibidos. */
   abstract actualizar(
     pacienteId: string,
     solicitudId: string,
-    datos: DatosSolicitud,
+    medicamentos: Medicamento[],
+    recetaFechaExpedicion: string | null,
+    direccionEntrega: string | null,
+  ): Promise<boolean>;
+
+  /** Sube/reemplaza la foto de la receta (ya subida a Storage). */
+  abstract actualizarReceta(
+    pacienteId: string,
+    solicitudId: string,
+    path: string,
   ): Promise<boolean>;
 
   /** G05. */

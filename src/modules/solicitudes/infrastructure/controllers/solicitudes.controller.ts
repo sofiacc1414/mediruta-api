@@ -5,12 +5,16 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseFilePipeBuilder,
   ParseUUIDPipe,
   Patch,
   Post,
+  UploadedFile,
   UseFilters,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { IdentidadAutenticada } from '../../../usuarios/domain/identidad-autenticada';
 import { Roles } from '../../../usuarios/infrastructure/decorators/roles.decorator';
 import { UsuarioAutenticado } from '../../../usuarios/infrastructure/decorators/usuario-autenticado.decorator';
@@ -23,22 +27,39 @@ import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicit
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
 import { ListarSolicitudesUseCase } from '../../application/use-cases/listar-solicitudes.use-case';
 import { ObtenerSolicitudUseCase } from '../../application/use-cases/obtener-solicitud.use-case';
-import { DatosSolicitud } from '../../domain/ports/solicitud.repository.port';
+import { SubirRecetaUseCase } from '../../application/use-cases/subir-receta.use-case';
+import { Medicamento } from '../../domain/ports/solicitud.repository.port';
 import { DatosSolicitudDto } from '../dtos/datos-solicitud.dto';
+import { MedicamentoDto } from '../dtos/medicamento.dto';
 
-function datosDesde(dto: DatosSolicitudDto): DatosSolicitud {
-  return {
-    medicamentoNombre: dto.medicamentoNombre ?? null,
-    medicamentoConcentracion: dto.medicamentoConcentracion ?? null,
-    medicamentoFormaFarmaceutica: dto.medicamentoFormaFarmaceutica ?? null,
-    medicamentoCantidad: dto.medicamentoCantidad ?? null,
-    medicamentoPosologia: dto.medicamentoPosologia ?? null,
-    recetaMedicoNombre: dto.recetaMedicoNombre ?? null,
-    recetaMedicoRegistro: dto.recetaMedicoRegistro ?? null,
-    recetaIps: dto.recetaIps ?? null,
-    recetaFechaExpedicion: dto.recetaFechaExpedicion ?? null,
-    direccionEntrega: dto.direccionEntrega ?? null,
-  };
+const VALIDADOR_ARCHIVO = new ParseFilePipeBuilder()
+  .addFileTypeValidator({
+    fileType: /^(image\/jpeg|image\/png|application\/pdf)$/,
+  })
+  .addMaxSizeValidator({ maxSize: 5 * 1024 * 1024 })
+  .build({ errorHttpStatusCode: HttpStatus.BAD_REQUEST });
+
+function medicamentosDesde(dtos: MedicamentoDto[] | undefined): Medicamento[] {
+  return (dtos ?? []).map((dto) => ({
+    nombre: dto.nombre ?? null,
+    concentracion: dto.concentracion ?? null,
+    formaFarmaceutica: dto.formaFarmaceutica ?? null,
+    cantidad: dto.cantidad ?? null,
+    posologia: dto.posologia ?? null,
+  }));
+}
+
+function extensionDesde(mimetype: string): string {
+  switch (mimetype) {
+    case 'image/jpeg':
+      return 'jpg';
+    case 'image/png':
+      return 'png';
+    case 'application/pdf':
+      return 'pdf';
+    default:
+      return 'bin';
+  }
 }
 
 /** HU-03 — solo Paciente. */
@@ -52,6 +73,7 @@ export class SolicitudesController {
     private readonly listarSolicitudes: ListarSolicitudesUseCase,
     private readonly obtenerSolicitud: ObtenerSolicitudUseCase,
     private readonly actualizarSolicitud: ActualizarSolicitudUseCase,
+    private readonly subirReceta: SubirRecetaUseCase,
     private readonly enviarSolicitud: EnviarSolicitudUseCase,
     private readonly cancelarSolicitud: CancelarSolicitudUseCase,
   ) {}
@@ -64,7 +86,9 @@ export class SolicitudesController {
   ) {
     return this.crearSolicitud.execute({
       pacienteId: identidad.usuarioId,
-      ...datosDesde(dto),
+      medicamentos: medicamentosDesde(dto.medicamentos),
+      recetaFechaExpedicion: dto.recetaFechaExpedicion ?? null,
+      direccionEntrega: dto.direccionEntrega ?? null,
     });
   }
 
@@ -93,7 +117,26 @@ export class SolicitudesController {
     return this.actualizarSolicitud.execute({
       pacienteId: identidad.usuarioId,
       solicitudId,
-      ...datosDesde(dto),
+      medicamentos: medicamentosDesde(dto.medicamentos),
+      recetaFechaExpedicion: dto.recetaFechaExpedicion ?? null,
+      direccionEntrega: dto.direccionEntrega ?? null,
+    });
+  }
+
+  @Post(':id/receta')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('archivo'))
+  subirFotoReceta(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+    @UploadedFile(VALIDADOR_ARCHIVO) archivo: Express.Multer.File,
+  ) {
+    return this.subirReceta.execute({
+      pacienteId: identidad.usuarioId,
+      solicitudId,
+      contenido: archivo.buffer,
+      contentType: archivo.mimetype,
+      extension: extensionDesde(archivo.mimetype),
     });
   }
 

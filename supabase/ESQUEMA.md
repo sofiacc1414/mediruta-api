@@ -322,33 +322,45 @@ crean una tabla de documentos paralela: leen `perfil_domiciliario` (HU-02) tal c
 
 **Migración:** `20260823030500_create_domiciliarios_admin_functions.sql`
 
-## Tablas `solicitudes` y `historial_solicitud` (HU-03)
+## Tablas `solicitudes`, `solicitud_medicamentos` y `historial_solicitud` (HU-03)
 
-`solicitudes`: una fila por solicitud de medicamento del Paciente. Campos de
-medicamento (`medicamento_nombre`, `medicamento_concentracion`,
-`medicamento_forma_farmaceutica`, `medicamento_cantidad`, `medicamento_posologia`) y de
-receta médica (`receta_medico_nombre`, `receta_medico_registro`, `receta_ips`,
-`receta_fecha_expedicion`) — datos tipeados, no una foto (eso es HU-05; el OCR es
-HU-04). `direccion_entrega` se precarga desde `perfil_paciente.direccion` (HU-02) pero
-es un valor propio de la solicitud, no una referencia viva — si el perfil cambia
-después, la solicitud ya creada conserva la dirección que tenía. Todos los campos son
-nullable: un Borrador puede estar incompleto por diseño, se completa de a poco (G04) y
-recién se exige todo obligatorio al enviar (G05).
+Modelo reworkeado tras revisión en vivo de la primera versión (una fórmula real trae
+varios medicamentos, y la receta se sube como foto — no se tipea).
+
+`solicitudes`: una fila por solicitud. `receta_path` — path del Storage a la **foto** de
+la fórmula completa (bucket `perfiles`, mismo patrón que HU-02/HU-08); no se tipean
+médico/registro médico/IPS — esos datos ya están legibles en la foto. Se conserva
+`receta_fecha_expedicion` (tipeada, para detectar recetas vencidas sin abrir la foto).
+`direccion_entrega` se precarga desde `perfil_paciente.direccion` (HU-02) pero es un
+valor propio de la solicitud, no una referencia viva — si el perfil cambia después, la
+solicitud ya creada conserva la dirección que tenía. **La cédula del paciente NO es
+una columna acá** — es una referencia viva a `perfil_paciente.foto_cedula_path`,
+resuelta al consultar el detalle (`app.obtener_solicitud`, `LEFT JOIN`).
 
 `estado` — check `in ('borrador', 'pendiente_revision', 'cancelada')`. **HU-06** (revisión
 del admin) va a ampliar este check con `pendiente_correccion`/`aprobada`/`rechazada`
 sobre solicitudes ya enviadas — no se agregan ahora porque todavía no existe quién los
 use.
 
+`solicitud_medicamentos`: una fila por medicamento de la solicitud (`nombre`,
+`concentracion`, `forma_farmaceutica`, `cantidad`, `posologia`, todos nullable — una
+línea puede estar a medio llenar en un Borrador). El orden de aparición se resuelve
+ordenando por `creado_en` — no hay columna `orden` aparte porque
+`app.actualizar_solicitud` reemplaza todas las filas en cada guardado (borra e inserta
+de nuevo), la App siempre reenvía la lista completa.
+
 `historial_solicitud`: insert-only (mismo espíritu que `validaciones_domiciliario` de
 HU-08) — cada cambio de estado de una solicitud inserta una fila acá, nunca se
 actualiza ninguna. Resuelve G03 ("historial de estados disponible") y va a seguir
 creciendo con HU-06/HU-09/HU-10/HU-11 sin cambiar de forma.
 
-**RLS:** ambas `ENABLE`+`FORCE`, sin policies — todo el acceso vía funciones `app.*`.
+**RLS:** las 3 `ENABLE`+`FORCE`, sin policies — todo el acceso vía funciones `app.*`.
 
 **Migraciones:** `20260823040000_create_solicitudes.sql`,
-`20260823040500_create_historial_solicitud.sql`.
+`20260823040500_create_historial_solicitud.sql`,
+`20260823050000_alter_solicitudes_receta_medicamentos.sql` (rework — DROP de las 8
+columnas de medicamento/receta tipeada, ADD `receta_path`),
+`20260823050500_create_solicitud_medicamentos.sql`.
 
 ## Funciones de solicitudes (HU-03)
 
@@ -356,14 +368,20 @@ Mismo patrón de seguridad que el resto de la API. A diferencia de las de HU-08 
 el admin consulta sobre *otra* cuenta), acá `p_paciente_id` es siempre
 `identidad.usuarioId` del propio JWT — mismo nivel de confianza que
 `app.obtener_perfil`, sin necesitar una verificación de rol aparte en cada función (el
-`RolesGuard` de la API, `@Roles('PACIENTE')`, ya lo exige antes de llegar acá).
+`RolesGuard` de la API, `@Roles('PACIENTE')`, ya lo exige antes de llegar acá). Los
+medicamentos viajan como `jsonb` (array), descompuestos con `jsonb_to_recordset` — sin
+SQL dinámico.
 
-- **`app.crear_solicitud(p_paciente_id, ...9 campos..., p_direccion_entrega)`** → `uuid`, `NULL` si la cuenta no tiene rol `PACIENTE` (G01). Inserta en `estado='borrador'` + primera fila en `historial_solicitud`.
-- **`app.listar_solicitudes(p_paciente_id)`** → resumen (id, medicamento_nombre, estado, creado_en) de las propias, más recientes primero (G02).
-- **`app.obtener_solicitud(p_paciente_id, p_solicitud_id)`** → fila completa; el `WHERE paciente_id = p_paciente_id` es la verificación de dueño (G03).
+- **`app.crear_solicitud(p_paciente_id, p_medicamentos jsonb, p_receta_path, p_receta_fecha_expedicion, p_direccion_entrega)`** → `(resultado text, id uuid)`, `resultado` en `creada`\|`no_autorizado`\|**`sin_cedula`** (G01) — bloqueo nuevo: si `perfil_paciente.foto_cedula_path` es `NULL`, no crea nada. Inserta la solicitud + sus medicamentos + primera fila en `historial_solicitud`.
+- **`app.listar_solicitudes(p_paciente_id)`** → resumen (id, estado, creado_en) de las propias, más recientes primero (G02) — ya no trae datos de medicamento, eso vive en el detalle.
+- **`app.obtener_solicitud(p_paciente_id, p_solicitud_id)`** → fila completa + `cedula_path` (`LEFT JOIN perfil_paciente`, referencia viva); el `WHERE paciente_id = p_paciente_id` es la verificación de dueño (G03).
+- **`app.listar_medicamentos_solicitud(p_paciente_id, p_solicitud_id)`** → medicamentos de la solicitud, en el orden en que se cargaron (G03) — aparte del detalle porque es 0..N filas.
 - **`app.listar_historial_solicitud(p_paciente_id, p_solicitud_id)`** → eventos de `historial_solicitud`, más antiguo primero (G03).
-- **`app.actualizar_solicitud(p_paciente_id, p_solicitud_id, ...)`** → `boolean`. Solo si `estado='borrador'` y es del dueño (G04).
-- **`app.enviar_solicitud(p_paciente_id, p_solicitud_id)`** → `(resultado text, faltantes text[])`, `resultado` en `enviada`\|`incompleta`\|`no_encontrada` — mismo patrón que `app.aprobar_domiciliario` de HU-08 (G05).
+- **`app.actualizar_solicitud(p_paciente_id, p_solicitud_id, p_medicamentos jsonb, p_receta_fecha_expedicion, p_direccion_entrega)`** → `boolean`. Solo si `estado='borrador'` y es del dueño (G04). Reemplaza todos los medicamentos (`DELETE` + `INSERT`) por los del array recibido.
+- **`app.actualizar_receta_solicitud(p_paciente_id, p_solicitud_id, p_path)`** → `boolean`. Sube/reemplaza la foto de la receta — aparte de `actualizar_solicitud` porque la sube la API después de subir el archivo a Storage (dos pasos, mismo patrón que `actualizar_foto_cedula_paciente` de HU-02).
+- **`app.enviar_solicitud(p_paciente_id, p_solicitud_id)`** → `(resultado text, faltantes text[])`, `resultado` en `enviada`\|`incompleta`\|`no_encontrada` (G05). `incompleta` exige: al menos un medicamento con sus 5 campos completos, foto de receta, fecha de expedición y dirección — la cédula NO se revisa acá, ya se exigió en `crear_solicitud`.
+
+**Migración:** `20260823051000_update_solicitudes_functions.sql`.
 - **`app.cancelar_solicitud(p_paciente_id, p_solicitud_id)`** → `text`, `cancelada`\|`no_encontrada`. Por ahora solo exige que no esté ya cancelada — el chequeo de "no recogida por un domiciliario" se agrega cuando exista ese estado (HU-09/10) (G06).
 
 **Migración:** `20260823041000_create_solicitudes_functions.sql`

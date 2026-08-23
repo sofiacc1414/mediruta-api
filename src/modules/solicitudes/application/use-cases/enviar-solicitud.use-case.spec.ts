@@ -11,8 +11,10 @@ describe('EnviarSolicitudUseCase', () => {
     crear: jest.fn(),
     listar: jest.fn(),
     obtener: jest.fn(),
+    listarMedicamentos: jest.fn(),
     listarHistorial: jest.fn(),
     actualizar: jest.fn(),
+    actualizarReceta: jest.fn(),
     enviar: jest.fn(),
     cancelar: jest.fn(),
   };

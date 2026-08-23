@@ -1,73 +1,90 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import {
-  DatosSolicitud,
   EstadoSolicitud,
   EventoHistorial,
+  Medicamento,
   ResultadoCancelar,
+  ResultadoCrear,
   ResultadoEnviar,
   SolicitudDetalle,
   SolicitudRepositoryPort,
   SolicitudResumen,
 } from '../../domain/ports/solicitud.repository.port';
 
-type FilaResumen = {
-  id: string;
-  medicamento_nombre: string | null;
-  estado: EstadoSolicitud;
-  creado_en: string;
-};
+type FilaResumen = { id: string; estado: EstadoSolicitud; creado_en: string };
 
 type FilaDetalle = {
   id: string;
   estado: EstadoSolicitud;
-  medicamento_nombre: string | null;
-  medicamento_concentracion: string | null;
-  medicamento_forma_farmaceutica: string | null;
-  medicamento_cantidad: string | null;
-  medicamento_posologia: string | null;
-  receta_medico_nombre: string | null;
-  receta_medico_registro: string | null;
-  receta_ips: string | null;
+  receta_path: string | null;
   receta_fecha_expedicion: string | null;
   direccion_entrega: string | null;
   creado_en: string;
   enviado_en: string | null;
   cancelado_en: string | null;
+  cedula_path: string | null;
+};
+
+type FilaMedicamento = {
+  nombre: string | null;
+  concentracion: string | null;
+  forma_farmaceutica: string | null;
+  cantidad: string | null;
+  posologia: string | null;
 };
 
 type FilaHistorial = { estado: EstadoSolicitud; creado_en: string };
 
+type FilaCrear = { resultado: string; id: string | null };
+
 type FilaEnviar = { resultado: string; faltantes: string[] | null };
 
 /** Todo acotado al paciente dueño (nunca a otra cuenta) — pacienteId
- * siempre es identidad.usuarioId del JWT, no algo que mande el cliente. */
+ * siempre es identidad.usuarioId del JWT, no algo que mande el cliente.
+ *
+ * Los medicamentos viajan como jsonb: `pg` no serializa objetos/arrays
+ * JS automáticamente en los parámetros, así que se hace
+ * `JSON.stringify` acá antes de mandarlos — la función app.* los
+ * castea con `::jsonb` y los descompone con `jsonb_to_recordset`. */
 @Injectable()
 export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
   constructor(private readonly db: DatabaseService) {
     super();
   }
 
-  crear(pacienteId: string, datos: DatosSolicitud): Promise<string | null> {
+  crear(
+    pacienteId: string,
+    medicamentos: Medicamento[],
+    recetaPath: string | null,
+    recetaFechaExpedicion: string | null,
+    direccionEntrega: string | null,
+  ): Promise<ResultadoCrear> {
     return this.db.withUserContext(pacienteId, async (client) => {
-      const result = await client.query<{ crear_solicitud: string | null }>(
-        `select app.crear_solicitud($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-           as crear_solicitud`,
+      const result = await client.query<FilaCrear>(
+        `select * from app.crear_solicitud($1, $2::jsonb, $3, $4, $5)`,
         [
           pacienteId,
-          datos.medicamentoNombre,
-          datos.medicamentoConcentracion,
-          datos.medicamentoFormaFarmaceutica,
-          datos.medicamentoCantidad,
-          datos.medicamentoPosologia,
-          datos.recetaMedicoNombre,
-          datos.recetaMedicoRegistro,
-          datos.recetaIps,
-          datos.recetaFechaExpedicion,
-          datos.direccionEntrega,
+          JSON.stringify(medicamentos),
+          recetaPath,
+          recetaFechaExpedicion,
+          direccionEntrega,
         ],
       );
-      return result.rows[0].crear_solicitud;
+      const fila = result.rows[0];
+
+      if (fila.resultado === 'creada' && fila.id) {
+        return { resultado: 'creada', id: fila.id };
+      }
+      if (
+        fila.resultado === 'no_autorizado' ||
+        fila.resultado === 'sin_cedula'
+      ) {
+        return { resultado: fila.resultado };
+      }
+      throw new Error(
+        `Resultado inesperado de app.crear_solicitud: ${fila.resultado}`,
+      );
     });
   }
 
@@ -79,7 +96,6 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       );
       return result.rows.map((fila) => ({
         id: fila.id,
-        medicamentoNombre: fila.medicamento_nombre,
         estado: fila.estado,
         creadoEn: fila.creado_en,
       }));
@@ -104,20 +120,33 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       return {
         id: fila.id,
         estado: fila.estado,
-        medicamentoNombre: fila.medicamento_nombre,
-        medicamentoConcentracion: fila.medicamento_concentracion,
-        medicamentoFormaFarmaceutica: fila.medicamento_forma_farmaceutica,
-        medicamentoCantidad: fila.medicamento_cantidad,
-        medicamentoPosologia: fila.medicamento_posologia,
-        recetaMedicoNombre: fila.receta_medico_nombre,
-        recetaMedicoRegistro: fila.receta_medico_registro,
-        recetaIps: fila.receta_ips,
+        recetaPath: fila.receta_path,
         recetaFechaExpedicion: fila.receta_fecha_expedicion,
         direccionEntrega: fila.direccion_entrega,
         creadoEn: fila.creado_en,
         enviadoEn: fila.enviado_en,
         canceladoEn: fila.cancelado_en,
+        cedulaPath: fila.cedula_path,
       };
+    });
+  }
+
+  listarMedicamentos(
+    pacienteId: string,
+    solicitudId: string,
+  ): Promise<Medicamento[]> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<FilaMedicamento>(
+        'select * from app.listar_medicamentos_solicitud($1, $2)',
+        [pacienteId, solicitudId],
+      );
+      return result.rows.map((fila) => ({
+        nombre: fila.nombre,
+        concentracion: fila.concentracion,
+        formaFarmaceutica: fila.forma_farmaceutica,
+        cantidad: fila.cantidad,
+        posologia: fila.posologia,
+      }));
     });
   }
 
@@ -140,29 +169,39 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
   actualizar(
     pacienteId: string,
     solicitudId: string,
-    datos: DatosSolicitud,
+    medicamentos: Medicamento[],
+    recetaFechaExpedicion: string | null,
+    direccionEntrega: string | null,
   ): Promise<boolean> {
     return this.db.withUserContext(pacienteId, async (client) => {
       const result = await client.query<{ actualizar_solicitud: boolean }>(
-        `select app.actualizar_solicitud(
-           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
-         ) as actualizar_solicitud`,
+        `select app.actualizar_solicitud($1, $2, $3::jsonb, $4, $5)
+           as actualizar_solicitud`,
         [
           pacienteId,
           solicitudId,
-          datos.medicamentoNombre,
-          datos.medicamentoConcentracion,
-          datos.medicamentoFormaFarmaceutica,
-          datos.medicamentoCantidad,
-          datos.medicamentoPosologia,
-          datos.recetaMedicoNombre,
-          datos.recetaMedicoRegistro,
-          datos.recetaIps,
-          datos.recetaFechaExpedicion,
-          datos.direccionEntrega,
+          JSON.stringify(medicamentos),
+          recetaFechaExpedicion,
+          direccionEntrega,
         ],
       );
       return result.rows[0].actualizar_solicitud;
+    });
+  }
+
+  actualizarReceta(
+    pacienteId: string,
+    solicitudId: string,
+    path: string,
+  ): Promise<boolean> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<{
+        actualizar_receta_solicitud: boolean;
+      }>(
+        'select app.actualizar_receta_solicitud($1, $2, $3) as actualizar_receta_solicitud',
+        [pacienteId, solicitudId, path],
+      );
+      return result.rows[0].actualizar_receta_solicitud;
     });
   }
 

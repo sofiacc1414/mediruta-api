@@ -1,6 +1,6 @@
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import {
-  DatosSolicitud,
+  Medicamento,
   SolicitudRepositoryPort,
 } from '../../domain/ports/solicitud.repository.port';
 import {
@@ -8,26 +8,25 @@ import {
   MENSAJE_SOLICITUD_ACTUALIZADA,
 } from './actualizar-solicitud.use-case';
 
-const DATOS: DatosSolicitud = {
-  medicamentoNombre: 'Acetaminofén',
-  medicamentoConcentracion: '500mg',
-  medicamentoFormaFarmaceutica: 'Tableta',
-  medicamentoCantidad: '30 tabletas',
-  medicamentoPosologia: 'Cada 8 horas por 7 días',
-  recetaMedicoNombre: 'Dra. Ana Pérez',
-  recetaMedicoRegistro: 'RM12345',
-  recetaIps: 'IPS Central',
-  recetaFechaExpedicion: '2026-08-01',
-  direccionEntrega: 'Calle 1 #2-3',
-};
+const MEDICAMENTOS: Medicamento[] = [
+  {
+    nombre: 'Acetaminofén',
+    concentracion: '500mg',
+    formaFarmaceutica: 'Tableta',
+    cantidad: '30 tabletas',
+    posologia: 'Cada 8 horas por 7 días',
+  },
+];
 
 describe('ActualizarSolicitudUseCase', () => {
   const solicitudes: SolicitudRepositoryPort = {
     crear: jest.fn(),
     listar: jest.fn(),
     obtener: jest.fn(),
+    listarMedicamentos: jest.fn(),
     listarHistorial: jest.fn(),
     actualizar: jest.fn(),
+    actualizarReceta: jest.fn(),
     enviar: jest.fn(),
     cancelar: jest.fn(),
   };
@@ -43,14 +42,18 @@ describe('ActualizarSolicitudUseCase', () => {
     const resultado = await useCase.execute({
       pacienteId: 'paciente-uuid',
       solicitudId: 'solicitud-uuid',
-      ...DATOS,
+      medicamentos: MEDICAMENTOS,
+      recetaFechaExpedicion: '2026-08-01',
+      direccionEntrega: 'Calle 1 #2-3',
     });
 
     expect(resultado).toEqual({ message: MENSAJE_SOLICITUD_ACTUALIZADA });
     expect(solicitudes.actualizar).toHaveBeenCalledWith(
       'paciente-uuid',
       'solicitud-uuid',
-      DATOS,
+      MEDICAMENTOS,
+      '2026-08-01',
+      'Calle 1 #2-3',
     );
   });
 
@@ -61,7 +64,9 @@ describe('ActualizarSolicitudUseCase', () => {
       useCase.execute({
         pacienteId: 'paciente-uuid',
         solicitudId: 'solicitud-uuid',
-        ...DATOS,
+        medicamentos: [],
+        recetaFechaExpedicion: null,
+        direccionEntrega: null,
       }),
     ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
   });
