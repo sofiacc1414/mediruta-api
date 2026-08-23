@@ -9,7 +9,7 @@ export type ActualizarSolicitudCommand = {
   pacienteId: string;
   solicitudId: string;
   medicamentos: Medicamento[];
-  recetaFechaExpedicion: string | null;
+  recetaFechaVencimiento: string | null;
   direccionEntrega: string | null;
 };
 
@@ -29,7 +29,7 @@ export class ActualizarSolicitudUseCase {
       command.pacienteId,
       command.solicitudId,
       command.medicamentos,
-      command.recetaFechaExpedicion,
+      command.recetaFechaVencimiento,
       command.direccionEntrega,
     );
     if (!actualizado) {

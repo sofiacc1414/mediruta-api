@@ -43,7 +43,7 @@ describe('ActualizarSolicitudUseCase', () => {
       pacienteId: 'paciente-uuid',
       solicitudId: 'solicitud-uuid',
       medicamentos: MEDICAMENTOS,
-      recetaFechaExpedicion: '2026-08-01',
+      recetaFechaVencimiento: '2026-08-01',
       direccionEntrega: 'Calle 1 #2-3',
     });
 
@@ -65,7 +65,7 @@ describe('ActualizarSolicitudUseCase', () => {
         pacienteId: 'paciente-uuid',
         solicitudId: 'solicitud-uuid',
         medicamentos: [],
-        recetaFechaExpedicion: null,
+        recetaFechaVencimiento: null,
         direccionEntrega: null,
       }),
     ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);

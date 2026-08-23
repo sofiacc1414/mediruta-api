@@ -9,7 +9,7 @@ import {
 export type CrearSolicitudCommand = {
   pacienteId: string;
   medicamentos: Medicamento[];
-  recetaFechaExpedicion: string | null;
+  recetaFechaVencimiento: string | null;
   direccionEntrega: string | null;
 };
 
@@ -31,7 +31,7 @@ export class CrearSolicitudUseCase {
       command.pacienteId,
       command.medicamentos,
       null,
-      command.recetaFechaExpedicion,
+      command.recetaFechaVencimiento,
       command.direccionEntrega,
     );
 

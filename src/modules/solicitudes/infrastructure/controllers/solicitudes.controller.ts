@@ -87,7 +87,7 @@ export class SolicitudesController {
     return this.crearSolicitud.execute({
       pacienteId: identidad.usuarioId,
       medicamentos: medicamentosDesde(dto.medicamentos),
-      recetaFechaExpedicion: dto.recetaFechaExpedicion ?? null,
+      recetaFechaVencimiento: dto.recetaFechaVencimiento ?? null,
       direccionEntrega: dto.direccionEntrega ?? null,
     });
   }
@@ -118,7 +118,7 @@ export class SolicitudesController {
       pacienteId: identidad.usuarioId,
       solicitudId,
       medicamentos: medicamentosDesde(dto.medicamentos),
-      recetaFechaExpedicion: dto.recetaFechaExpedicion ?? null,
+      recetaFechaVencimiento: dto.recetaFechaVencimiento ?? null,
       direccionEntrega: dto.direccionEntrega ?? null,
     });
   }

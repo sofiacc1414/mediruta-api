@@ -43,7 +43,7 @@ describe('CrearSolicitudUseCase', () => {
     const resultado = await useCase.execute({
       pacienteId: 'paciente-uuid',
       medicamentos: [],
-      recetaFechaExpedicion: null,
+      recetaFechaVencimiento: null,
       direccionEntrega: null,
     });
 
@@ -66,7 +66,7 @@ describe('CrearSolicitudUseCase', () => {
     await useCase.execute({
       pacienteId: 'paciente-uuid',
       medicamentos: UN_MEDICAMENTO,
-      recetaFechaExpedicion: '2026-08-01',
+      recetaFechaVencimiento: '2026-08-01',
       direccionEntrega: 'Calle 1 #2-3',
     });
 
@@ -88,7 +88,7 @@ describe('CrearSolicitudUseCase', () => {
       useCase.execute({
         pacienteId: 'paciente-uuid',
         medicamentos: [],
-        recetaFechaExpedicion: null,
+        recetaFechaVencimiento: null,
         direccionEntrega: null,
       }),
     ).rejects.toBeInstanceOf(RolNoAutorizadoError);
@@ -103,7 +103,7 @@ describe('CrearSolicitudUseCase', () => {
       useCase.execute({
         pacienteId: 'paciente-uuid',
         medicamentos: [],
-        recetaFechaExpedicion: null,
+        recetaFechaVencimiento: null,
         direccionEntrega: null,
       }),
     ).rejects.toBeInstanceOf(PerfilIncompletoError);

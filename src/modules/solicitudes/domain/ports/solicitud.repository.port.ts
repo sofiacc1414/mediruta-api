@@ -10,7 +10,7 @@ export type Medicamento = {
 
 export type DatosSolicitud = {
   medicamentos: Medicamento[];
-  recetaFechaExpedicion: string | null;
+  recetaFechaVencimiento: string | null;
   direccionEntrega: string | null;
 };
 
@@ -24,7 +24,7 @@ export type SolicitudDetalle = {
   id: string;
   estado: EstadoSolicitud;
   recetaPath: string | null;
-  recetaFechaExpedicion: string | null;
+  recetaFechaVencimiento: string | null;
   direccionEntrega: string | null;
   creadoEn: string;
   enviadoEn: string | null;
@@ -62,7 +62,7 @@ export abstract class SolicitudRepositoryPort {
     pacienteId: string,
     medicamentos: Medicamento[],
     recetaPath: string | null,
-    recetaFechaExpedicion: string | null,
+    recetaFechaVencimiento: string | null,
     direccionEntrega: string | null,
   ): Promise<ResultadoCrear>;
 
@@ -93,7 +93,7 @@ export abstract class SolicitudRepositoryPort {
     pacienteId: string,
     solicitudId: string,
     medicamentos: Medicamento[],
-    recetaFechaExpedicion: string | null,
+    recetaFechaVencimiento: string | null,
     direccionEntrega: string | null,
   ): Promise<boolean>;
 

@@ -17,7 +17,7 @@ const identidad = { usuarioId: 'paciente-desde-guard', sid: 'sid-desde-guard' };
 const DTO_VACIO: DatosSolicitudDto = {};
 const DATOS_VACIOS = {
   medicamentos: [],
-  recetaFechaExpedicion: null,
+  recetaFechaVencimiento: null,
   direccionEntrega: null,
 };
 
@@ -108,7 +108,7 @@ describe('SolicitudesController', () => {
           posologia: null,
         },
       ],
-      recetaFechaExpedicion: null,
+      recetaFechaVencimiento: null,
       direccionEntrega: null,
     });
   });

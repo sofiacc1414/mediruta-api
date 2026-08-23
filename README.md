@@ -91,10 +91,10 @@ medicamentos, y la receta se sube como foto, no se tipea):
 - `GET /solicitudes/:id` — detalle (medicamentos, receta y **cédula del paciente** como URLs firmadas) + historial de cambios de estado.
 - `PATCH /solicitudes/:id` — editar, solo mientras está en `borrador`. Reemplaza todos los medicamentos por los recibidos (la App reenvía la lista completa en cada guardado).
 - `POST /solicitudes/:id/receta` — sube/reemplaza la **foto** de la fórmula médica completa (multipart, misma validación por contenido real que HU-02).
-- `POST /solicitudes/:id/enviar` — pasa a `pendiente_revision` y bloquea la edición. Si falta algún medicamento completo, la foto de receta, la fecha de expedición o la dirección, responde `422` con la lista exacta de qué falta.
+- `POST /solicitudes/:id/enviar` — pasa a `pendiente_revision` y bloquea la edición. Si falta algún medicamento completo, la foto de receta, la fecha de vencimiento, la dirección, **o si la receta ya está vencida** (`receta_fecha_vencimiento` pasada), responde `422` con la lista exacta de qué falta.
 - `POST /solicitudes/:id/cancelar` — pasa a `cancelada`.
 - **Varios medicamentos por solicitud** (`solicitud_medicamentos`, tabla hija) — una fórmula real casi nunca trae uno solo.
-- **Receta = foto**, no texto — de los campos tipeados originales solo queda `receta_fecha_expedicion` (para detectar recetas vencidas sin abrir la foto); médico/registro médico/IPS se eliminaron, ya están legibles en la foto.
+- **Receta = foto**, no texto — de los campos tipeados originales solo queda `receta_fecha_vencimiento` (fecha hasta la que la receta es válida — **no** la de expedición; corregido tras detectar que se estaba pidiendo el dato equivocado para poder validar recetas vencidas). `enviar_solicitud` bloquea el envío si ya venció. Médico/registro médico/IPS se eliminaron, ya están legibles en la foto.
 - **Cédula del paciente = referencia viva** a `perfil_paciente.foto_cedula_path` (HU-02) — nunca se copia a la solicitud.
 - `direccion_entrega` se precarga del perfil del Paciente (HU-02) pero es un valor propio de cada solicitud, no una referencia viva.
 - Segundo uso de `RolesGuard` (`@Roles('PACIENTE')`), después de HU-08.

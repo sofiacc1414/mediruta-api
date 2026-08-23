@@ -18,7 +18,7 @@ type FilaDetalle = {
   id: string;
   estado: EstadoSolicitud;
   receta_path: string | null;
-  receta_fecha_expedicion: string | null;
+  receta_fecha_vencimiento: string | null;
   direccion_entrega: string | null;
   creado_en: string;
   enviado_en: string | null;
@@ -57,7 +57,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     pacienteId: string,
     medicamentos: Medicamento[],
     recetaPath: string | null,
-    recetaFechaExpedicion: string | null,
+    recetaFechaVencimiento: string | null,
     direccionEntrega: string | null,
   ): Promise<ResultadoCrear> {
     return this.db.withUserContext(pacienteId, async (client) => {
@@ -67,7 +67,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
           pacienteId,
           JSON.stringify(medicamentos),
           recetaPath,
-          recetaFechaExpedicion,
+          recetaFechaVencimiento,
           direccionEntrega,
         ],
       );
@@ -121,7 +121,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         id: fila.id,
         estado: fila.estado,
         recetaPath: fila.receta_path,
-        recetaFechaExpedicion: fila.receta_fecha_expedicion,
+        recetaFechaVencimiento: fila.receta_fecha_vencimiento,
         direccionEntrega: fila.direccion_entrega,
         creadoEn: fila.creado_en,
         enviadoEn: fila.enviado_en,
@@ -170,7 +170,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     pacienteId: string,
     solicitudId: string,
     medicamentos: Medicamento[],
-    recetaFechaExpedicion: string | null,
+    recetaFechaVencimiento: string | null,
     direccionEntrega: string | null,
   ): Promise<boolean> {
     return this.db.withUserContext(pacienteId, async (client) => {
@@ -181,7 +181,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
           pacienteId,
           solicitudId,
           JSON.stringify(medicamentos),
-          recetaFechaExpedicion,
+          recetaFechaVencimiento,
           direccionEntrega,
         ],
       );

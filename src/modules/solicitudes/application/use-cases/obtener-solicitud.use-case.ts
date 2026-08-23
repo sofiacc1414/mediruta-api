@@ -16,7 +16,7 @@ export type ObtenerSolicitudResultado = {
   id: string;
   estado: EstadoSolicitud;
   recetaUrl: string | null;
-  recetaFechaExpedicion: string | null;
+  recetaFechaVencimiento: string | null;
   direccionEntrega: string | null;
   creadoEn: string;
   enviadoEn: string | null;
@@ -63,7 +63,7 @@ export class ObtenerSolicitudUseCase {
       id: detalle.id,
       estado: detalle.estado,
       recetaUrl,
-      recetaFechaExpedicion: detalle.recetaFechaExpedicion,
+      recetaFechaVencimiento: detalle.recetaFechaVencimiento,
       direccionEntrega: detalle.direccionEntrega,
       creadoEn: detalle.creadoEn,
       enviadoEn: detalle.enviadoEn,
