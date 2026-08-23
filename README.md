@@ -56,13 +56,15 @@ npm run lint       # eslint --fix
 
 | Historia | Estado | Notas |
 |---|---|---|
-| **HU-01** — Gestión de acceso (registro, login, refresh, cambio/recuperación de contraseña, logout) | ✅ Completa | Endpoints bajo `/auth`. |
-| **HU-02** — Administración del perfil de usuario | ✅ Completa | Endpoints bajo `/perfil`. Ver detalle abajo. |
-| **HU-08** — Validación de domiciliarios (revisión/aprobación por el Administrador) | ✅ Completa | Endpoints bajo `/admin/domiciliarios`. Ver detalle abajo. |
-| **HU-03** — Creación y gestión de solicitudes médicas digitales | ✅ Completa | Endpoints bajo `/solicitudes`. Ver detalle abajo. |
-| **HU-04** — OCR de fórmula médica | 🔜 Próxima | — |
-| **HU-05** — Gestión de documentos de la solicitud | 🔜 Próxima | — |
-| **HU-09** — Asignación automática de domiciliario | 🔜 Próxima | — |
+| **HU-01** — Gestión de acceso a la plataforma | ✅ Completa | Endpoints bajo `/auth`. |
+| **HU-02** — Administración del perfil del usuario | ✅ Completa | Endpoints bajo `/perfil`. Ver detalle abajo. |
+| **HU-03** — Creación de solicitudes médicas digitales | ✅ Completa | Endpoints bajo `/solicitudes`. Ver detalle abajo. |
+| **HU-05** — Lectura y validación inicial de documentos médicos | ✅ Completa | Es la carga/reemplazo de documentos — ya cubierta por lo que HU-02 (cédula, licencia, SOAT, tecnomecánica del Domiciliario; foto de cédula del Paciente) y HU-03 (foto de receta) ya construyeron, no es una superficie aparte. |
+| **HU-06** — Revisión y aprobación de solicitudes | 🔜 Próxima | — |
+| **HU-07** — Consulta y actualización del estado del proceso | 🔜 Próxima | — |
+| **HU-08** — Supervisión y trazabilidad administrativa (validación de domiciliarios) | ✅ Completa | Endpoints bajo `/admin/domiciliarios`. Ver detalle abajo. |
+| **HU-09** — Asignación y gestión del domiciliario | 🔜 Próxima | — |
+| **HU-10** — Control del proceso de entrega | 🔜 Próxima | — |
 
 ### HU-01 — qué incluye
 
