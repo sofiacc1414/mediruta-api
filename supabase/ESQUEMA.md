@@ -423,12 +423,14 @@ SQL dinámico.
 - **`app.listar_historial_solicitud(p_paciente_id, p_solicitud_id)`** → eventos de `historial_solicitud`, más antiguo primero (G03).
 - **`app.actualizar_solicitud(p_paciente_id, p_solicitud_id, p_medicamentos jsonb, p_receta_fecha_vencimiento, p_direccion_entrega, p_direccion_farmacia)`** → `boolean`. Solo si `estado='borrador'` y es del dueño (G04). Reemplaza todos los medicamentos (`DELETE` + `INSERT`) por los del array recibido.
 - **`app.actualizar_receta_solicitud(p_paciente_id, p_solicitud_id, p_path)`** → `boolean`. Sube/reemplaza la foto de la receta — aparte de `actualizar_solicitud` porque la sube la API después de subir el archivo a Storage (dos pasos, mismo patrón que `actualizar_foto_cedula_paciente` de HU-02).
-- **`app.enviar_solicitud(p_paciente_id, p_solicitud_id)`** → `(resultado text, faltantes text[], codigo_pedido text)`, `resultado` en `enviada`\|`incompleta`\|`no_encontrada` (G05). `incompleta` exige: al menos un medicamento con sus 5 campos completos, foto de receta, fecha de vencimiento, **dirección de la farmacia**, dirección de entrega, **y que la receta no esté ya vencida** (`receta_fecha_vencimiento < current_date` agrega `'La receta está vencida...'` a `faltantes`) — la cédula NO se revisa acá, ya se exigió en `crear_solicitud`. Si `resultado='enviada'`, genera y guarda `codigo_pedido` (`MR-000001`, ...) — es el único momento en que se genera.
+- **`app.enviar_solicitud(p_paciente_id, p_solicitud_id)`** → `(resultado text, faltantes text[], codigo_pedido text)`, `resultado` en `enviada`\|`incompleta`\|`no_encontrada` (G05). `incompleta` exige: al menos un medicamento con nombre/concentración/forma farmacéutica/cantidad completos (**posología queda afuera a propósito, es el único campo opcional de la línea**), foto de receta, fecha de vencimiento, **dirección de la farmacia**, dirección de entrega, **y que la receta no esté ya vencida** (`receta_fecha_vencimiento < current_date` agrega `'La receta está vencida...'` a `faltantes`) — la cédula NO se revisa acá, ya se exigió en `crear_solicitud`. Si `resultado='enviada'`, genera y guarda `codigo_pedido` (`MR-000001`, ...) — es el único momento en que se genera.
 
 **Migraciones:** `20260823051000_update_solicitudes_functions.sql`,
 `20260823060000_alter_solicitudes_receta_vencimiento.sql` (rename de columna/parámetro
 + chequeo real de receta vencida en `enviar_solicitud`, que antes no existía),
-`20260823070000_add_codigo_pedido.sql` (genera y devuelve `codigo_pedido` al enviar).
+`20260823070000_add_codigo_pedido.sql` (genera y devuelve `codigo_pedido` al enviar),
+`20260823130000_posologia_opcional_en_solicitud.sql` (posología deja de contar en
+`'Completar todos los campos de cada medicamento'`).
 - **`app.cancelar_solicitud(p_paciente_id, p_solicitud_id)`** → `text`, `cancelada`\|`no_encontrada`. Por ahora solo exige que no esté ya cancelada — el chequeo de "no recogida por un domiciliario" se agrega cuando exista ese estado (HU-09/10) (G06).
 
 **Migración:** `20260823041000_create_solicitudes_functions.sql`
