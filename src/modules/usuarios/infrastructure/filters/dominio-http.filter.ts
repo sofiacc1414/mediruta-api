@@ -7,6 +7,8 @@ import {
 import { Response } from 'express';
 import { DocumentacionIncompletaError } from '../../../domiciliarios/domain/errors/documentacion-incompleta.error';
 import { DomiciliarioNoEncontradoError } from '../../../domiciliarios/domain/errors/domiciliario-no-encontrado.error';
+import { SolicitudIncompletaError } from '../../../solicitudes/domain/errors/solicitud-incompleta.error';
+import { SolicitudNoEncontradaError } from '../../../solicitudes/domain/errors/solicitud-no-encontrada.error';
 import { CambioContrasenaInvalidoError } from '../../domain/errors/cambio-contrasena-invalido.error';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
@@ -29,6 +31,8 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   RolNoAutorizadoError,
   DocumentacionIncompletaError,
   DomiciliarioNoEncontradoError,
+  SolicitudIncompletaError,
+  SolicitudNoEncontradaError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -62,7 +66,10 @@ export class DominioHttpFilter implements ExceptionFilter {
       return;
     }
 
-    if (exception instanceof DomiciliarioNoEncontradoError) {
+    if (
+      exception instanceof DomiciliarioNoEncontradoError ||
+      exception instanceof SolicitudNoEncontradaError
+    ) {
       response.status(HttpStatus.NOT_FOUND).json({
         statusCode: HttpStatus.NOT_FOUND,
         message: exception.message,
@@ -70,7 +77,10 @@ export class DominioHttpFilter implements ExceptionFilter {
       return;
     }
 
-    if (exception instanceof DocumentacionIncompletaError) {
+    if (
+      exception instanceof DocumentacionIncompletaError ||
+      exception instanceof SolicitudIncompletaError
+    ) {
       response.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
         statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
         message: exception.message,

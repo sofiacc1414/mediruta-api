@@ -322,6 +322,52 @@ crean una tabla de documentos paralela: leen `perfil_domiciliario` (HU-02) tal c
 
 **Migración:** `20260823030500_create_domiciliarios_admin_functions.sql`
 
+## Tablas `solicitudes` y `historial_solicitud` (HU-03)
+
+`solicitudes`: una fila por solicitud de medicamento del Paciente. Campos de
+medicamento (`medicamento_nombre`, `medicamento_concentracion`,
+`medicamento_forma_farmaceutica`, `medicamento_cantidad`, `medicamento_posologia`) y de
+receta médica (`receta_medico_nombre`, `receta_medico_registro`, `receta_ips`,
+`receta_fecha_expedicion`) — datos tipeados, no una foto (eso es HU-05; el OCR es
+HU-04). `direccion_entrega` se precarga desde `perfil_paciente.direccion` (HU-02) pero
+es un valor propio de la solicitud, no una referencia viva — si el perfil cambia
+después, la solicitud ya creada conserva la dirección que tenía. Todos los campos son
+nullable: un Borrador puede estar incompleto por diseño, se completa de a poco (G04) y
+recién se exige todo obligatorio al enviar (G05).
+
+`estado` — check `in ('borrador', 'pendiente_revision', 'cancelada')`. **HU-06** (revisión
+del admin) va a ampliar este check con `pendiente_correccion`/`aprobada`/`rechazada`
+sobre solicitudes ya enviadas — no se agregan ahora porque todavía no existe quién los
+use.
+
+`historial_solicitud`: insert-only (mismo espíritu que `validaciones_domiciliario` de
+HU-08) — cada cambio de estado de una solicitud inserta una fila acá, nunca se
+actualiza ninguna. Resuelve G03 ("historial de estados disponible") y va a seguir
+creciendo con HU-06/HU-09/HU-10/HU-11 sin cambiar de forma.
+
+**RLS:** ambas `ENABLE`+`FORCE`, sin policies — todo el acceso vía funciones `app.*`.
+
+**Migraciones:** `20260823040000_create_solicitudes.sql`,
+`20260823040500_create_historial_solicitud.sql`.
+
+## Funciones de solicitudes (HU-03)
+
+Mismo patrón de seguridad que el resto de la API. A diferencia de las de HU-08 (donde
+el admin consulta sobre *otra* cuenta), acá `p_paciente_id` es siempre
+`identidad.usuarioId` del propio JWT — mismo nivel de confianza que
+`app.obtener_perfil`, sin necesitar una verificación de rol aparte en cada función (el
+`RolesGuard` de la API, `@Roles('PACIENTE')`, ya lo exige antes de llegar acá).
+
+- **`app.crear_solicitud(p_paciente_id, ...9 campos..., p_direccion_entrega)`** → `uuid`, `NULL` si la cuenta no tiene rol `PACIENTE` (G01). Inserta en `estado='borrador'` + primera fila en `historial_solicitud`.
+- **`app.listar_solicitudes(p_paciente_id)`** → resumen (id, medicamento_nombre, estado, creado_en) de las propias, más recientes primero (G02).
+- **`app.obtener_solicitud(p_paciente_id, p_solicitud_id)`** → fila completa; el `WHERE paciente_id = p_paciente_id` es la verificación de dueño (G03).
+- **`app.listar_historial_solicitud(p_paciente_id, p_solicitud_id)`** → eventos de `historial_solicitud`, más antiguo primero (G03).
+- **`app.actualizar_solicitud(p_paciente_id, p_solicitud_id, ...)`** → `boolean`. Solo si `estado='borrador'` y es del dueño (G04).
+- **`app.enviar_solicitud(p_paciente_id, p_solicitud_id)`** → `(resultado text, faltantes text[])`, `resultado` en `enviada`\|`incompleta`\|`no_encontrada` — mismo patrón que `app.aprobar_domiciliario` de HU-08 (G05).
+- **`app.cancelar_solicitud(p_paciente_id, p_solicitud_id)`** → `text`, `cancelada`\|`no_encontrada`. Por ahora solo exige que no esté ya cancelada — el chequeo de "no recogida por un domiciliario" se agrega cuando exista ese estado (HU-09/10) (G06).
+
+**Migración:** `20260823041000_create_solicitudes_functions.sql`
+
 ## Rol PostgreSQL interno `mediruta_app`
 
 Rol **técnico** de PostgreSQL. **No** es un rol funcional de MediRuta (`PACIENTE`, `DOMICILIARIO`, `ADMINISTRADOR`, `ROOT`). La API lo asume para aplicar mínimo privilegio y para que RLS sea real (la conexión `DATABASE_URL` es administrativa).

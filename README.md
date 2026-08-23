@@ -58,6 +58,9 @@ npm run lint       # eslint --fix
 | **HU-01** — Gestión de acceso (registro, login, refresh, cambio/recuperación de contraseña, logout) | ✅ Completa | Endpoints bajo `/auth`. |
 | **HU-02** — Administración del perfil de usuario | ✅ Completa | Endpoints bajo `/perfil`. Ver detalle abajo. |
 | **HU-08** — Validación de domiciliarios (revisión/aprobación por el Administrador) | ✅ Completa | Endpoints bajo `/admin/domiciliarios`. Ver detalle abajo. |
+| **HU-03** — Creación y gestión de solicitudes médicas digitales | ✅ Completa | Endpoints bajo `/solicitudes`. Ver detalle abajo. |
+| **HU-04** — OCR de fórmula médica | 🔜 Próxima | — |
+| **HU-05** — Gestión de documentos de la solicitud | 🔜 Próxima | — |
 | **HU-09** — Asignación automática de domiciliario | 🔜 Próxima | — |
 
 ### HU-02 — qué incluye
@@ -78,4 +81,16 @@ npm run lint       # eslint --fix
 - Reutiliza las mismas filas de `perfil_domiciliario` que crea HU-02 — no hay tabla de documentos paralela.
 - Primer endpoint restringido por rol de la API: `RolesGuard` + `@Roles('ADMINISTRADOR', 'ROOT')`, reutilizable para futuras historias de Administrador. Verificado en vivo que bloquea con `403` a cualquier cuenta sin ese rol (incluida la del propio domiciliario) y con `401` sin sesión.
 
-214/214 tests pasando.
+### HU-03 — qué incluye
+
+- `POST /solicitudes` — crea en `borrador`. Acepta campos vacíos a propósito: un Borrador puede estar incompleto, se completa de a poco.
+- `GET /solicitudes` — "Mis solicitudes" (solo las propias).
+- `GET /solicitudes/:id` — detalle + historial de cambios de estado.
+- `PATCH /solicitudes/:id` — editar, solo mientras está en `borrador`.
+- `POST /solicitudes/:id/enviar` — pasa a `pendiente_revision` y bloquea la edición. Si falta algún campo obligatorio (medicamento + receta + dirección de entrega), responde `422` con la lista exacta de qué falta.
+- `POST /solicitudes/:id/cancelar` — pasa a `cancelada`.
+- Campos de medicamento y receta médica definidos investigando qué exige una fórmula válida en Colombia — la foto/escaneo de la receta es HU-05, el OCR es HU-04; acá los datos se tipean.
+- `direccion_entrega` se precarga del perfil del Paciente (HU-02) pero es un valor propio de cada solicitud, no una referencia viva.
+- Segundo uso de `RolesGuard` (`@Roles('PACIENTE')`), después de HU-08.
+
+233/233 tests pasando.
