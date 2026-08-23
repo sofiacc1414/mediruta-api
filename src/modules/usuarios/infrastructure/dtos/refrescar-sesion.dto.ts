@@ -1,8 +1,11 @@
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class RefrescarSesionDto {
+  // Opcional: el flujo Web lo manda por cookie HttpOnly, no en el body
+  // (ver refresh-cookie.ts). El caso de uso valida que llegue por alguna
+  // de las dos vías.
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(1024)
-  refreshToken: string;
+  refreshToken?: string;
 }

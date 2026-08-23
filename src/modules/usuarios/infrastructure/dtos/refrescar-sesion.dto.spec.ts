@@ -14,15 +14,14 @@ describe('RefrescarSesionDto', () => {
     ).resolves.toHaveLength(0);
   });
 
-  it('exige refreshToken', async () => {
-    const errores = await validar({});
-    expect(errores.some((error) => error.property === 'refreshToken')).toBe(
-      true,
-    );
+  it('permite omitir refreshToken (el flujo Web lo manda por cookie, no por body)', async () => {
+    // La validación de "no vino ni por cookie ni por body" la hace el
+    // caso de uso (refrescar-sesion.use-case.spec.ts), no el DTO.
+    await expect(validar({})).resolves.toHaveLength(0);
   });
 
-  it('rechaza un refreshToken vacío', async () => {
-    const errores = await validar({ refreshToken: '' });
+  it('rechaza un refreshToken que no sea texto', async () => {
+    const errores = await validar({ refreshToken: 12345 });
     expect(errores.some((error) => error.property === 'refreshToken')).toBe(
       true,
     );
