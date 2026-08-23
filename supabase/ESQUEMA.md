@@ -545,15 +545,40 @@ pedir un rol que ya se tiene no es un error).
   esperar aprobación ni volver a loguearse (los roles no viajan en el
   JWT, se validan siempre en vivo contra la BD).
 
+### Reutilización de datos entre perfiles
+
+Ambas copian los datos que se solapan entre `perfil_paciente` y
+`perfil_domiciliario` — no tiene sentido volver a pedirlos si ya se
+cargaron para el otro rol:
+
+- `direccion` — misma columna en las dos tablas, se copia tal cual.
+- Foto de cédula — `perfil_paciente.foto_cedula_path` ↔
+  `perfil_domiciliario.cedula_path` (mismo documento, dos nombres de
+  columna distintos).
+
+`solicitar_rol_paciente` copia `direccion`/`foto_cedula_path` desde
+`perfil_domiciliario` (`fecha_nacimiento` queda vacía — el domiciliario
+nunca la carga). `solicitar_rol_domiciliario` copia
+`direccion`/`cedula_path` desde `perfil_paciente` (vehículo y los otros
+3 documentos quedan vacíos a propósito — no hay de dónde copiarlos, hay
+que agregarlos para poder enviar la solicitud de validación). Los
+`INSERT` son `ON CONFLICT (usuario_id) DO NOTHING` — solo aplican la
+primera vez que se gana el rol, nunca sobreescriben un perfil que ya
+existía. Ninguna copia ocurre si el perfil de origen no tiene nada
+cargado (evita insertar una fila vacía sin necesidad).
+
 ### Seguridad
 
 Mismo patrón que el resto: `SECURITY DEFINER`, `search_path` vacío, sin
 SQL dinámico, `EXECUTE` solo para `mediruta_app`, `REVOKE ALL` de
 `PUBLIC`/`anon`/`authenticated`.
 
-### Migración
+### Migraciones
 
-`20260823100000_alta_paciente_opcional_y_solicitar_rol.sql`
+`20260823100000_alta_paciente_opcional_y_solicitar_rol.sql` (firma
+original, sin reutilización de datos),
+`20260823110000_solicitar_rol_reusa_datos.sql` (agrega la copia de
+`direccion`/foto de cédula entre perfiles).
 
 ## `app.obtener_credenciales_login(text)`
 
