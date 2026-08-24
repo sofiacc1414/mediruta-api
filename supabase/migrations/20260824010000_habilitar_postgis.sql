@@ -1,0 +1,16 @@
+-- HU-09 — para armar el pool de domiciliarios por cercanía necesitamos
+-- distancia real entre dos puntos (farmacia vs. domiciliario), no una
+-- Haversine escrita a mano. PostGIS ya está disponible en el proyecto
+-- Supabase (confirmado vía pg_available_extensions), solo faltaba
+-- instalarla. Open source (proyecto de OSGeo), sin costo.
+--
+-- Da el tipo `geography(Point,4326)` (coordenadas WGS84, las mismas que
+-- usa GPS/OpenStreetMap) y `ST_Distance`, que devuelve metros en línea
+-- recta entre dos puntos — exactamente lo que pide "solo calcularemos
+-- distancias", sin necesitar un motor de ruteo (OSRM) todavía.
+-- Se fija el schema a `public` a propósito (Supabase por defecto la
+-- instala en `extensions`) — el resto del proyecto referencia todo
+-- calificado como `public.*` dentro de funciones con `search_path=''`,
+-- fijarla acá evita tener que acordarse de un schema distinto cada vez
+-- que se usa `geography`/`ST_Distance`/etc.
+create extension if not exists postgis with schema public;
