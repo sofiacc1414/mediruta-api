@@ -29,6 +29,9 @@ describe('EnviarSolicitudUseCase', () => {
     reportarNovedad: jest.fn(),
     listarNovedadesAbiertas: jest.fn(),
     resolverNovedad: jest.fn(),
+    obtenerPedidoActivo: jest.fn(),
+    listarHistorialPedidoActivo: jest.fn(),
+    obtenerNovedadPropiaAbierta: jest.fn(),
   };
   const geocodificacion: GeocodificacionPort = {
     geocodificar: jest.fn(),

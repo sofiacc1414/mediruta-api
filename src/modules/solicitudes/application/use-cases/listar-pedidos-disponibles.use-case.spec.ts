@@ -23,6 +23,9 @@ describe('ListarPedidosDisponiblesUseCase', () => {
     reportarNovedad: jest.fn(),
     listarNovedadesAbiertas: jest.fn(),
     resolverNovedad: jest.fn(),
+    obtenerPedidoActivo: jest.fn(),
+    listarHistorialPedidoActivo: jest.fn(),
+    obtenerNovedadPropiaAbierta: jest.fn(),
   };
   const useCase = new ListarPedidosDisponiblesUseCase(solicitudes);
 

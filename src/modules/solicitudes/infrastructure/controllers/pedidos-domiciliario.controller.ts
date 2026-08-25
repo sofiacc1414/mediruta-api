@@ -22,6 +22,7 @@ import { IniciarEntregaUseCase } from '../../application/use-cases/iniciar-entre
 import { ListarPedidosDisponiblesUseCase } from '../../application/use-cases/listar-pedidos-disponibles.use-case';
 import { MarcarEnSitioUseCase } from '../../application/use-cases/marcar-en-sitio.use-case';
 import { MarcarMedicamentosRecogidosUseCase } from '../../application/use-cases/marcar-medicamentos-recogidos.use-case';
+import { ObtenerPedidoActivoUseCase } from '../../application/use-cases/obtener-pedido-activo.use-case';
 import { ReportarNovedadUseCase } from '../../application/use-cases/reportar-novedad.use-case';
 import { EntregarPedidoDto } from '../dtos/entregar-pedido.dto';
 import { ReportarNovedadDto } from '../dtos/reportar-novedad.dto';
@@ -44,12 +45,22 @@ export class PedidosDomiciliarioController {
     private readonly marcarEnSitio: MarcarEnSitioUseCase,
     private readonly entregarPedido: EntregarPedidoUseCase,
     private readonly reportarNovedad: ReportarNovedadUseCase,
+    private readonly obtenerPedidoActivo: ObtenerPedidoActivoUseCase,
   ) {}
 
   @Get('disponibles')
   @HttpCode(HttpStatus.OK)
   disponibles(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
     return this.listarPedidosDisponibles.execute(identidad.usuarioId);
+  }
+
+  /** "Mi pedido activo" — antes de `/disponibles`/rutas con `:id` para
+   * que no haya ambigüedad, aunque acá no colisiona (Nest resuelve
+   * rutas literales antes que las con parámetro de todas formas). */
+  @Get('mi-activo')
+  @HttpCode(HttpStatus.OK)
+  miActivo(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
+    return this.obtenerPedidoActivo.execute(identidad.usuarioId);
   }
 
   @Post(':id/aceptar')

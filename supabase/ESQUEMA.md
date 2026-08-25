@@ -487,6 +487,7 @@ indique otra):
 - **`app.resolver_novedad(p_admin_id, p_novedad_id)`** / **`app.listar_novedades_abiertas(p_admin_id)`** → panel del Administrador, mismo patrón `usuario_tiene_rol_habilitado` de HU-08.
 - **`app.obtener_datos_geocodificacion_farmacia`** / **`app.obtener_novedad_abierta_solicitud`** (`20260824070000_lecturas_asignacion_y_geocodificacion.sql`) → lecturas de apoyo para el caso de uso en TS (la primera, antes de geocodificar; la segunda, para que el Paciente vea si su propio pedido tiene una novedad sin ser Administrador).
 - **`app.obtener_perfil`** / **`app.upsert_perfil_paciente`** (`20260824080000_perfil_paciente_ciudad_departamento_funciones.sql`, ambas con `DROP` previo — la primera por cambio de `RETURNS TABLE`) → exponen/piden `departamento`/`ciudad`, obligatorios desde acá.
+- **`app.obtener_pedido_activo_domiciliario(p_domiciliario_id)`** / **`app.listar_historial_pedido_domiciliario`** / **`app.obtener_novedad_propia_abierta`** (`20260825020000_obtener_pedido_activo_domiciliario.sql`) → equivalentes de `obtener_solicitud`/`listar_historial_solicitud`/`obtener_novedad_abierta_solicitud` pero acotados por `domiciliario_id` en vez de `paciente_id` — sin esto el Domiciliario no tenía forma de recuperar "su" pedido tras cerrar y reabrir la app (`listar_pedidos_disponibles` deja de incluirlo apenas lo acepta). La primera, a propósito, no expone `codigo_entrega`.
 
 Verificado end-to-end contra la base y Nominatim reales: pedido enviado → geocodificado
 → visible en el pool con distancia real → aceptado → recorrido completo de estados →

@@ -66,6 +66,19 @@ export type PedidoDisponible = {
   creadoEn: string;
 };
 
+/** HU-09/HU-07 — el pedido que el Domiciliario tiene en curso ahora
+ * mismo (uno de los 4 estados "activos"). A propósito NO incluye
+ * `codigoEntrega` — el paciente se lo dicta recién al momento de la
+ * entrega, el Domiciliario no debe conocerlo de antemano. */
+export type PedidoActivoDomiciliario = {
+  id: string;
+  codigoPedido: string | null;
+  estado: EstadoSolicitud;
+  direccionEntrega: string | null;
+  direccionFarmacia: string | null;
+  creadoEn: string;
+};
+
 /** HU-07 — un incidente reportado por el Domiciliario sobre un pedido
  * en curso, visible para el Administrador hasta que lo resuelva. No
  * reemplaza el `estado` real del pedido (ver ports comment en la
@@ -264,6 +277,30 @@ export abstract class SolicitudRepositoryPort {
     solicitudId: string,
     detalle: string,
   ): Promise<ResultadoReportarNovedad>;
+
+  /** El pedido que el Domiciliario tiene en curso ahora mismo, o `null`
+   * si no tiene ninguno — sin esto no había forma de recuperar "su"
+   * pedido tras cerrar y reabrir la app (`listarPedidosDisponibles` deja
+   * de incluirlo apenas lo acepta). */
+  abstract obtenerPedidoActivo(
+    domiciliarioId: string,
+  ): Promise<PedidoActivoDomiciliario | null>;
+
+  /** Historial del pedido activo del Domiciliario — mismo criterio de
+   * "dueño" que `listarHistorial`, acotado por `domiciliario_id` en vez
+   * de `paciente_id`. */
+  abstract listarHistorialPedidoActivo(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<EventoHistorial[]>;
+
+  /** Si el propio Domiciliario ya reportó una novedad sobre este pedido
+   * y sigue sin resolver — para no ofrecerle "Reportar novedad" de
+   * nuevo. */
+  abstract obtenerNovedadPropiaAbierta(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<NovedadDelPaciente | null>;
 
   // --- Administrador (novedades) ---
 

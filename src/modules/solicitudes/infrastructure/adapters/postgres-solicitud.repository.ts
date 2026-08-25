@@ -6,6 +6,7 @@ import {
   Medicamento,
   NovedadAbierta,
   NovedadDelPaciente,
+  PedidoActivoDomiciliario,
   PedidoDisponible,
   ResultadoAceptarPedido,
   ResultadoCancelar,
@@ -54,6 +55,15 @@ type FilaPedidoDisponible = {
   direccion_farmacia: string | null;
   direccion_entrega: string | null;
   distancia_metros: number;
+  creado_en: string;
+};
+
+type FilaPedidoActivoDomiciliario = {
+  id: string;
+  codigo_pedido: string | null;
+  estado: EstadoSolicitud;
+  direccion_entrega: string | null;
+  direccion_farmacia: string | null;
   creado_en: string;
 };
 
@@ -452,6 +462,62 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         return { resultado: 'reportada', id: fila.id };
       }
       return { resultado: 'no_encontrado' };
+    });
+  }
+
+  obtenerPedidoActivo(
+    domiciliarioId: string,
+  ): Promise<PedidoActivoDomiciliario | null> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<FilaPedidoActivoDomiciliario>(
+        'select * from app.obtener_pedido_activo_domiciliario($1)',
+        [domiciliarioId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return {
+        id: fila.id,
+        codigoPedido: fila.codigo_pedido,
+        estado: fila.estado,
+        direccionEntrega: fila.direccion_entrega,
+        direccionFarmacia: fila.direccion_farmacia,
+        creadoEn: fila.creado_en,
+      };
+    });
+  }
+
+  listarHistorialPedidoActivo(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<EventoHistorial[]> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<FilaHistorial>(
+        'select * from app.listar_historial_pedido_domiciliario($1, $2)',
+        [domiciliarioId, solicitudId],
+      );
+      return result.rows.map((fila) => ({
+        estado: fila.estado,
+        creadoEn: fila.creado_en,
+      }));
+    });
+  }
+
+  obtenerNovedadPropiaAbierta(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<NovedadDelPaciente | null> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<FilaNovedadDelPaciente>(
+        'select * from app.obtener_novedad_propia_abierta($1, $2)',
+        [domiciliarioId, solicitudId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return { id: fila.id, detalle: fila.detalle, creadoEn: fila.creado_en };
     });
   }
 

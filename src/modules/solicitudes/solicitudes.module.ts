@@ -12,6 +12,7 @@ import { ListarPedidosDisponiblesUseCase } from './application/use-cases/listar-
 import { ListarSolicitudesUseCase } from './application/use-cases/listar-solicitudes.use-case';
 import { MarcarEnSitioUseCase } from './application/use-cases/marcar-en-sitio.use-case';
 import { MarcarMedicamentosRecogidosUseCase } from './application/use-cases/marcar-medicamentos-recogidos.use-case';
+import { ObtenerPedidoActivoUseCase } from './application/use-cases/obtener-pedido-activo.use-case';
 import { ObtenerSolicitudUseCase } from './application/use-cases/obtener-solicitud.use-case';
 import { ReportarNovedadUseCase } from './application/use-cases/reportar-novedad.use-case';
 import { ResolverNovedadUseCase } from './application/use-cases/resolver-novedad.use-case';
@@ -53,6 +54,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     ReportarNovedadUseCase,
     ListarNovedadesAbiertasUseCase,
     ResolverNovedadUseCase,
+    ObtenerPedidoActivoUseCase,
     {
       provide: SolicitudRepositoryPort,
       useClass: PostgresSolicitudRepository,

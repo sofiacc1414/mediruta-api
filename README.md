@@ -140,6 +140,12 @@ del perfil del Paciente como contexto.
   `en_camino_entrega` → `en_sitio` → `entregado`. "Novedad en pedido" **no es
   un estado más** — es una bandera aparte (tabla `novedad_solicitud`), el
   pedido no pierde en qué paso del flujo estaba al reportar un incidente.
+- `GET /pedidos/mi-activo` — el pedido que el Domiciliario tiene en curso
+  ahora mismo (o `null`), con su historial — hace falta para que "Mi pedido
+  activo" (App) sobreviva un cierre/reapertura: el pool deja de incluir un
+  pedido apenas se acepta, y `GET /solicitudes/:id` está acotado al Paciente
+  dueño, no al Domiciliario asignado. A propósito no incluye `codigoEntrega`
+  — el Paciente se lo dicta recién al momento de la entrega.
 - `GET /pedidos/disponibles` — pool ordenado por distancia real
   (`ST_Distance`, PostGIS) a la última ubicación guardada del Domiciliario
   que consulta, acotado a **15km** (`ST_DWithin` — un pedido a 40km no le
@@ -171,4 +177,4 @@ radio de 15km (pool vacío probando desde Medellín, con pedidos en Bogotá) y
 el límite de un pedido activo (aceptar un segundo mientras el primero sigue
 en curso da `409`, y funciona recién después de entregarlo).
 
-307/307 tests pasando.
+310/310 tests pasando.
