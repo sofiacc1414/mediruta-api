@@ -106,7 +106,11 @@ export type ResultadoCancelar = 'cancelada' | 'no_encontrada';
  * `ya_asignado` es el caso normal de dos Domiciliarios aceptando a la
  * vez, no un error — el guard atómico de `app.aceptar_pedido` decide
  * quién gana. */
-export type ResultadoAceptarPedido = 'aceptado' | 'ya_asignado' | 'no_encontrado';
+export type ResultadoAceptarPedido =
+  | 'aceptado'
+  | 'ya_asignado'
+  | 'ya_tiene_pedido_activo'
+  | 'no_encontrado';
 
 /** HU-07 — resultado común de las transiciones manuales del
  * Domiciliario (recogido, iniciar entrega, en sitio). */

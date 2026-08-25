@@ -142,10 +142,14 @@ del perfil del Paciente como contexto.
   pedido no pierde en qué paso del flujo estaba al reportar un incidente.
 - `GET /pedidos/disponibles` — pool ordenado por distancia real
   (`ST_Distance`, PostGIS) a la última ubicación guardada del Domiciliario
-  que consulta.
+  que consulta, acotado a **15km** (`ST_DWithin` — un pedido a 40km no le
+  sirve a nadie). Vacío si ya tiene un pedido activo — no tiene sentido
+  ofrecerle algo que no puede aceptar.
 - `POST /pedidos/:id/aceptar` — guard atómico: si dos Domiciliarios aceptan
   casi al mismo tiempo, el segundo recibe `409` (`Ese pedido ya fue asignado
-  a otro domiciliario`), no se pisan.
+  a otro domiciliario`), no se pisan. **Un Domiciliario solo puede tener un
+  pedido activo a la vez** — si ya tiene uno en curso (aceptado hasta
+  `en_sitio`, sin entregar/cancelar), `409` (`Ya tenés un pedido activo`).
 - `POST /pedidos/:id/{recogido,iniciar-entrega,en-sitio}` — transiciones
   manuales, cada una valida que sea el Domiciliario asignado y el estado
   anterior correcto.
@@ -162,6 +166,9 @@ Verificado end-to-end contra la base y Nominatim reales (no solo con specs
 mockeados): pedido enviado → geocodificado → visible en el pool con distancia
 real → aceptado → recorrido completo de estados → entrega rechazada con
 código incorrecto y aceptada con el correcto → novedad reportada a mitad de
-camino sin perder el estado real → vista y resuelta por el admin.
+camino sin perder el estado real → vista y resuelta por el admin. También el
+radio de 15km (pool vacío probando desde Medellín, con pedidos en Bogotá) y
+el límite de un pedido activo (aceptar un segundo mientras el primero sigue
+en curso da `409`, y funciona recién después de entregarlo).
 
-305/305 tests pasando.
+307/307 tests pasando.

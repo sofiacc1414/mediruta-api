@@ -7,6 +7,7 @@ import { NuevaContrasenaIgualError } from '../../domain/errors/nueva-contrasena-
 import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-invalida.error';
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
+import { DomiciliarioConPedidoActivoError } from '../../../solicitudes/domain/errors/domiciliario-con-pedido-activo.error';
 import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { DominioHttpFilter } from './dominio-http.filter';
 
@@ -116,6 +117,18 @@ describe('DominioHttpFilter', () => {
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.CONFLICT,
       message: 'Ese pedido ya fue asignado a otro domiciliario.',
+    });
+  });
+
+  it('mapea DomiciliarioConPedidoActivoError a HTTP 409', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new DomiciliarioConPedidoActivoError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.CONFLICT,
+      message: 'Ya tenés un pedido activo — entregalo antes de aceptar otro.',
     });
   });
 

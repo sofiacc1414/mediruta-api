@@ -1,3 +1,4 @@
+import { DomiciliarioConPedidoActivoError } from '../../domain/errors/domiciliario-con-pedido-activo.error';
 import { PedidoYaAsignadoError } from '../../domain/errors/pedido-ya-asignado.error';
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
@@ -48,6 +49,14 @@ describe('AceptarPedidoUseCase', () => {
     await expect(
       useCase.execute('domiciliario-uuid', 'solicitud-uuid'),
     ).rejects.toBeInstanceOf(PedidoYaAsignadoError);
+  });
+
+  it('lanza DomiciliarioConPedidoActivoError si ya tiene un pedido en curso', async () => {
+    (solicitudes.aceptarPedido as jest.Mock).mockResolvedValue('ya_tiene_pedido_activo');
+
+    await expect(
+      useCase.execute('domiciliario-uuid', 'solicitud-uuid'),
+    ).rejects.toBeInstanceOf(DomiciliarioConPedidoActivoError);
   });
 
   it('lanza SolicitudNoEncontradaError si no existe/no está en_asignacion', async () => {

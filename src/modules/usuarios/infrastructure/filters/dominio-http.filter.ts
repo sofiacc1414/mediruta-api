@@ -9,6 +9,7 @@ import { DocumentacionIncompletaError } from '../../../domiciliarios/domain/erro
 import { DomiciliarioNoEncontradoError } from '../../../domiciliarios/domain/errors/domiciliario-no-encontrado.error';
 import { NoHayBorradorDomiciliarioError } from '../../../domiciliarios/domain/errors/no-hay-borrador-domiciliario.error';
 import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
+import { DomiciliarioConPedidoActivoError } from '../../../solicitudes/domain/errors/domiciliario-con-pedido-activo.error';
 import { NovedadNoEncontradaError } from '../../../solicitudes/domain/errors/novedad-no-encontrada.error';
 import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { PerfilIncompletoError } from '../../../solicitudes/domain/errors/perfil-incompleto.error';
@@ -43,6 +44,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   PedidoYaAsignadoError,
   CodigoEntregaIncorrectoError,
   NovedadNoEncontradaError,
+  DomiciliarioConPedidoActivoError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -50,7 +52,8 @@ export class DominioHttpFilter implements ExceptionFilter {
 
     if (
       exception instanceof CorreoYaRegistradoError ||
-      exception instanceof PedidoYaAsignadoError
+      exception instanceof PedidoYaAsignadoError ||
+      exception instanceof DomiciliarioConPedidoActivoError
     ) {
       response.status(HttpStatus.CONFLICT).json({
         statusCode: HttpStatus.CONFLICT,
