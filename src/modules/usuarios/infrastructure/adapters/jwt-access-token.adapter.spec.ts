@@ -1,4 +1,5 @@
 import { JwtService } from '@nestjs/jwt';
+import type { StringValue } from 'ms';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
 import { JwtAccessTokenAdapter } from './jwt-access-token.adapter';
 
@@ -10,7 +11,7 @@ function decodificarPayload(token: string): Record<string, unknown> {
   return JSON.parse(Buffer.from(segmento, 'base64url').toString('utf8'));
 }
 
-function adapterCon(secret = 'test-secret', expiresIn = '15m') {
+function adapterCon(secret = 'test-secret', expiresIn: StringValue = '15m') {
   const jwt = new JwtService({
     secret,
     signOptions: { expiresIn },

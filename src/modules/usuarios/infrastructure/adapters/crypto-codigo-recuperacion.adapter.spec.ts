@@ -17,7 +17,13 @@ function configCon(valores: Record<string, string | undefined>): ConfigService {
 }
 
 describe('CryptoCodigoRecuperacionAdapter', () => {
-  const randomIntMock = randomInt as jest.MockedFunction<typeof randomInt>;
+  // `randomInt` está sobrecargado (la variante con callback devuelve
+  // `void`) — `jest.MockedFunction<typeof randomInt>` resolvía a esa
+  // sobrecarga y `mockReturnValue(42)` no tipaba. Acá solo se usa la
+  // variante sync `(min, max) => number`, así que se tipa a esa sola.
+  const randomIntMock = randomInt as unknown as jest.MockedFunction<
+    (min: number, max: number) => number
+  >;
 
   beforeEach(() => {
     randomIntMock.mockReset();

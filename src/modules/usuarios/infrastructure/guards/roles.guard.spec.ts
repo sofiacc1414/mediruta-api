@@ -24,7 +24,7 @@ class ControllerSinRoles {
 }
 
 function contextoCon(
-  claseControlador: new () => object,
+  claseControlador: new () => { metodoSinDecorarPropio(): void },
   identidad?: { usuarioId: string; sid: string },
 ) {
   const request: {
@@ -47,6 +47,9 @@ describe('RolesGuard', () => {
     obtenerCredencialesLogin: jest.fn(),
     obtenerCuentaActual: jest.fn(),
     obtenerRoles: jest.fn(),
+    solicitarRolPaciente: jest.fn(),
+    solicitarRolDomiciliario: jest.fn(),
+    enviarSolicitudDomiciliario: jest.fn(),
   };
   const guard = new RolesGuard(reflector, usuarios);
 
