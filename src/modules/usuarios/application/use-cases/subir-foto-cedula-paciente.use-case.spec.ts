@@ -17,6 +17,7 @@ describe('SubirFotoCedulaPacienteUseCase', () => {
     upsertPerfilDomiciliario: jest.fn(),
     actualizarDocumentoDomiciliario: jest.fn(),
     desactivarCuenta: jest.fn(),
+    actualizarDisponibilidadDomiciliario: jest.fn(),
   };
   const almacenamiento: AlmacenamientoArchivosPort = {
     subir: jest.fn(),

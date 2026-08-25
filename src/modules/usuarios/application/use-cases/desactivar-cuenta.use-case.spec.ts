@@ -12,6 +12,7 @@ describe('DesactivarCuentaUseCase', () => {
     upsertPerfilDomiciliario: jest.fn(),
     actualizarDocumentoDomiciliario: jest.fn(),
     desactivarCuenta: jest.fn(),
+    actualizarDisponibilidadDomiciliario: jest.fn(),
   };
 
   const useCase = new DesactivarCuentaUseCase(perfiles);

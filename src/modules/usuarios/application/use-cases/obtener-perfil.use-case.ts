@@ -15,6 +15,8 @@ export type ObtenerPerfilResultado = {
     direccion: string | null;
     fechaNacimiento: string | null;
     fotoCedulaUrl: string | null;
+    departamento: string | null;
+    ciudad: string | null;
   } | null;
   domiciliario: {
     direccion: string | null;
@@ -71,6 +73,8 @@ export class ObtenerPerfilUseCase {
             direccion: perfil.paciente.direccion,
             fechaNacimiento: perfil.paciente.fechaNacimiento,
             fotoCedulaUrl,
+            departamento: perfil.paciente.departamento,
+            ciudad: perfil.paciente.ciudad,
           }
         : null,
       domiciliario: perfil.domiciliario

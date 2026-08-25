@@ -15,6 +15,7 @@ describe('ActualizarDatosComunesUseCase', () => {
     upsertPerfilDomiciliario: jest.fn(),
     actualizarDocumentoDomiciliario: jest.fn(),
     desactivarCuenta: jest.fn(),
+    actualizarDisponibilidadDomiciliario: jest.fn(),
   };
 
   const useCase = new ActualizarDatosComunesUseCase(perfiles);

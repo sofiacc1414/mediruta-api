@@ -22,6 +22,17 @@ describe('ObtenerSolicitudUseCase', () => {
     actualizarReceta: jest.fn(),
     enviar: jest.fn(),
     cancelar: jest.fn(),
+    obtenerDatosGeocodificacionFarmacia: jest.fn(),
+    obtenerNovedadAbierta: jest.fn(),
+    listarPedidosDisponibles: jest.fn(),
+    aceptarPedido: jest.fn(),
+    marcarMedicamentosRecogidos: jest.fn(),
+    iniciarEntrega: jest.fn(),
+    marcarEnSitio: jest.fn(),
+    entregarPedido: jest.fn(),
+    reportarNovedad: jest.fn(),
+    listarNovedadesAbiertas: jest.fn(),
+    resolverNovedad: jest.fn(),
   };
   const almacenamiento: AlmacenamientoArchivosPort = {
     subir: jest.fn(),
@@ -37,6 +48,7 @@ describe('ObtenerSolicitudUseCase', () => {
     );
     (solicitudes.listarMedicamentos as jest.Mock).mockResolvedValue([]);
     (solicitudes.listarHistorial as jest.Mock).mockResolvedValue([]);
+    (solicitudes.obtenerNovedadAbierta as jest.Mock).mockResolvedValue(null);
   });
 
   it('G03 — resuelve receta y cédula a URLs firmadas, e incluye medicamentos e historial', async () => {
@@ -52,6 +64,7 @@ describe('ObtenerSolicitudUseCase', () => {
       enviadoEn: null,
       canceladoEn: null,
       cedulaPath: 'paciente/usuario-uuid/cedula.jpg',
+      codigoEntrega: '8SBM9J',
     };
     const medicamentos: Medicamento[] = [
       {
@@ -74,6 +87,8 @@ describe('ObtenerSolicitudUseCase', () => {
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
     expect(resultado.codigoPedido).toBe('MR-000123');
+    expect(resultado.codigoEntrega).toBe('8SBM9J');
+    expect(resultado.novedadAbierta).toBeNull();
     expect(resultado.recetaUrl).toBe(
       'https://firmada.test/solicitud/solicitud-uuid/receta.jpg',
     );
@@ -89,6 +104,36 @@ describe('ObtenerSolicitudUseCase', () => {
     );
   });
 
+  it('incluye la novedad abierta cuando el pedido tiene una', async () => {
+    (solicitudes.obtener as jest.Mock).mockResolvedValue({
+      id: 'solicitud-uuid',
+      codigoPedido: 'MR-000123',
+      estado: 'asignado_en_camino_farmacia',
+      recetaPath: null,
+      recetaFechaVencimiento: null,
+      direccionEntrega: null,
+      direccionFarmacia: null,
+      creadoEn: '2026-08-20T10:00:00.000Z',
+      enviadoEn: null,
+      canceladoEn: null,
+      cedulaPath: null,
+      codigoEntrega: '8SBM9J',
+    });
+    (solicitudes.obtenerNovedadAbierta as jest.Mock).mockResolvedValue({
+      id: 'novedad-uuid',
+      detalle: 'No había uno de los medicamentos',
+      creadoEn: '2026-08-20T11:00:00.000Z',
+    });
+
+    const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
+
+    expect(resultado.novedadAbierta).toEqual({
+      id: 'novedad-uuid',
+      detalle: 'No había uno de los medicamentos',
+      creadoEn: '2026-08-20T11:00:00.000Z',
+    });
+  });
+
   it('recetaUrl/cedulaUrl quedan null si no hay path', async () => {
     (solicitudes.obtener as jest.Mock).mockResolvedValue({
       id: 'solicitud-uuid',
@@ -101,6 +146,7 @@ describe('ObtenerSolicitudUseCase', () => {
       enviadoEn: null,
       canceladoEn: null,
       cedulaPath: null,
+      codigoEntrega: null,
     });
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');

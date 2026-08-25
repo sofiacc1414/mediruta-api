@@ -9,6 +9,7 @@ import {
   EstadoSolicitud,
   EventoHistorial,
   Medicamento,
+  NovedadDelPaciente,
   SolicitudRepositoryPort,
 } from '../../domain/ports/solicitud.repository.port';
 
@@ -28,6 +29,12 @@ export type ObtenerSolicitudResultado = {
   cedulaUrl: string | null;
   medicamentos: Medicamento[];
   historial: EventoHistorial[];
+  /** HU-09 — el paciente se lo dicta al Domiciliario al recibir el
+   * pedido. Existe desde que se envía, igual que codigoPedido. */
+  codigoEntrega: string | null;
+  /** HU-07 — si hay una novedad abierta sobre este pedido, se muestra
+   * acá; `null` si no hay ninguna. */
+  novedadAbierta: NovedadDelPaciente | null;
 };
 
 /**
@@ -46,10 +53,11 @@ export class ObtenerSolicitudUseCase {
     pacienteId: string,
     solicitudId: string,
   ): Promise<ObtenerSolicitudResultado> {
-    const [detalle, medicamentos, historial] = await Promise.all([
+    const [detalle, medicamentos, historial, novedadAbierta] = await Promise.all([
       this.solicitudes.obtener(pacienteId, solicitudId),
       this.solicitudes.listarMedicamentos(pacienteId, solicitudId),
       this.solicitudes.listarHistorial(pacienteId, solicitudId),
+      this.solicitudes.obtenerNovedadAbierta(pacienteId, solicitudId),
     ]);
 
     if (!detalle) {
@@ -75,6 +83,8 @@ export class ObtenerSolicitudUseCase {
       cedulaUrl,
       medicamentos,
       historial,
+      codigoEntrega: detalle.codigoEntrega,
+      novedadAbierta,
     };
   }
 

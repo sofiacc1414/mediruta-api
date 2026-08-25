@@ -15,6 +15,7 @@ describe('ActualizarPerfilPacienteUseCase', () => {
     upsertPerfilDomiciliario: jest.fn(),
     actualizarDocumentoDomiciliario: jest.fn(),
     desactivarCuenta: jest.fn(),
+    actualizarDisponibilidadDomiciliario: jest.fn(),
   };
 
   const useCase = new ActualizarPerfilPacienteUseCase(perfiles);
@@ -30,12 +31,16 @@ describe('ActualizarPerfilPacienteUseCase', () => {
       usuarioId: 'usuario-uuid',
       direccion: 'Calle 123 #45-67',
       fechaNacimiento: '1990-05-10',
+      departamento: 'Cundinamarca',
+      ciudad: 'Bogotá',
     });
 
     expect(perfiles.upsertPerfilPaciente).toHaveBeenCalledWith(
       'usuario-uuid',
       'Calle 123 #45-67',
       '1990-05-10',
+      'Cundinamarca',
+      'Bogotá',
     );
     expect(resultado).toEqual({ message: MENSAJE_PERFIL_PACIENTE_ACTUALIZADO });
   });
@@ -48,6 +53,8 @@ describe('ActualizarPerfilPacienteUseCase', () => {
         usuarioId: 'usuario-uuid',
         direccion: 'Calle 123 #45-67',
         fechaNacimiento: '1990-05-10',
+        departamento: 'Cundinamarca',
+        ciudad: 'Bogotá',
       }),
     ).rejects.toBeInstanceOf(RolNoAutorizadoError);
   });

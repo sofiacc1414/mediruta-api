@@ -6,6 +6,8 @@ import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
 import { NuevaContrasenaIgualError } from '../../domain/errors/nueva-contrasena-igual.error';
 import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-invalida.error';
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
+import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
+import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { DominioHttpFilter } from './dominio-http.filter';
 
 function hostConRespuesta() {
@@ -102,6 +104,30 @@ describe('DominioHttpFilter', () => {
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.BAD_REQUEST,
       message: 'La nueva contraseña debe ser diferente de la contraseña actual.',
+    });
+  });
+
+  it('mapea PedidoYaAsignadoError a HTTP 409', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new PedidoYaAsignadoError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.CONFLICT,
+      message: 'Ese pedido ya fue asignado a otro domiciliario.',
+    });
+  });
+
+  it('mapea CodigoEntregaIncorrectoError a HTTP 400', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new CodigoEntregaIncorrectoError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.BAD_REQUEST,
+      message: 'El código de entrega no coincide.',
     });
   });
 });

@@ -1,6 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { GUARDS_METADATA, HTTP_CODE_METADATA } from '@nestjs/common/constants';
 import { ActualizarDatosComunesUseCase } from '../../application/use-cases/actualizar-datos-comunes.use-case';
+import { ActualizarDisponibilidadDomiciliarioUseCase } from '../../application/use-cases/actualizar-disponibilidad-domiciliario.use-case';
 import { ActualizarPerfilDomiciliarioUseCase } from '../../application/use-cases/actualizar-perfil-domiciliario.use-case';
 import { ActualizarPerfilPacienteUseCase } from '../../application/use-cases/actualizar-perfil-paciente.use-case';
 import { DesactivarCuentaUseCase } from '../../application/use-cases/desactivar-cuenta.use-case';
@@ -39,6 +40,7 @@ function crearController(overrides?: {
   solicitarRolPaciente?: { execute: jest.Mock };
   solicitarRolDomiciliario?: { execute: jest.Mock };
   enviarSolicitudDomiciliario?: { execute: jest.Mock };
+  actualizarDisponibilidadDomiciliario?: { execute: jest.Mock };
 }) {
   return new PerfilController(
     (overrides?.obtenerPerfil ?? {
@@ -74,6 +76,9 @@ function crearController(overrides?: {
     (overrides?.enviarSolicitudDomiciliario ?? {
       execute: jest.fn(),
     }) as unknown as EnviarSolicitudDomiciliarioUseCase,
+    (overrides?.actualizarDisponibilidadDomiciliario ?? {
+      execute: jest.fn(),
+    }) as unknown as ActualizarDisponibilidadDomiciliarioUseCase,
   );
 }
 
@@ -123,12 +128,52 @@ describe('PerfilController', () => {
     await controller.actualizarPaciente(identidad, {
       direccion: 'Calle 123',
       fechaNacimiento: '1990-05-10',
+      departamento: 'Cundinamarca',
+      ciudad: 'Bogotá',
     });
 
     expect(actualizarPerfilPaciente.execute).toHaveBeenCalledWith({
       usuarioId: 'usuario-desde-guard',
       direccion: 'Calle 123',
       fechaNacimiento: '1990-05-10',
+      departamento: 'Cundinamarca',
+      ciudad: 'Bogotá',
+    });
+  });
+
+  it('POST /perfil/domiciliario/disponibilidad delega en ActualizarDisponibilidadDomiciliarioUseCase', async () => {
+    const actualizarDisponibilidadDomiciliario = {
+      execute: jest.fn().mockResolvedValue({ message: 'ok' }),
+    };
+    const controller = crearController({ actualizarDisponibilidadDomiciliario });
+
+    await controller.actualizarDisponibilidad(identidad, {
+      disponible: true,
+      lat: 4.65,
+      lng: -74.06,
+    });
+
+    expect(actualizarDisponibilidadDomiciliario.execute).toHaveBeenCalledWith({
+      usuarioId: 'usuario-desde-guard',
+      disponible: true,
+      lat: 4.65,
+      lng: -74.06,
+    });
+  });
+
+  it('POST /perfil/domiciliario/disponibilidad manda lat/lng null si no vienen (apagar)', async () => {
+    const actualizarDisponibilidadDomiciliario = {
+      execute: jest.fn().mockResolvedValue({ message: 'ok' }),
+    };
+    const controller = crearController({ actualizarDisponibilidadDomiciliario });
+
+    await controller.actualizarDisponibilidad(identidad, { disponible: false });
+
+    expect(actualizarDisponibilidadDomiciliario.execute).toHaveBeenCalledWith({
+      usuarioId: 'usuario-desde-guard',
+      disponible: false,
+      lat: null,
+      lng: null,
     });
   });
 

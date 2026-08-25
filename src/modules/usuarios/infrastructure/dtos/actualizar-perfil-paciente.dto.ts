@@ -10,4 +10,16 @@ export class ActualizarPerfilPacienteDto {
   @IsDateString()
   @EsFechaPasada()
   fechaNacimiento: string;
+
+  /** HU-09 — contexto de geocodificación (dirección de entrega y de
+   * farmacia de cada pedido). */
+  @IsString()
+  @MinLength(3)
+  @MaxLength(100)
+  departamento: string;
+
+  @IsString()
+  @MinLength(3)
+  @MaxLength(100)
+  ciudad: string;
 }

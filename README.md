@@ -61,9 +61,9 @@ npm run lint       # eslint --fix
 | **HU-03** — Creación de solicitudes médicas digitales | ✅ Completa | Endpoints bajo `/solicitudes`. Ver detalle abajo. |
 | **HU-05** — Lectura y validación inicial de documentos médicos | ✅ Completa | Es la carga/reemplazo de documentos — ya cubierta por lo que HU-02 (cédula, licencia, SOAT, tecnomecánica del Domiciliario; foto de cédula del Paciente) y HU-03 (foto de receta) ya construyeron, no es una superficie aparte. |
 | **HU-06** — Revisión y aprobación de solicitudes | 🔜 Próxima | — |
-| **HU-07** — Consulta y actualización del estado del proceso | 🔜 Próxima | — |
+| **HU-07** — Consulta y actualización del estado del proceso | 🟡 API completa | Endpoints bajo `/pedidos` y `/admin/novedades`. Falta la App (Domiciliario/Paciente) y el Web (panel de novedades). Ver detalle abajo. |
 | **HU-08** — Supervisión y trazabilidad administrativa (validación de domiciliarios) | ✅ Completa | Endpoints bajo `/admin/domiciliarios`. Ver detalle abajo. |
-| **HU-09** — Asignación y gestión del domiciliario | 🔜 Próxima | — |
+| **HU-09** — Asignación y gestión del domiciliario | 🟡 API completa | Endpoints bajo `/pedidos` y `/perfil/domiciliario/disponibilidad`. Falta la App (Domiciliario). Ver detalle abajo. |
 | **HU-10** — Control del proceso de entrega | 🔜 Próxima | — |
 
 ### HU-01 — qué incluye
@@ -112,3 +112,56 @@ medicamentos, y la receta se sube como foto, no se tipea):
 - Segundo uso de `RolesGuard` (`@Roles('PACIENTE')`), después de HU-08.
 
 240/240 tests pasando.
+
+### HU-09/HU-07 — qué incluye (API — falta App/Web)
+
+Van juntas porque HU-07 son justamente los estados que HU-09 recorre una vez
+asignado el pedido. **Solo cálculo de distancias para armar el pool — sin mapa
+visual todavía** (ni Leaflet ni un equivalente); eso queda para una iteración
+futura. Ubicación del Domiciliario = GPS del celular en el momento de activar
+"Disponible" (foto instantánea, no tracking continuo); ubicación de la
+farmacia = geocodificada vía **Nominatim** (OpenStreetMap, gratis, sin API
+key — respeta 1 req/s y manda `User-Agent` propio) usando ciudad/departamento
+del perfil del Paciente como contexto.
+
+- `perfil_paciente` gana `departamento`/`ciudad` (obligatorios) — sin esto no
+  se puede geocodificar ni la dirección de entrega ni la de farmacia de sus
+  pedidos.
+- `POST /perfil/domiciliario/disponibilidad` — prende/apaga "Disponible para
+  recibir pedidos"; la ubicación (lat/lng) es obligatoria solo al activar.
+- `POST /solicitudes/:id/enviar` geocodifica `direccionFarmacia` antes de
+  pasar a `en_asignacion` — si Nominatim no la resuelve, el pedido se envía
+  igual (no bloquea), solo que sin ordenar por distancia hasta resolverse
+  manual. Genera también **`codigoEntrega`** (6 caracteres alfanuméricos, sin
+  `0/O/1/I/L` para no confundir al leerlo/tipearlo) — el Paciente se lo dicta
+  al Domiciliario al recibir el pedido.
+- Estados nuevos sobre `solicitudes`: `en_asignacion` →
+  `asignado_en_camino_farmacia` → `medicamentos_recogidos` →
+  `en_camino_entrega` → `en_sitio` → `entregado`. "Novedad en pedido" **no es
+  un estado más** — es una bandera aparte (tabla `novedad_solicitud`), el
+  pedido no pierde en qué paso del flujo estaba al reportar un incidente.
+- `GET /pedidos/disponibles` — pool ordenado por distancia real
+  (`ST_Distance`, PostGIS) a la última ubicación guardada del Domiciliario
+  que consulta.
+- `POST /pedidos/:id/aceptar` — guard atómico: si dos Domiciliarios aceptan
+  casi al mismo tiempo, el segundo recibe `409` (`Ese pedido ya fue asignado
+  a otro domiciliario`), no se pisan.
+- `POST /pedidos/:id/{recogido,iniciar-entrega,en-sitio}` — transiciones
+  manuales, cada una valida que sea el Domiciliario asignado y el estado
+  anterior correcto.
+- `POST /pedidos/:id/entregar` — pide el código de 6, lo valida
+  case-insensitive contra el guardado; si no coincide, `400` sin cambiar el
+  estado.
+- `POST /pedidos/:id/novedad` — reporta un incidente sin tocar el estado real
+  del pedido.
+- `GET /admin/novedades` / `POST /admin/novedades/:id/resolver` — panel del
+  Administrador (`@Roles('ADMINISTRADOR', 'ROOT')`), mismo patrón que
+  `/admin/domiciliarios` de HU-08.
+
+Verificado end-to-end contra la base y Nominatim reales (no solo con specs
+mockeados): pedido enviado → geocodificado → visible en el pool con distancia
+real → aceptado → recorrido completo de estados → entrega rechazada con
+código incorrecto y aceptada con el correcto → novedad reportada a mitad de
+camino sin perder el estado real → vista y resuelta por el admin.
+
+305/305 tests pasando.

@@ -3,6 +3,7 @@ import { DatabaseService } from '../../../../shared/infrastructure/database/data
 import {
   Perfil,
   PerfilRepositoryPort,
+  ResultadoActualizarDisponibilidad,
   TipoDocumentoDomiciliario,
 } from '../../domain/ports/perfil.repository.port';
 
@@ -13,6 +14,8 @@ type FilaPerfil = {
   pac_direccion: string | null;
   pac_fecha_nacimiento: string | null;
   pac_foto_cedula_path: string | null;
+  pac_departamento: string | null;
+  pac_ciudad: string | null;
   dom_direccion: string | null;
   dom_vehiculo_tipo: string | null;
   dom_vehiculo_placa: string | null;
@@ -43,7 +46,9 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
       const tienePaciente =
         fila.pac_direccion !== null ||
         fila.pac_fecha_nacimiento !== null ||
-        fila.pac_foto_cedula_path !== null;
+        fila.pac_foto_cedula_path !== null ||
+        fila.pac_departamento !== null ||
+        fila.pac_ciudad !== null;
       const tieneDomiciliario =
         fila.dom_direccion !== null ||
         fila.dom_vehiculo_tipo !== null ||
@@ -62,6 +67,8 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
               direccion: fila.pac_direccion,
               fechaNacimiento: fila.pac_fecha_nacimiento,
               fotoCedulaPath: fila.pac_foto_cedula_path,
+              departamento: fila.pac_departamento,
+              ciudad: fila.pac_ciudad,
             }
           : null,
         domiciliario: tieneDomiciliario
@@ -97,11 +104,13 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
     usuarioId: string,
     direccion: string,
     fechaNacimiento: string,
+    departamento: string,
+    ciudad: string,
   ): Promise<boolean> {
     return this.db.withUserContext(usuarioId, async (client) => {
       const result = await client.query<{ upsert_perfil_paciente: boolean }>(
-        'select app.upsert_perfil_paciente($1, $2, $3) as upsert_perfil_paciente',
-        [usuarioId, direccion, fechaNacimiento],
+        'select app.upsert_perfil_paciente($1, $2, $3, $4, $5) as upsert_perfil_paciente',
+        [usuarioId, direccion, fechaNacimiento, departamento, ciudad],
       );
       return result.rows[0].upsert_perfil_paciente;
     });
@@ -172,6 +181,25 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
         [usuarioId, sid],
       );
       return result.rows[0].desactivar_cuenta;
+    });
+  }
+
+  actualizarDisponibilidadDomiciliario(
+    usuarioId: string,
+    disponible: boolean,
+    lat: number | null,
+    lng: number | null,
+  ): Promise<ResultadoActualizarDisponibilidad> {
+    return this.db.withUserContext(usuarioId, async (client) => {
+      const result = await client.query<{
+        resultado: ResultadoActualizarDisponibilidad;
+      }>('select * from app.actualizar_disponibilidad_domiciliario($1, $2, $3, $4)', [
+        usuarioId,
+        disponible,
+        lat,
+        lng,
+      ]);
+      return result.rows[0].resultado;
     });
   }
 }

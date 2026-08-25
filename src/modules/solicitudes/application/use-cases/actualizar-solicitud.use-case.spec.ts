@@ -29,6 +29,7 @@ describe('ActualizarSolicitudUseCase', () => {
     actualizarReceta: jest.fn(),
     enviar: jest.fn(),
     cancelar: jest.fn(),
+obtenerDatosGeocodificacionFarmacia: jest.fn(),    obtenerNovedadAbierta: jest.fn(),    listarPedidosDisponibles: jest.fn(),    aceptarPedido: jest.fn(),    marcarMedicamentosRecogidos: jest.fn(),    iniciarEntrega: jest.fn(),    marcarEnSitio: jest.fn(),    entregarPedido: jest.fn(),    reportarNovedad: jest.fn(),    listarNovedadesAbiertas: jest.fn(),    resolverNovedad: jest.fn(),
   };
   const useCase = new ActualizarSolicitudUseCase(solicitudes);
 

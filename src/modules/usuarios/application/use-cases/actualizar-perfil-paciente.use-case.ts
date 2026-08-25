@@ -9,6 +9,10 @@ export type ActualizarPerfilPacienteCommand = {
   usuarioId: string;
   direccion: string;
   fechaNacimiento: string;
+  /** HU-09 — contexto de geocodificación, obligatorio igual que el
+   * resto de los campos acá. */
+  departamento: string;
+  ciudad: string;
 };
 
 export type ActualizarPerfilPacienteResultado = {
@@ -27,6 +31,8 @@ export class ActualizarPerfilPacienteUseCase {
       command.usuarioId,
       command.direccion,
       command.fechaNacimiento,
+      command.departamento,
+      command.ciudad,
     );
     if (!actualizado) {
       throw new RolNoAutorizadoError();

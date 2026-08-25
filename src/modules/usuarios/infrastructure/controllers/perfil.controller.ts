@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ActualizarDatosComunesUseCase } from '../../application/use-cases/actualizar-datos-comunes.use-case';
+import { ActualizarDisponibilidadDomiciliarioUseCase } from '../../application/use-cases/actualizar-disponibilidad-domiciliario.use-case';
 import { ActualizarPerfilDomiciliarioUseCase } from '../../application/use-cases/actualizar-perfil-domiciliario.use-case';
 import { ActualizarPerfilPacienteUseCase } from '../../application/use-cases/actualizar-perfil-paciente.use-case';
 import { DesactivarCuentaUseCase } from '../../application/use-cases/desactivar-cuenta.use-case';
@@ -27,6 +28,7 @@ import { SubirFotoPerfilUseCase } from '../../application/use-cases/subir-foto-p
 import type { IdentidadAutenticada } from '../../domain/identidad-autenticada';
 import { UsuarioAutenticado } from '../decorators/usuario-autenticado.decorator';
 import { ActualizarDatosComunesDto } from '../dtos/actualizar-datos-comunes.dto';
+import { ActualizarDisponibilidadDomiciliarioDto } from '../dtos/actualizar-disponibilidad-domiciliario.dto';
 import { ActualizarPerfilDomiciliarioDto } from '../dtos/actualizar-perfil-domiciliario.dto';
 import { ActualizarPerfilPacienteDto } from '../dtos/actualizar-perfil-paciente.dto';
 import { SubirDocumentoDomiciliarioDto } from '../dtos/subir-documento-domiciliario.dto';
@@ -56,6 +58,7 @@ export class PerfilController {
     private readonly solicitarRolPaciente: SolicitarRolPacienteUseCase,
     private readonly solicitarRolDomiciliario: SolicitarRolDomiciliarioUseCase,
     private readonly enviarSolicitudDomiciliario: EnviarSolicitudDomiciliarioUseCase,
+    private readonly actualizarDisponibilidadDomiciliario: ActualizarDisponibilidadDomiciliarioUseCase,
   ) {}
 
   @Get()
@@ -87,6 +90,8 @@ export class PerfilController {
       usuarioId: identidad.usuarioId,
       direccion: dto.direccion,
       fechaNacimiento: dto.fechaNacimiento,
+      departamento: dto.departamento,
+      ciudad: dto.ciudad,
     });
   }
 
@@ -169,6 +174,20 @@ export class PerfilController {
     @UsuarioAutenticado() identidad: IdentidadAutenticada,
   ) {
     return this.enviarSolicitudDomiciliario.execute(identidad.usuarioId);
+  }
+
+  @Post('domiciliario/disponibilidad')
+  @HttpCode(HttpStatus.OK)
+  actualizarDisponibilidad(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Body() dto: ActualizarDisponibilidadDomiciliarioDto,
+  ) {
+    return this.actualizarDisponibilidadDomiciliario.execute({
+      usuarioId: identidad.usuarioId,
+      disponible: dto.disponible,
+      lat: dto.lat ?? null,
+      lng: dto.lng ?? null,
+    });
   }
 
   @Post('desactivar')

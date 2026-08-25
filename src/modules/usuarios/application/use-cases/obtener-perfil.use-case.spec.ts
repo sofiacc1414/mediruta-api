@@ -20,6 +20,7 @@ describe('ObtenerPerfilUseCase', () => {
     upsertPerfilDomiciliario: jest.fn(),
     actualizarDocumentoDomiciliario: jest.fn(),
     desactivarCuenta: jest.fn(),
+    actualizarDisponibilidadDomiciliario: jest.fn(),
   };
   const almacenamiento: AlmacenamientoArchivosPort = {
     subir: jest.fn(),
@@ -67,6 +68,8 @@ describe('ObtenerPerfilUseCase', () => {
         direccion: 'Calle 123',
         fechaNacimiento: '1990-05-10',
         fotoCedulaPath: 'paciente/usuario-uuid/cedula.jpg',
+        departamento: 'Cundinamarca',
+        ciudad: 'Bogotá',
       },
       domiciliario: {
         direccion: 'Avenida 45',
@@ -92,6 +95,8 @@ describe('ObtenerPerfilUseCase', () => {
       'https://firmada.test/domiciliario/usuario-uuid/cedula.jpg',
     );
     expect(resultado.domiciliario?.licenciaUrl).toBeNull();
+    expect(resultado.paciente?.departamento).toBe('Cundinamarca');
+    expect(resultado.paciente?.ciudad).toBe('Bogotá');
     expect(almacenamiento.obtenerUrlFirmada).toHaveBeenCalledWith(
       BUCKET_PERFILES,
       'perfil/usuario-uuid/foto.jpg',

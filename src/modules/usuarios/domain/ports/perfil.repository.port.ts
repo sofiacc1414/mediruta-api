@@ -2,7 +2,20 @@ export type PerfilPaciente = {
   direccion: string | null;
   fechaNacimiento: string | null;
   fotoCedulaPath: string | null;
+  /** HU-09 — contexto para geocodificar tanto esta dirección (default
+   * de la de entrega en una solicitud) como la de farmacia de cada
+   * pedido (se asume la misma ciudad del paciente). */
+  departamento: string | null;
+  ciudad: string | null;
 };
+
+/** HU-09 — resultado de prender/apagar "Disponible para recibir
+ * pedidos". `no_autorizado` si la cuenta no tiene DOMICILIARIO
+ * habilitado. */
+export type ResultadoActualizarDisponibilidad =
+  | 'actualizado'
+  | 'no_autorizado'
+  | 'no_encontrado';
 
 export type PerfilDomiciliario = {
   direccion: string | null;
@@ -36,11 +49,15 @@ export abstract class PerfilRepositoryPort {
     telefono: string,
   ): Promise<boolean>;
 
-  /** G01/G03 — dirección + fecha de nacimiento del Paciente. */
+  /** G01/G03 — dirección + fecha de nacimiento del Paciente.
+   * departamento/ciudad son obligatorios desde HU-09 (contexto de
+   * geocodificación), igual que el resto de los campos acá. */
   abstract upsertPerfilPaciente(
     usuarioId: string,
     direccion: string,
     fechaNacimiento: string,
+    departamento: string,
+    ciudad: string,
   ): Promise<boolean>;
 
   /** G01/G03 — foto de cédula del Paciente (ya subida a Storage). */
@@ -72,4 +89,15 @@ export abstract class PerfilRepositoryPort {
 
   /** G05 — revoca todas las sesiones y desactiva la cuenta. */
   abstract desactivarCuenta(usuarioId: string, sid: string): Promise<boolean>;
+
+  /** HU-09 — prende/apaga "Disponible para recibir pedidos". La
+   * ubicación (lat/lng, la manda el celular) solo se guarda cuando
+   * `disponible = true` — es una foto instantánea de ese momento, no
+   * tracking continuo. */
+  abstract actualizarDisponibilidadDomiciliario(
+    usuarioId: string,
+    disponible: boolean,
+    lat: number | null,
+    lng: number | null,
+  ): Promise<ResultadoActualizarDisponibilidad>;
 }

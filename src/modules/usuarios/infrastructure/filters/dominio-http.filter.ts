@@ -8,6 +8,9 @@ import { Response } from 'express';
 import { DocumentacionIncompletaError } from '../../../domiciliarios/domain/errors/documentacion-incompleta.error';
 import { DomiciliarioNoEncontradoError } from '../../../domiciliarios/domain/errors/domiciliario-no-encontrado.error';
 import { NoHayBorradorDomiciliarioError } from '../../../domiciliarios/domain/errors/no-hay-borrador-domiciliario.error';
+import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
+import { NovedadNoEncontradaError } from '../../../solicitudes/domain/errors/novedad-no-encontrada.error';
+import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { PerfilIncompletoError } from '../../../solicitudes/domain/errors/perfil-incompleto.error';
 import { SolicitudIncompletaError } from '../../../solicitudes/domain/errors/solicitud-incompleta.error';
 import { SolicitudNoEncontradaError } from '../../../solicitudes/domain/errors/solicitud-no-encontrada.error';
@@ -37,12 +40,18 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   SolicitudIncompletaError,
   SolicitudNoEncontradaError,
   PerfilIncompletoError,
+  PedidoYaAsignadoError,
+  CodigoEntregaIncorrectoError,
+  NovedadNoEncontradaError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
     const response = host.switchToHttp().getResponse<Response>();
 
-    if (exception instanceof CorreoYaRegistradoError) {
+    if (
+      exception instanceof CorreoYaRegistradoError ||
+      exception instanceof PedidoYaAsignadoError
+    ) {
       response.status(HttpStatus.CONFLICT).json({
         statusCode: HttpStatus.CONFLICT,
         message: exception.message,
@@ -76,7 +85,8 @@ export class DominioHttpFilter implements ExceptionFilter {
     if (
       exception instanceof DomiciliarioNoEncontradoError ||
       exception instanceof NoHayBorradorDomiciliarioError ||
-      exception instanceof SolicitudNoEncontradaError
+      exception instanceof SolicitudNoEncontradaError ||
+      exception instanceof NovedadNoEncontradaError
     ) {
       response.status(HttpStatus.NOT_FOUND).json({
         statusCode: HttpStatus.NOT_FOUND,

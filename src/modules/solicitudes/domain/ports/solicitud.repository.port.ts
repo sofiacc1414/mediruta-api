@@ -1,4 +1,13 @@
-export type EstadoSolicitud = 'borrador' | 'pendiente_revision' | 'cancelada';
+export type EstadoSolicitud =
+  | 'borrador'
+  | 'pendiente_revision'
+  | 'en_asignacion'
+  | 'asignado_en_camino_farmacia'
+  | 'medicamentos_recogidos'
+  | 'en_camino_entrega'
+  | 'en_sitio'
+  | 'entregado'
+  | 'cancelada';
 
 export type Medicamento = {
   nombre: string | null;
@@ -40,6 +49,40 @@ export type SolicitudDetalle = {
   /** Referencia viva a `perfil_paciente.foto_cedula_path` (HU-02) —
    * nunca se copia a la solicitud. */
   cedulaPath: string | null;
+  /** Solo existe una vez enviada (G05), igual que codigoPedido — el
+   * paciente lo ve en el detalle de su pedido para dárselo al
+   * domiciliario al recibirlo. */
+  codigoEntrega: string | null;
+};
+
+/** HU-09 — un pedido en `en_asignacion`, visto por un Domiciliario,
+ * ordenado por distancia real a la farmacia. */
+export type PedidoDisponible = {
+  id: string;
+  codigoPedido: string | null;
+  direccionFarmacia: string | null;
+  direccionEntrega: string | null;
+  distanciaMetros: number;
+  creadoEn: string;
+};
+
+/** HU-07 — un incidente reportado por el Domiciliario sobre un pedido
+ * en curso, visible para el Administrador hasta que lo resuelva. No
+ * reemplaza el `estado` real del pedido (ver ports comment en la
+ * migración) — es información aparte. */
+export type NovedadAbierta = {
+  id: string;
+  solicitudId: string;
+  codigoPedido: string | null;
+  detalle: string;
+  reportadaPorCorreo: string;
+  creadoEn: string;
+};
+
+export type NovedadDelPaciente = {
+  id: string;
+  detalle: string;
+  creadoEn: string;
 };
 
 export type EventoHistorial = {
@@ -58,6 +101,27 @@ export type ResultadoEnviar =
   | { resultado: 'no_encontrada' };
 
 export type ResultadoCancelar = 'cancelada' | 'no_encontrada';
+
+/** HU-09 — resultado de intentar aceptar un pedido del pool.
+ * `ya_asignado` es el caso normal de dos Domiciliarios aceptando a la
+ * vez, no un error — el guard atómico de `app.aceptar_pedido` decide
+ * quién gana. */
+export type ResultadoAceptarPedido = 'aceptado' | 'ya_asignado' | 'no_encontrado';
+
+/** HU-07 — resultado común de las transiciones manuales del
+ * Domiciliario (recogido, iniciar entrega, en sitio). */
+export type ResultadoTransicionPedido = 'actualizado' | 'no_encontrado';
+
+export type ResultadoEntregarPedido =
+  | 'entregado'
+  | 'codigo_incorrecto'
+  | 'no_encontrado';
+
+export type ResultadoReportarNovedad =
+  | { resultado: 'reportada'; id: string }
+  | { resultado: 'no_encontrado' };
+
+export type ResultadoResolverNovedad = 'resuelta' | 'no_encontrado';
 
 /** G01-G06 de HU-03 — el Paciente crea y gestiona sus propias
  * solicitudes. Todas las operaciones están acotadas al dueño (nunca se
@@ -114,10 +178,27 @@ export abstract class SolicitudRepositoryPort {
     path: string,
   ): Promise<boolean>;
 
-  /** G05. */
+  /** Lo que hace falta ANTES de geocodificar la farmacia (HU-09): la
+   * dirección recién tipeada + ciudad/departamento del perfil del
+   * paciente. `null` si la solicitud no existe o no es del dueño. */
+  abstract obtenerDatosGeocodificacionFarmacia(
+    pacienteId: string,
+    solicitudId: string,
+  ): Promise<{
+    direccionFarmacia: string | null;
+    ciudad: string | null;
+    departamento: string | null;
+  } | null>;
+
+  /** G05. `farmaciaLat`/`farmaciaLng` ya vienen geocodificados (el caso
+   * de uso llama a GeocodificacionPort antes) — si la geocodificación
+   * falló, se mandan `null` y el pedido se envía igual, sin ubicación
+   * de farmacia (HU-09, no bloquea el envío). */
   abstract enviar(
     pacienteId: string,
     solicitudId: string,
+    farmaciaLat: number | null,
+    farmaciaLng: number | null,
   ): Promise<ResultadoEnviar>;
 
   /** G06. */
@@ -125,4 +206,67 @@ export abstract class SolicitudRepositoryPort {
     pacienteId: string,
     solicitudId: string,
   ): Promise<ResultadoCancelar>;
+
+  /** HU-09 — si el paciente tiene una novedad abierta sobre este
+   * pedido, para mostrarla en el detalle. `null` si no hay ninguna
+   * (o el pedido no existe/no es del dueño). */
+  abstract obtenerNovedadAbierta(
+    pacienteId: string,
+    solicitudId: string,
+  ): Promise<NovedadDelPaciente | null>;
+
+  // --- Domiciliario (HU-09/HU-07) ---
+
+  /** Pedidos en `en_asignacion`, ordenados por distancia real a la
+   * farmacia — vacío si el Domiciliario no está disponible o no tiene
+   * ubicación guardada todavía. */
+  abstract listarPedidosDisponibles(
+    domiciliarioId: string,
+  ): Promise<PedidoDisponible[]>;
+
+  /** Guard atómico — dos Domiciliarios aceptando el mismo pedido a la
+   * vez, solo uno gana. */
+  abstract aceptarPedido(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoAceptarPedido>;
+
+  abstract marcarMedicamentosRecogidos(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoTransicionPedido>;
+
+  abstract iniciarEntrega(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoTransicionPedido>;
+
+  abstract marcarEnSitio(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoTransicionPedido>;
+
+  /** Valida el código de 6 contra el guardado — case-insensitive. */
+  abstract entregarPedido(
+    domiciliarioId: string,
+    solicitudId: string,
+    codigo: string,
+  ): Promise<ResultadoEntregarPedido>;
+
+  /** No cambia `estado` — la novedad convive con el paso real en el
+   * que esté el pedido (ver comentario en la migración). */
+  abstract reportarNovedad(
+    domiciliarioId: string,
+    solicitudId: string,
+    detalle: string,
+  ): Promise<ResultadoReportarNovedad>;
+
+  // --- Administrador (novedades) ---
+
+  abstract listarNovedadesAbiertas(adminId: string): Promise<NovedadAbierta[]>;
+
+  abstract resolverNovedad(
+    adminId: string,
+    novedadId: string,
+  ): Promise<ResultadoResolverNovedad>;
 }

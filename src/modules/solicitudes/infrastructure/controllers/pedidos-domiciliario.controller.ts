@@ -1,0 +1,110 @@
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseFilters,
+  UseGuards,
+} from '@nestjs/common';
+import type { IdentidadAutenticada } from '../../../usuarios/domain/identidad-autenticada';
+import { Roles } from '../../../usuarios/infrastructure/decorators/roles.decorator';
+import { UsuarioAutenticado } from '../../../usuarios/infrastructure/decorators/usuario-autenticado.decorator';
+import { DominioHttpFilter } from '../../../usuarios/infrastructure/filters/dominio-http.filter';
+import { AccessAuthGuard } from '../../../usuarios/infrastructure/guards/access-auth.guard';
+import { RolesGuard } from '../../../usuarios/infrastructure/guards/roles.guard';
+import { AceptarPedidoUseCase } from '../../application/use-cases/aceptar-pedido.use-case';
+import { EntregarPedidoUseCase } from '../../application/use-cases/entregar-pedido.use-case';
+import { IniciarEntregaUseCase } from '../../application/use-cases/iniciar-entrega.use-case';
+import { ListarPedidosDisponiblesUseCase } from '../../application/use-cases/listar-pedidos-disponibles.use-case';
+import { MarcarEnSitioUseCase } from '../../application/use-cases/marcar-en-sitio.use-case';
+import { MarcarMedicamentosRecogidosUseCase } from '../../application/use-cases/marcar-medicamentos-recogidos.use-case';
+import { ReportarNovedadUseCase } from '../../application/use-cases/reportar-novedad.use-case';
+import { EntregarPedidoDto } from '../dtos/entregar-pedido.dto';
+import { ReportarNovedadDto } from '../dtos/reportar-novedad.dto';
+
+/** HU-09/HU-07 — solo Domiciliario. Una vez que el paciente envía un
+ * pedido (`SolicitudesController`, /solicitudes), de acá en más lo
+ * recorre el Domiciliario asignado — mismo recurso (`solicitudes`),
+ * distinto rol, por eso es un controller aparte con su propio
+ * `@Roles`, no una sección más de `SolicitudesController`. */
+@Controller('pedidos')
+@UseFilters(DominioHttpFilter)
+@UseGuards(AccessAuthGuard, RolesGuard)
+@Roles('DOMICILIARIO')
+export class PedidosDomiciliarioController {
+  constructor(
+    private readonly listarPedidosDisponibles: ListarPedidosDisponiblesUseCase,
+    private readonly aceptarPedido: AceptarPedidoUseCase,
+    private readonly marcarMedicamentosRecogidos: MarcarMedicamentosRecogidosUseCase,
+    private readonly iniciarEntrega: IniciarEntregaUseCase,
+    private readonly marcarEnSitio: MarcarEnSitioUseCase,
+    private readonly entregarPedido: EntregarPedidoUseCase,
+    private readonly reportarNovedad: ReportarNovedadUseCase,
+  ) {}
+
+  @Get('disponibles')
+  @HttpCode(HttpStatus.OK)
+  disponibles(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
+    return this.listarPedidosDisponibles.execute(identidad.usuarioId);
+  }
+
+  @Post(':id/aceptar')
+  @HttpCode(HttpStatus.OK)
+  aceptar(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+  ) {
+    return this.aceptarPedido.execute(identidad.usuarioId, solicitudId);
+  }
+
+  @Post(':id/recogido')
+  @HttpCode(HttpStatus.OK)
+  recogido(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+  ) {
+    return this.marcarMedicamentosRecogidos.execute(identidad.usuarioId, solicitudId);
+  }
+
+  @Post(':id/iniciar-entrega')
+  @HttpCode(HttpStatus.OK)
+  iniciarEntregaAction(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+  ) {
+    return this.iniciarEntrega.execute(identidad.usuarioId, solicitudId);
+  }
+
+  @Post(':id/en-sitio')
+  @HttpCode(HttpStatus.OK)
+  enSitio(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+  ) {
+    return this.marcarEnSitio.execute(identidad.usuarioId, solicitudId);
+  }
+
+  @Post(':id/entregar')
+  @HttpCode(HttpStatus.OK)
+  entregar(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+    @Body() dto: EntregarPedidoDto,
+  ) {
+    return this.entregarPedido.execute(identidad.usuarioId, solicitudId, dto.codigo);
+  }
+
+  @Post(':id/novedad')
+  @HttpCode(HttpStatus.OK)
+  novedad(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+    @Body() dto: ReportarNovedadDto,
+  ) {
+    return this.reportarNovedad.execute(identidad.usuarioId, solicitudId, dto.detalle);
+  }
+}

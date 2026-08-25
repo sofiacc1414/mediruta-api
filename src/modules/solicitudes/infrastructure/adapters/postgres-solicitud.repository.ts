@@ -4,9 +4,17 @@ import {
   EstadoSolicitud,
   EventoHistorial,
   Medicamento,
+  NovedadAbierta,
+  NovedadDelPaciente,
+  PedidoDisponible,
+  ResultadoAceptarPedido,
   ResultadoCancelar,
   ResultadoCrear,
   ResultadoEnviar,
+  ResultadoEntregarPedido,
+  ResultadoReportarNovedad,
+  ResultadoResolverNovedad,
+  ResultadoTransicionPedido,
   SolicitudDetalle,
   SolicitudRepositoryPort,
   SolicitudResumen,
@@ -31,6 +39,37 @@ type FilaDetalle = {
   enviado_en: string | null;
   cancelado_en: string | null;
   cedula_path: string | null;
+  codigo_entrega: string | null;
+};
+
+type FilaDatosGeocodificacionFarmacia = {
+  direccion_farmacia: string | null;
+  ciudad: string | null;
+  departamento: string | null;
+};
+
+type FilaPedidoDisponible = {
+  id: string;
+  codigo_pedido: string | null;
+  direccion_farmacia: string | null;
+  direccion_entrega: string | null;
+  distancia_metros: number;
+  creado_en: string;
+};
+
+type FilaNovedadAbierta = {
+  id: string;
+  solicitud_id: string;
+  codigo_pedido: string | null;
+  detalle: string;
+  reportada_por_correo: string;
+  creado_en: string;
+};
+
+type FilaNovedadDelPaciente = {
+  id: string;
+  detalle: string;
+  creado_en: string;
 };
 
 type FilaMedicamento = {
@@ -143,6 +182,32 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         enviadoEn: fila.enviado_en,
         canceladoEn: fila.cancelado_en,
         cedulaPath: fila.cedula_path,
+        codigoEntrega: fila.codigo_entrega,
+      };
+    });
+  }
+
+  obtenerDatosGeocodificacionFarmacia(
+    pacienteId: string,
+    solicitudId: string,
+  ): Promise<{
+    direccionFarmacia: string | null;
+    ciudad: string | null;
+    departamento: string | null;
+  } | null> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<FilaDatosGeocodificacionFarmacia>(
+        'select * from app.obtener_datos_geocodificacion_farmacia($1, $2)',
+        [pacienteId, solicitudId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return {
+        direccionFarmacia: fila.direccion_farmacia,
+        ciudad: fila.ciudad,
+        departamento: fila.departamento,
       };
     });
   }
@@ -223,11 +288,16 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     });
   }
 
-  enviar(pacienteId: string, solicitudId: string): Promise<ResultadoEnviar> {
+  enviar(
+    pacienteId: string,
+    solicitudId: string,
+    farmaciaLat: number | null,
+    farmaciaLng: number | null,
+  ): Promise<ResultadoEnviar> {
     return this.db.withUserContext(pacienteId, async (client) => {
       const result = await client.query<FilaEnviar>(
-        'select * from app.enviar_solicitud($1, $2)',
-        [pacienteId, solicitudId],
+        'select * from app.enviar_solicitud($1, $2, $3, $4)',
+        [pacienteId, solicitudId, farmaciaLat, farmaciaLng],
       );
       const fila = result.rows[0];
 
@@ -258,6 +328,160 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         solicitudId,
       ]);
       return result.rows[0].cancelar_solicitud;
+    });
+  }
+
+  obtenerNovedadAbierta(
+    pacienteId: string,
+    solicitudId: string,
+  ): Promise<NovedadDelPaciente | null> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<FilaNovedadDelPaciente>(
+        'select * from app.obtener_novedad_abierta_solicitud($1, $2)',
+        [pacienteId, solicitudId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return { id: fila.id, detalle: fila.detalle, creadoEn: fila.creado_en };
+    });
+  }
+
+  listarPedidosDisponibles(domiciliarioId: string): Promise<PedidoDisponible[]> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<FilaPedidoDisponible>(
+        'select * from app.listar_pedidos_disponibles($1)',
+        [domiciliarioId],
+      );
+      return result.rows.map((fila) => ({
+        id: fila.id,
+        codigoPedido: fila.codigo_pedido,
+        direccionFarmacia: fila.direccion_farmacia,
+        direccionEntrega: fila.direccion_entrega,
+        distanciaMetros: fila.distancia_metros,
+        creadoEn: fila.creado_en,
+      }));
+    });
+  }
+
+  aceptarPedido(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoAceptarPedido> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<{ resultado: ResultadoAceptarPedido }>(
+        'select * from app.aceptar_pedido($1, $2)',
+        [domiciliarioId, solicitudId],
+      );
+      return result.rows[0].resultado;
+    });
+  }
+
+  marcarMedicamentosRecogidos(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoTransicionPedido> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<{
+        resultado: ResultadoTransicionPedido;
+      }>('select * from app.marcar_medicamentos_recogidos($1, $2)', [
+        domiciliarioId,
+        solicitudId,
+      ]);
+      return result.rows[0].resultado;
+    });
+  }
+
+  iniciarEntrega(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoTransicionPedido> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<{
+        resultado: ResultadoTransicionPedido;
+      }>('select * from app.iniciar_entrega($1, $2)', [
+        domiciliarioId,
+        solicitudId,
+      ]);
+      return result.rows[0].resultado;
+    });
+  }
+
+  marcarEnSitio(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoTransicionPedido> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<{
+        resultado: ResultadoTransicionPedido;
+      }>('select * from app.marcar_en_sitio($1, $2)', [
+        domiciliarioId,
+        solicitudId,
+      ]);
+      return result.rows[0].resultado;
+    });
+  }
+
+  entregarPedido(
+    domiciliarioId: string,
+    solicitudId: string,
+    codigo: string,
+  ): Promise<ResultadoEntregarPedido> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<{ resultado: ResultadoEntregarPedido }>(
+        'select * from app.entregar_pedido($1, $2, $3)',
+        [domiciliarioId, solicitudId, codigo],
+      );
+      return result.rows[0].resultado;
+    });
+  }
+
+  reportarNovedad(
+    domiciliarioId: string,
+    solicitudId: string,
+    detalle: string,
+  ): Promise<ResultadoReportarNovedad> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<{ resultado: string; id: string | null }>(
+        'select * from app.reportar_novedad($1, $2, $3)',
+        [domiciliarioId, solicitudId, detalle],
+      );
+      const fila = result.rows[0];
+      if (fila.resultado === 'reportada' && fila.id) {
+        return { resultado: 'reportada', id: fila.id };
+      }
+      return { resultado: 'no_encontrado' };
+    });
+  }
+
+  listarNovedadesAbiertas(adminId: string): Promise<NovedadAbierta[]> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<FilaNovedadAbierta>(
+        'select * from app.listar_novedades_abiertas($1)',
+        [adminId],
+      );
+      return result.rows.map((fila) => ({
+        id: fila.id,
+        solicitudId: fila.solicitud_id,
+        codigoPedido: fila.codigo_pedido,
+        detalle: fila.detalle,
+        reportadaPorCorreo: fila.reportada_por_correo,
+        creadoEn: fila.creado_en,
+      }));
+    });
+  }
+
+  resolverNovedad(
+    adminId: string,
+    novedadId: string,
+  ): Promise<ResultadoResolverNovedad> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<{ resultado: ResultadoResolverNovedad }>(
+        'select * from app.resolver_novedad($1, $2)',
+        [adminId, novedadId],
+      );
+      return result.rows[0].resultado;
     });
   }
 }

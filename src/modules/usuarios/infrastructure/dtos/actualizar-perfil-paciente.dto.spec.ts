@@ -7,11 +7,25 @@ async function validar(body: Record<string, unknown>) {
   return validate(dto);
 }
 
-const valido = { direccion: 'Calle 123 #45-67', fechaNacimiento: '1990-05-10' };
+const valido = {
+  direccion: 'Calle 123 #45-67',
+  fechaNacimiento: '1990-05-10',
+  departamento: 'Cundinamarca',
+  ciudad: 'Bogotá',
+};
 
 describe('ActualizarPerfilPacienteDto', () => {
   it('acepta datos válidos', async () => {
     await expect(validar(valido)).resolves.toHaveLength(0);
+  });
+
+  it('rechaza sin departamento/ciudad — HU-09 los necesita para geocodificar', async () => {
+    const errores = await validar({
+      direccion: valido.direccion,
+      fechaNacimiento: valido.fechaNacimiento,
+    });
+    expect(errores.some((e) => e.property === 'departamento')).toBe(true);
+    expect(errores.some((e) => e.property === 'ciudad')).toBe(true);
   });
 
   it('rechaza dirección demasiado corta', async () => {

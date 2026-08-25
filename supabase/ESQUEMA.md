@@ -375,10 +375,13 @@ genera en `crear_solicitud`. `unique index` parcial (`where codigo_pedido is not
 null`) además de la unicidad que ya da la secuencia — es un identificador de cara al
 paciente/domiciliario, vale la pena la garantía extra a nivel de base.
 
-`estado` — check `in ('borrador', 'pendiente_revision', 'cancelada')`. **HU-06** (revisión
-del admin) va a ampliar este check con `pendiente_correccion`/`aprobada`/`rechazada`
-sobre solicitudes ya enviadas — no se agregan ahora porque todavía no existe quién los
-use.
+`estado` — check `in ('borrador', 'pendiente_revision', 'en_asignacion',
+'asignado_en_camino_farmacia', 'medicamentos_recogidos', 'en_camino_entrega',
+'en_sitio', 'entregado', 'cancelada')` — los 6 estados desde `en_asignacion` en
+adelante son de HU-09/HU-07 (ver sección propia más abajo). **HU-06** (revisión del
+admin) todavía puede sumar `pendiente_correccion`/`aprobada`/`rechazada` *antes* de
+`en_asignacion` cuando exista esa historia — no se agregan ahora porque todavía no
+existe quién los use.
 
 `solicitud_medicamentos`: una fila por medicamento de la solicitud (`nombre`,
 `concentracion`, `forma_farmaceutica`, `cantidad`, `posologia`, todos nullable — una
@@ -418,22 +421,86 @@ SQL dinámico.
 
 - **`app.crear_solicitud(p_paciente_id, p_medicamentos jsonb, p_receta_path, p_receta_fecha_vencimiento, p_direccion_entrega, p_direccion_farmacia)`** → `(resultado text, id uuid)`, `resultado` en `creada`\|`no_autorizado`\|**`sin_cedula`** (G01) — bloqueo nuevo: si `perfil_paciente.foto_cedula_path` es `NULL`, no crea nada. Inserta la solicitud + sus medicamentos + primera fila en `historial_solicitud`.
 - **`app.listar_solicitudes(p_paciente_id)`** → resumen (id, codigo_pedido, estado, creado_en) de las propias, más recientes primero (G02) — `codigo_pedido` nulo mientras siga en Borrador. Ya no trae datos de medicamento, eso vive en el detalle.
-- **`app.obtener_solicitud(p_paciente_id, p_solicitud_id)`** → fila completa (incluye `direccion_farmacia`) + `cedula_path` (`LEFT JOIN perfil_paciente`, referencia viva); el `WHERE paciente_id = p_paciente_id` es la verificación de dueño (G03).
+- **`app.obtener_solicitud(p_paciente_id, p_solicitud_id)`** → fila completa (incluye `direccion_farmacia` y, desde HU-09, `codigo_entrega`) + `cedula_path` (`LEFT JOIN perfil_paciente`, referencia viva); el `WHERE paciente_id = p_paciente_id` es la verificación de dueño (G03).
 - **`app.listar_medicamentos_solicitud(p_paciente_id, p_solicitud_id)`** → medicamentos de la solicitud, en el orden en que se cargaron (G03) — aparte del detalle porque es 0..N filas.
 - **`app.listar_historial_solicitud(p_paciente_id, p_solicitud_id)`** → eventos de `historial_solicitud`, más antiguo primero (G03).
 - **`app.actualizar_solicitud(p_paciente_id, p_solicitud_id, p_medicamentos jsonb, p_receta_fecha_vencimiento, p_direccion_entrega, p_direccion_farmacia)`** → `boolean`. Solo si `estado='borrador'` y es del dueño (G04). Reemplaza todos los medicamentos (`DELETE` + `INSERT`) por los del array recibido.
 - **`app.actualizar_receta_solicitud(p_paciente_id, p_solicitud_id, p_path)`** → `boolean`. Sube/reemplaza la foto de la receta — aparte de `actualizar_solicitud` porque la sube la API después de subir el archivo a Storage (dos pasos, mismo patrón que `actualizar_foto_cedula_paciente` de HU-02).
-- **`app.enviar_solicitud(p_paciente_id, p_solicitud_id)`** → `(resultado text, faltantes text[], codigo_pedido text)`, `resultado` en `enviada`\|`incompleta`\|`no_encontrada` (G05). `incompleta` exige: al menos un medicamento con nombre/concentración/forma farmacéutica/cantidad completos (**posología queda afuera a propósito, es el único campo opcional de la línea**), foto de receta, fecha de vencimiento, **dirección de la farmacia**, dirección de entrega, **y que la receta no esté ya vencida** (`receta_fecha_vencimiento < current_date` agrega `'La receta está vencida...'` a `faltantes`) — la cédula NO se revisa acá, ya se exigió en `crear_solicitud`. Si `resultado='enviada'`, genera y guarda `codigo_pedido` (`MR-000001`, ...) — es el único momento en que se genera.
+- **`app.enviar_solicitud(p_paciente_id, p_solicitud_id, p_farmacia_lat double precision default null, p_farmacia_lng double precision default null)`** → `(resultado text, faltantes text[], codigo_pedido text)`, `resultado` en `enviada`\|`incompleta`\|`no_encontrada` (G05). `incompleta` exige: al menos un medicamento con nombre/concentración/forma farmacéutica/cantidad completos (**posología queda afuera a propósito, es el único campo opcional de la línea**), foto de receta, fecha de vencimiento, **dirección de la farmacia**, dirección de entrega, **y que la receta no esté ya vencida** (`receta_fecha_vencimiento < current_date` agrega `'La receta está vencida...'` a `faltantes`) — la cédula NO se revisa acá, ya se exigió en `crear_solicitud`. Si `resultado='enviada'`: genera y guarda `codigo_pedido` (`MR-000001`, ...) y **`codigo_entrega`** (HU-09, 6 caracteres), guarda `farmacia_ubicacion` si `p_farmacia_lat`/`p_farmacia_lng` no son null (los geocodifica el caso de uso en TS, vía `GeocodificacionPort`, antes de llamar acá — nunca desde SQL), y pasa el estado directo a **`en_asignacion`** (no se queda en `pendiente_revision`, ver HU-09/HU-07 más abajo) — igual inserta la fila de historial en `pendiente_revision` primero, así que "Pedido generado" no desaparece de la línea de tiempo.
 
 **Migraciones:** `20260823051000_update_solicitudes_functions.sql`,
 `20260823060000_alter_solicitudes_receta_vencimiento.sql` (rename de columna/parámetro
 + chequeo real de receta vencida en `enviar_solicitud`, que antes no existía),
 `20260823070000_add_codigo_pedido.sql` (genera y devuelve `codigo_pedido` al enviar),
 `20260823130000_posologia_opcional_en_solicitud.sql` (posología deja de contar en
-`'Completar todos los campos de cada medicamento'`).
-- **`app.cancelar_solicitud(p_paciente_id, p_solicitud_id)`** → `text`, `cancelada`\|`no_encontrada`. Por ahora solo exige que no esté ya cancelada — el chequeo de "no recogida por un domiciliario" se agrega cuando exista ese estado (HU-09/10) (G06).
+`'Completar todos los campos de cada medicamento'`),
+`20260824060000_enviar_solicitud_asignacion_y_codigo_entrega.sql` (agrega los 2
+parámetros de geocodificación + `codigo_entrega` + pasa a `en_asignacion` — **requirió
+`DROP FUNCTION` previo**: agregar parámetros con default vía `CREATE OR REPLACE` no
+reemplaza una función existente, crea una segunda sobrecargada y deja la vieja viva con
+el comportamiento anterior — comprobado en vivo contra la base real).
+- **`app.cancelar_solicitud(p_paciente_id, p_solicitud_id)`** → `text`, `cancelada`\|`no_encontrada`. Por ahora solo exige que no esté ya cancelada — el chequeo de "no recogida por un domiciliario" se agrega cuando exista ese estado (HU-10) (G06).
 
 **Migración:** `20260823041000_create_solicitudes_functions.sql`
+
+## HU-09/HU-07 — asignación por cercanía y estados del pedido
+
+Cuando se envía un pedido (`app.enviar_solicitud`, arriba) hay que ofrecérselo a un
+Domiciliario cercano a la farmacia (no a cualquiera) y que alguno lo acepte; de ahí en
+más el pedido recorre una secuencia de estados operativos que el Domiciliario dispara y
+el Paciente consulta. Van juntas porque HU-07 son justamente esos estados.
+
+**PostGIS** (`20260824010000_habilitar_postgis.sql`, fijada a schema `public` a
+propósito) da `geography(Point,4326)` + `ST_Distance` en metros — sin escribir
+Haversine a mano. Solo cálculo de distancias para el pool, **sin mapa visual todavía**.
+
+`perfil_domiciliario` gana `disponible boolean`, `ubicacion geography(Point,4326)`,
+`ubicacion_actualizada_en timestamptz` — la ubicación la manda el celular (GPS en vivo)
+al activar "Disponible", foto instantánea de ese momento, no tracking continuo en
+background. `solicitudes` gana `domiciliario_id`, `farmacia_ubicacion` (geocodificada,
+ver `enviar_solicitud` arriba) y `codigo_entrega`.
+
+Tabla nueva **`novedad_solicitud`** (`id`, `solicitud_id`, `reportada_por`, `detalle`,
+`creado_en`, `resuelta_en`, `resuelta_por`) — "Novedad en pedido" es una bandera aparte,
+**no un estado más**: el pedido sigue mostrando su `estado` real (ej.
+`asignado_en_camino_farmacia`) con la novedad superpuesta, en vez de perder en qué paso
+del flujo estaba (decisión tomada con el equipo). Un pedido puede tener más de una
+novedad a lo largo de su vida; `resuelta_en is null` es la lista de "abiertas" para el
+admin.
+
+**Migraciones de esquema:** `20260824010000_habilitar_postgis.sql`,
+`20260824020000_geolocalizacion_paciente_domiciliario.sql` (`departamento`/`ciudad` en
+`perfil_paciente`, `disponible`/`ubicacion`/`ubicacion_actualizada_en` en
+`perfil_domiciliario`), `20260824030000_asignacion_domiciliario_solicitudes.sql`
+(`domiciliario_id`/`farmacia_ubicacion`/`codigo_entrega` + amplía el `estado` check),
+`20260824040000_create_novedad_solicitud.sql`.
+
+Funciones (`20260824050000_create_funciones_asignacion_domiciliario.sql` salvo que se
+indique otra):
+
+- **`app.actualizar_disponibilidad_domiciliario(p_domiciliario_id, p_disponible, p_lat, p_lng)`** → `(resultado text)`, `actualizado`\|`no_autorizado`\|`no_encontrado`. Guarda `ubicacion` solo si `p_disponible = true`.
+- **`app.listar_pedidos_disponibles(p_domiciliario_id)`** → pedidos en `en_asignacion` con `farmacia_ubicacion` no nula, ordenados por `ST_Distance` a la última ubicación del Domiciliario. Vacío (no error) si no está disponible o no tiene ubicación todavía.
+- **`app.aceptar_pedido(p_domiciliario_id, p_solicitud_id)`** → `(resultado text)`, `aceptado`\|`ya_asignado`\|`no_encontrado`. `UPDATE ... WHERE estado='en_asignacion' AND domiciliario_id IS NULL` es el guard atómico — dos Domiciliarios aceptando a la vez, el segundo recibe `ya_asignado` (comprobado en vivo, no es teórico).
+- **`app.marcar_medicamentos_recogidos`**, **`app.iniciar_entrega`**, **`app.marcar_en_sitio`** → `(resultado text)`, `actualizado`\|`no_encontrado` cada una. Validan que sea el Domiciliario asignado y el estado anterior correcto.
+- **`app.entregar_pedido(p_domiciliario_id, p_solicitud_id, p_codigo)`** → `(resultado text)`, `entregado`\|`codigo_incorrecto`\|`no_encontrado`. Compara `p_codigo` contra `codigo_entrega` case-insensitive.
+- **`app.reportar_novedad(p_domiciliario_id, p_solicitud_id, p_detalle)`** → `(resultado text, id uuid)`, `reportada`\|`no_encontrado`. No toca `estado`.
+- **`app.resolver_novedad(p_admin_id, p_novedad_id)`** / **`app.listar_novedades_abiertas(p_admin_id)`** → panel del Administrador, mismo patrón `usuario_tiene_rol_habilitado` de HU-08.
+- **`app.obtener_datos_geocodificacion_farmacia`** / **`app.obtener_novedad_abierta_solicitud`** (`20260824070000_lecturas_asignacion_y_geocodificacion.sql`) → lecturas de apoyo para el caso de uso en TS (la primera, antes de geocodificar; la segunda, para que el Paciente vea si su propio pedido tiene una novedad sin ser Administrador).
+- **`app.obtener_perfil`** / **`app.upsert_perfil_paciente`** (`20260824080000_perfil_paciente_ciudad_departamento_funciones.sql`, ambas con `DROP` previo — la primera por cambio de `RETURNS TABLE`) → exponen/piden `departamento`/`ciudad`, obligatorios desde acá.
+
+Verificado end-to-end contra la base y Nominatim reales: pedido enviado → geocodificado
+→ visible en el pool con distancia real → aceptado → recorrido completo de estados →
+entrega rechazada con código incorrecto y aceptada con el correcto → novedad reportada
+a mitad de camino sin perder el estado real → vista y resuelta por el admin.
+
+**Nota de troubleshooting real:** un valor de prueba para `ciudad` cargado a mano desde
+una consola Windows/Git Bash con un acento tipeado directo (`á`) quedó guardado como el
+carácter de reemplazo Unicode (`U+FFFD`) en vez de la letra real — Nominatim,
+razonablemente, no encontraba resultados para una consulta con un byte inválido en
+medio. No era un bug de geocodificación: era el dato de prueba corrupto por un problema
+de encoding del shell al tipear un acento directo. Al cargar datos de prueba con
+acentos vía script, usar un escape Unicode (`String.fromCharCode(0xe1)`) en vez de
+tipear el carácter literal evita este problema.
 
 ## Rol PostgreSQL interno `mediruta_app`
 

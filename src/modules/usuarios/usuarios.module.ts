@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { ActualizarDatosComunesUseCase } from './application/use-cases/actualizar-datos-comunes.use-case';
+import { ActualizarDisponibilidadDomiciliarioUseCase } from './application/use-cases/actualizar-disponibilidad-domiciliario.use-case';
 import { ActualizarPerfilDomiciliarioUseCase } from './application/use-cases/actualizar-perfil-domiciliario.use-case';
 import { ActualizarPerfilPacienteUseCase } from './application/use-cases/actualizar-perfil-paciente.use-case';
 import { CambiarContrasenaUseCase } from './application/use-cases/cambiar-contrasena.use-case';
@@ -84,6 +85,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
     ObtenerPerfilUseCase,
     ActualizarDatosComunesUseCase,
     ActualizarPerfilPacienteUseCase,
+    ActualizarDisponibilidadDomiciliarioUseCase,
     SubirFotoCedulaPacienteUseCase,
     SubirFotoPerfilUseCase,
     ActualizarPerfilDomiciliarioUseCase,
