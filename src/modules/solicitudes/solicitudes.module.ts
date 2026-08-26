@@ -7,6 +7,7 @@ import { CrearSolicitudUseCase } from './application/use-cases/crear-solicitud.u
 import { EntregarPedidoUseCase } from './application/use-cases/entregar-pedido.use-case';
 import { EnviarSolicitudUseCase } from './application/use-cases/enviar-solicitud.use-case';
 import { IniciarEntregaUseCase } from './application/use-cases/iniciar-entrega.use-case';
+import { ListarHistorialPedidosUseCase } from './application/use-cases/listar-historial-pedidos.use-case';
 import { ListarNovedadesAbiertasUseCase } from './application/use-cases/listar-novedades-abiertas.use-case';
 import { ListarPedidosDisponiblesUseCase } from './application/use-cases/listar-pedidos-disponibles.use-case';
 import { ListarSolicitudesUseCase } from './application/use-cases/listar-solicitudes.use-case';
@@ -55,6 +56,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     ListarNovedadesAbiertasUseCase,
     ResolverNovedadUseCase,
     ObtenerPedidoActivoUseCase,
+    ListarHistorialPedidosUseCase,
     {
       provide: SolicitudRepositoryPort,
       useClass: PostgresSolicitudRepository,

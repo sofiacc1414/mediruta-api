@@ -66,6 +66,19 @@ export type PedidoDisponible = {
   creadoEn: string;
 };
 
+/** Una fila del historial de pedidos que el Domiciliario ya atendió
+ * (aceptó en algún momento) — incluye entregados, cancelados y el
+ * activo actual si tiene uno; el filtro Activas/Historial lo hace la
+ * UI, no la API (mismo criterio que `SolicitudResumen` del lado
+ * Paciente). */
+export type PedidoHistorialDomiciliario = {
+  id: string;
+  codigoPedido: string | null;
+  estado: EstadoSolicitud;
+  direccionEntrega: string | null;
+  creadoEn: string;
+};
+
 /** HU-09/HU-07 — el pedido que el Domiciliario tiene en curso ahora
  * mismo (uno de los 4 estados "activos"). A propósito NO incluye
  * `codigoEntrega` — el paciente se lo dicta recién al momento de la
@@ -240,6 +253,13 @@ export abstract class SolicitudRepositoryPort {
   abstract listarPedidosDisponibles(
     domiciliarioId: string,
   ): Promise<PedidoDisponible[]>;
+
+  /** Todos los pedidos que el Domiciliario aceptó alguna vez (en curso,
+   * entregados o cancelados), más reciente primero — "Mis pedidos"
+   * del lado Domiciliario. */
+  abstract listarHistorialPedidos(
+    domiciliarioId: string,
+  ): Promise<PedidoHistorialDomiciliario[]>;
 
   /** Guard atómico — dos Domiciliarios aceptando el mismo pedido a la
    * vez, solo uno gana. */

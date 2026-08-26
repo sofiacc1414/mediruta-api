@@ -19,6 +19,7 @@ import { RolesGuard } from '../../../usuarios/infrastructure/guards/roles.guard'
 import { AceptarPedidoUseCase } from '../../application/use-cases/aceptar-pedido.use-case';
 import { EntregarPedidoUseCase } from '../../application/use-cases/entregar-pedido.use-case';
 import { IniciarEntregaUseCase } from '../../application/use-cases/iniciar-entrega.use-case';
+import { ListarHistorialPedidosUseCase } from '../../application/use-cases/listar-historial-pedidos.use-case';
 import { ListarPedidosDisponiblesUseCase } from '../../application/use-cases/listar-pedidos-disponibles.use-case';
 import { MarcarEnSitioUseCase } from '../../application/use-cases/marcar-en-sitio.use-case';
 import { MarcarMedicamentosRecogidosUseCase } from '../../application/use-cases/marcar-medicamentos-recogidos.use-case';
@@ -46,12 +47,20 @@ export class PedidosDomiciliarioController {
     private readonly entregarPedido: EntregarPedidoUseCase,
     private readonly reportarNovedad: ReportarNovedadUseCase,
     private readonly obtenerPedidoActivo: ObtenerPedidoActivoUseCase,
+    private readonly listarHistorialPedidos: ListarHistorialPedidosUseCase,
   ) {}
 
   @Get('disponibles')
   @HttpCode(HttpStatus.OK)
   disponibles(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
     return this.listarPedidosDisponibles.execute(identidad.usuarioId);
+  }
+
+  /** "Mis pedidos" del Domiciliario — todos los que aceptó alguna vez. */
+  @Get('historial')
+  @HttpCode(HttpStatus.OK)
+  historial(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
+    return this.listarHistorialPedidos.execute(identidad.usuarioId);
   }
 
   /** "Mi pedido activo" — antes de `/disponibles`/rutas con `:id` para

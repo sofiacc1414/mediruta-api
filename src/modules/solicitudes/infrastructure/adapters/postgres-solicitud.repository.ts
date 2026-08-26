@@ -8,6 +8,7 @@ import {
   NovedadDelPaciente,
   PedidoActivoDomiciliario,
   PedidoDisponible,
+  PedidoHistorialDomiciliario,
   ResultadoAceptarPedido,
   ResultadoCancelar,
   ResultadoCrear,
@@ -55,6 +56,14 @@ type FilaPedidoDisponible = {
   direccion_farmacia: string | null;
   direccion_entrega: string | null;
   distancia_metros: number;
+  creado_en: string;
+};
+
+type FilaPedidoHistorialDomiciliario = {
+  id: string;
+  codigo_pedido: string | null;
+  estado: EstadoSolicitud;
+  direccion_entrega: string | null;
   creado_en: string;
 };
 
@@ -370,6 +379,22 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         direccionFarmacia: fila.direccion_farmacia,
         direccionEntrega: fila.direccion_entrega,
         distanciaMetros: fila.distancia_metros,
+        creadoEn: fila.creado_en,
+      }));
+    });
+  }
+
+  listarHistorialPedidos(domiciliarioId: string): Promise<PedidoHistorialDomiciliario[]> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<FilaPedidoHistorialDomiciliario>(
+        'select * from app.listar_historial_pedidos_domiciliario($1)',
+        [domiciliarioId],
+      );
+      return result.rows.map((fila) => ({
+        id: fila.id,
+        codigoPedido: fila.codigo_pedido,
+        estado: fila.estado,
+        direccionEntrega: fila.direccion_entrega,
         creadoEn: fila.creado_en,
       }));
     });
