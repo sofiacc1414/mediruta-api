@@ -18,12 +18,14 @@ const INTERVALO_MINIMO_MS = 1100;
 type ResultadoNominatim = { lat: string; lon: string };
 
 // Nominatim no resuelve direcciones colombianas que escriben el
-// numeral como palabra ("num", "número", "no.") en vez de "#" — visto
-// en vivo: "Calle 38 Sur num 77-100" da 0 resultados, pero la misma
-// dirección con "#" geocodifica bien (mismo lat/lng). Se normaliza
-// antes de consultar en vez de asumir que el paciente va a escribir
-// "#" a mano.
-const PATRON_NUMERAL = /\bn(u|ú)mero\b\.?|\bn(u|ú)m\b\.?|\bno\b\./gi;
+// numeral como palabra ("num", "número", "no.", "n.", "nro") en vez de
+// "#" — visto en vivo: "Calle 38 Sur num 77-100" da 0 resultados, pero
+// la misma dirección con "#" geocodifica bien (mismo lat/lng). Se
+// normaliza antes de consultar en vez de asumir que el paciente va a
+// escribir "#" a mano. "número"/"numero" ya cubre con y sin tilde (el
+// alternativo u|ú). "n." exige el punto pegado — sin eso "n" sola
+// colisionaría con inicios de palabra como "Norte".
+const PATRON_NUMERAL = /\bn(u|ú)mero\b\.?|\bn(u|ú)m\b\.?|\bnro\b\.?|\bno\b\.|\bn\./gi;
 
 export function normalizarDireccion(direccion: string): string {
   return direccion.replace(PATRON_NUMERAL, '#').replace(/\s+/g, ' ').trim();

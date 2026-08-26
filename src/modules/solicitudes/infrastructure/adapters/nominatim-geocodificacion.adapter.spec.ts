@@ -64,6 +64,33 @@ describe('NominatimGeocodificacionAdapter', () => {
     );
   });
 
+  it.each([
+    ['Carrera 43A No. 5 Sur-100', 'Carrera 43A # 5 Sur-100'],
+    ['Cra 43 numero 5-100', 'Cra 43 # 5-100'],
+    ['Calle 10 Núm. 20-30', 'Calle 10 # 20-30'],
+    ['Calle 10 N. 5-20', 'Calle 10 # 5-20'],
+    ['Cra 43 Nro 5-100', 'Cra 43 # 5-100'],
+    ['Cra 43 Nro. 5-100', 'Cra 43 # 5-100'],
+  ])('normaliza otras variantes: "%s"', async (entrada, esperado) => {
+    fetchMock.mockResolvedValue(respuestaJson([{ lat: '4.65', lon: '-74.06' }]));
+    const adapter = new NominatimGeocodificacionAdapter();
+
+    await adapter.geocodificar(entrada, null, null);
+
+    const [url] = fetchMock.mock.calls[0] as [URL];
+    expect(url.searchParams.get('q')).toBe(`${esperado}, Colombia`);
+  });
+
+  it('no toca "no" cuando no es un numeral (palabra común, ni "Norte")', async () => {
+    fetchMock.mockResolvedValue(respuestaJson([{ lat: '4.65', lon: '-74.06' }]));
+    const adapter = new NominatimGeocodificacionAdapter();
+
+    await adapter.geocodificar('Avenida Norte con Calle 5', null, null);
+
+    const [url] = fetchMock.mock.calls[0] as [URL];
+    expect(url.searchParams.get('q')).toBe('Avenida Norte con Calle 5, Colombia');
+  });
+
   it('omite ciudad/departamento nulos sin dejar comas de más', async () => {
     fetchMock.mockResolvedValue(respuestaJson([{ lat: '4.65', lon: '-74.06' }]));
     const adapter = new NominatimGeocodificacionAdapter();
