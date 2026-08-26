@@ -17,6 +17,18 @@ const INTERVALO_MINIMO_MS = 1100;
 
 type ResultadoNominatim = { lat: string; lon: string };
 
+// Nominatim no resuelve direcciones colombianas que escriben el
+// numeral como palabra ("num", "número", "no.") en vez de "#" — visto
+// en vivo: "Calle 38 Sur num 77-100" da 0 resultados, pero la misma
+// dirección con "#" geocodifica bien (mismo lat/lng). Se normaliza
+// antes de consultar en vez de asumir que el paciente va a escribir
+// "#" a mano.
+const PATRON_NUMERAL = /\bn(u|ú)mero\b\.?|\bn(u|ú)m\b\.?|\bno\b\./gi;
+
+export function normalizarDireccion(direccion: string): string {
+  return direccion.replace(PATRON_NUMERAL, '#').replace(/\s+/g, ' ').trim();
+}
+
 /**
  * Adaptador de geocodificación vía la API pública de Nominatim
  * (OpenStreetMap) — gratis, open source, sin API key. Nunca se llama
@@ -35,7 +47,7 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     ciudad: string | null,
     departamento: string | null,
   ): Promise<Coordenadas | null> {
-    const consulta = [direccion, ciudad, departamento, 'Colombia']
+    const consulta = [normalizarDireccion(direccion), ciudad, departamento, 'Colombia']
       .filter((parte): parte is string => !!parte && parte.trim().length > 0)
       .join(', ');
 

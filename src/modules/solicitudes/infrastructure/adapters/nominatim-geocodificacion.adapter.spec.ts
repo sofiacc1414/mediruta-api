@@ -48,6 +48,22 @@ describe('NominatimGeocodificacionAdapter', () => {
     );
   });
 
+  it('normaliza "num"/"número"/"no." a "#" antes de consultar (Nominatim no resuelve la palabra)', async () => {
+    fetchMock.mockResolvedValue(respuestaJson([{ lat: '6.1869475', lon: '-75.6510397' }]));
+    const adapter = new NominatimGeocodificacionAdapter();
+
+    await adapter.geocodificar(
+      'calle 38 sur num 77-100 san Antonio de prado',
+      'Medellín',
+      'Antioquia',
+    );
+
+    const [url] = fetchMock.mock.calls[0] as [URL];
+    expect(url.searchParams.get('q')).toBe(
+      'calle 38 sur # 77-100 san Antonio de prado, Medellín, Antioquia, Colombia',
+    );
+  });
+
   it('omite ciudad/departamento nulos sin dejar comas de más', async () => {
     fetchMock.mockResolvedValue(respuestaJson([{ lat: '4.65', lon: '-74.06' }]));
     const adapter = new NominatimGeocodificacionAdapter();
