@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
 import { AlmacenamientoArchivosPort } from '../../domain/ports/almacenamiento-archivos.port';
 import { PerfilRepositoryPort } from '../../domain/ports/perfil.repository.port';
@@ -37,6 +37,8 @@ export type ObtenerPerfilResultado = {
  */
 @Injectable()
 export class ObtenerPerfilUseCase {
+  private readonly logger = new Logger(ObtenerPerfilUseCase.name);
+
   constructor(
     private readonly perfiles: PerfilRepositoryPort,
     private readonly almacenamiento: AlmacenamientoArchivosPort,
@@ -91,16 +93,28 @@ export class ObtenerPerfilUseCase {
     };
   }
 
+  /**
+   * `null` tanto si no hay path como si Storage no pudo generar la URL
+   * (archivo movido/borrado, etc.) — un adjunto que no se puede
+   * previsualizar no debe tumbar el perfil entero con un 500.
+   */
   private async urlFirmadaOpcional(
     path: string | null,
   ): Promise<string | null> {
     if (!path) {
       return null;
     }
-    return this.almacenamiento.obtenerUrlFirmada(
-      BUCKET_PERFILES,
-      path,
-      URL_FIRMADA_EXPIRA_SEGUNDOS,
-    );
+    try {
+      return await this.almacenamiento.obtenerUrlFirmada(
+        BUCKET_PERFILES,
+        path,
+        URL_FIRMADA_EXPIRA_SEGUNDOS,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo generar la URL firmada para "${path}": ${(error as Error).message}`,
+      );
+      return null;
+    }
   }
 }

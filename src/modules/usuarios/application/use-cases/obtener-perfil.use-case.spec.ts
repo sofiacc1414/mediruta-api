@@ -111,4 +111,22 @@ describe('ObtenerPerfilUseCase', () => {
       NoAutorizadoError,
     );
   });
+
+  it('las URLs quedan null (no revienta con 500) si Storage no puede firmar la URL', async () => {
+    const perfil: Perfil = {
+      nombreCompleto: 'Persona de Prueba',
+      telefono: '3001234567',
+      fotoPerfilPath: 'fake/foto.jpg',
+      paciente: null,
+      domiciliario: null,
+    };
+    (perfiles.obtenerPerfil as jest.Mock).mockResolvedValue(perfil);
+    (almacenamiento.obtenerUrlFirmada as jest.Mock).mockRejectedValue(
+      new Error('Object not found'),
+    );
+
+    const resultado = await useCase.execute('usuario-uuid');
+
+    expect(resultado.fotoPerfilUrl).toBeNull();
+  });
 });

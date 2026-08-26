@@ -105,4 +105,27 @@ describe('ObtenerDetalleDomiciliarioUseCase', () => {
       useCase.execute('admin-uuid', 'usuario-uuid'),
     ).rejects.toBeInstanceOf(DomiciliarioNoEncontradoError);
   });
+
+  it('las URLs quedan null (no revienta con 500) si Storage no puede firmar la URL', async () => {
+    (validaciones.obtenerDetalle as jest.Mock).mockResolvedValue({
+      nombreCompleto: 'Persona de Prueba',
+      telefono: '3001234567',
+      estado: 'pendiente_validacion',
+      solicitadoEn: '2026-08-20T10:00:00.000Z',
+      direccion: 'Avenida 45',
+      vehiculoTipo: 'Moto',
+      vehiculoPlaca: 'ABC123',
+      cedulaPath: 'fake/cedula.jpg',
+      licenciaPath: null,
+      soatPath: null,
+      tecnicomecanicaPath: null,
+    });
+    (almacenamiento.obtenerUrlFirmada as jest.Mock).mockRejectedValue(
+      new Error('Object not found'),
+    );
+
+    const resultado = await useCase.execute('admin-uuid', 'usuario-uuid');
+
+    expect(resultado.cedulaUrl).toBeNull();
+  });
 });

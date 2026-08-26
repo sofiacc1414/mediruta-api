@@ -167,4 +167,29 @@ describe('ObtenerSolicitudUseCase', () => {
       useCase.execute('paciente-uuid', 'solicitud-uuid'),
     ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
   });
+
+  it('recetaUrl/cedulaUrl quedan null (no revienta con 500) si Storage no puede firmar la URL', async () => {
+    (solicitudes.obtener as jest.Mock).mockResolvedValue({
+      id: 'solicitud-uuid',
+      codigoPedido: 'MR-000123',
+      estado: 'borrador',
+      recetaPath: 'fake/receta.jpg',
+      recetaFechaVencimiento: null,
+      direccionEntrega: null,
+      direccionFarmacia: null,
+      creadoEn: '2026-08-20T10:00:00.000Z',
+      enviadoEn: null,
+      canceladoEn: null,
+      cedulaPath: 'fake/cedula.jpg',
+      codigoEntrega: null,
+    });
+    (almacenamiento.obtenerUrlFirmada as jest.Mock).mockRejectedValue(
+      new Error('Object not found'),
+    );
+
+    const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
+
+    expect(resultado.recetaUrl).toBeNull();
+    expect(resultado.cedulaUrl).toBeNull();
+  });
 });

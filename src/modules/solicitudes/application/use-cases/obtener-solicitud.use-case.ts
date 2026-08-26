@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   BUCKET_PERFILES,
   URL_FIRMADA_EXPIRA_SEGUNDOS,
@@ -44,6 +44,8 @@ export type ObtenerSolicitudResultado = {
  */
 @Injectable()
 export class ObtenerSolicitudUseCase {
+  private readonly logger = new Logger(ObtenerSolicitudUseCase.name);
+
   constructor(
     private readonly solicitudes: SolicitudRepositoryPort,
     private readonly almacenamiento: AlmacenamientoArchivosPort,
@@ -88,16 +90,30 @@ export class ObtenerSolicitudUseCase {
     };
   }
 
+  /**
+   * `null` tanto si no hay path como si Storage no pudo generar la URL
+   * (archivo movido/borrado, dato de prueba con un path que nunca se
+   * subió, etc.) — un adjunto que no se puede previsualizar no debe
+   * tumbar el detalle entero con un 500; la pantalla ya sabe mostrar
+   * "no disponible" cuando la URL es `null`.
+   */
   private async urlFirmadaOpcional(
     path: string | null,
   ): Promise<string | null> {
     if (!path) {
       return null;
     }
-    return this.almacenamiento.obtenerUrlFirmada(
-      BUCKET_PERFILES,
-      path,
-      URL_FIRMADA_EXPIRA_SEGUNDOS,
-    );
+    try {
+      return await this.almacenamiento.obtenerUrlFirmada(
+        BUCKET_PERFILES,
+        path,
+        URL_FIRMADA_EXPIRA_SEGUNDOS,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo generar la URL firmada para "${path}": ${(error as Error).message}`,
+      );
+      return null;
+    }
   }
 }
