@@ -123,6 +123,32 @@ export type FiltrosPedidosAdmin = {
   busqueda?: string;
 };
 
+/** Panel admin — detalle completo de UN pedido (no solo la fila del
+ * listado): igual que `SolicitudDetalle` que ve el Paciente, pero sin
+ * restricción de dueño (solo exige rol admin) y con los datos de
+ * contacto de paciente/domiciliario, que el admin sí necesita ver. */
+export type PedidoAdminDetalle = {
+  id: string;
+  codigoPedido: string;
+  estado: EstadoSolicitud;
+  recetaPath: string | null;
+  recetaFechaVencimiento: string | null;
+  direccionEntrega: string | null;
+  direccionFarmacia: string | null;
+  creadoEn: string;
+  enviadoEn: string | null;
+  canceladoEn: string | null;
+  codigoEntrega: string | null;
+  pacienteNombre: string | null;
+  pacienteCorreo: string;
+  pacienteTelefono: string | null;
+  pacienteCedulaFrentePath: string | null;
+  pacienteCedulaReversoPath: string | null;
+  domiciliarioNombre: string | null;
+  domiciliarioCorreo: string | null;
+  domiciliarioTelefono: string | null;
+};
+
 /** HU-07 — un incidente reportado por el Domiciliario sobre un pedido
  * en curso, visible para el Administrador hasta que lo resuelva. No
  * reemplaza el `estado` real del pedido (ver ports comment en la
@@ -371,6 +397,29 @@ export abstract class SolicitudRepositoryPort {
     adminId: string,
     filtros: FiltrosPedidosAdmin,
   ): Promise<PedidoAdmin[]>;
+
+  /** Panel admin — detalle completo de un pedido puntual (no solo la
+   * fila del listado). `null` si no existe o no es un pedido real
+   * (`codigoPedido` nulo, ej. sigue en Borrador). */
+  abstract obtenerPedidoAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<PedidoAdminDetalle | null>;
+
+  abstract listarMedicamentosPedidoAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<Medicamento[]>;
+
+  abstract listarHistorialPedidoAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<EventoHistorial[]>;
+
+  abstract obtenerNovedadAbiertaPedidoAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<NovedadDelPaciente | null>;
 
   abstract listarNovedadesAbiertas(adminId: string): Promise<NovedadAbierta[]>;
 

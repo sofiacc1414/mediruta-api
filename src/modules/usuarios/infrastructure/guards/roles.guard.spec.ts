@@ -51,6 +51,8 @@ describe('RolesGuard', () => {
     solicitarRolDomiciliario: jest.fn(),
     enviarSolicitudDomiciliario: jest.fn(),
     crearAdministrador: jest.fn(),
+    listarAdministradores: jest.fn(),
+    obtenerAdministrador: jest.fn(),
   };
   const guard = new RolesGuard(reflector, usuarios);
 

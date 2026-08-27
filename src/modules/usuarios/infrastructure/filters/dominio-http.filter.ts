@@ -16,6 +16,7 @@ import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido
 import { PerfilIncompletoError } from '../../../solicitudes/domain/errors/perfil-incompleto.error';
 import { SolicitudIncompletaError } from '../../../solicitudes/domain/errors/solicitud-incompleta.error';
 import { SolicitudNoEncontradaError } from '../../../solicitudes/domain/errors/solicitud-no-encontrada.error';
+import { AdministradorNoEncontradoError } from '../../domain/errors/administrador-no-encontrado.error';
 import { CambioContrasenaInvalidoError } from '../../domain/errors/cambio-contrasena-invalido.error';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
@@ -47,6 +48,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   NovedadNoEncontradaError,
   DomiciliarioConPedidoActivoError,
   DocumentosPacienteNoDisponiblesError,
+  AdministradorNoEncontradoError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -92,7 +94,8 @@ export class DominioHttpFilter implements ExceptionFilter {
       exception instanceof NoHayBorradorDomiciliarioError ||
       exception instanceof SolicitudNoEncontradaError ||
       exception instanceof NovedadNoEncontradaError ||
-      exception instanceof DocumentosPacienteNoDisponiblesError
+      exception instanceof DocumentosPacienteNoDisponiblesError ||
+      exception instanceof AdministradorNoEncontradoError
     ) {
       response.status(HttpStatus.NOT_FOUND).json({
         statusCode: HttpStatus.NOT_FOUND,

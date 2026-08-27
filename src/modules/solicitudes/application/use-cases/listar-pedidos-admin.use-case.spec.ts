@@ -29,6 +29,10 @@ describe('ListarPedidosAdminUseCase', () => {
     obtenerNovedadPropiaAbierta: jest.fn(),
     obtenerDocumentosPacienteParaRecoger: jest.fn(),
     listarPedidosAdmin: jest.fn(),
+    obtenerPedidoAdmin: jest.fn(),
+    listarMedicamentosPedidoAdmin: jest.fn(),
+    listarHistorialPedidoAdmin: jest.fn(),
+    obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
   };
   const useCase = new ListarPedidosAdminUseCase(solicitudes);
 

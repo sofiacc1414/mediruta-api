@@ -20,6 +20,21 @@ export type CrearAdministradorInput = {
   telefono?: string;
 };
 
+/** Panel admin — "administrar usuarios creados": fila de la lista. */
+export type AdministradorResumen = {
+  id: string;
+  correo: string;
+  nombreCompleto: string | null;
+  telefono: string | null;
+  estadoCuenta: EstadoCuenta;
+  creadoEn: string;
+};
+
+/** Panel admin — ficha de un administrador puntual. */
+export type AdministradorDetalle = AdministradorResumen & {
+  fotoPerfilPath: string | null;
+};
+
 export type ResultadoEnviarSolicitudDomiciliario =
   | { resultado: 'enviada' }
   | { resultado: 'incompleta'; faltantes: string[] }
@@ -87,4 +102,14 @@ export abstract class UsuarioRepositoryPort {
   /** Solo ROOT — crea una cuenta ADMINISTRADOR directa (habilitada de
    * una, sin pasar por registro público ni validación). */
   abstract crearAdministrador(input: CrearAdministradorInput): Promise<string>;
+
+  /** Panel admin — "administrar usuarios creados", más recientes
+   * primero. Visible para Administrador/Root (crear sigue siendo solo
+   * ROOT). */
+  abstract listarAdministradores(adminId: string): Promise<AdministradorResumen[]>;
+
+  abstract obtenerAdministrador(
+    adminId: string,
+    usuarioId: string,
+  ): Promise<AdministradorDetalle | null>;
 }

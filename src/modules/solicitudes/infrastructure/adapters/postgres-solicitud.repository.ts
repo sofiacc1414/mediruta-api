@@ -10,6 +10,7 @@ import {
   NovedadDelPaciente,
   PedidoActivoDomiciliario,
   PedidoAdmin,
+  PedidoAdminDetalle,
   PedidoDisponible,
   PedidoHistorialDomiciliario,
   ResultadoAceptarPedido,
@@ -97,6 +98,28 @@ type FilaPedidoAdmin = {
   direccion_farmacia: string | null;
   creado_en: string;
   enviado_en: string | null;
+};
+
+type FilaPedidoAdminDetalle = {
+  id: string;
+  codigo_pedido: string;
+  estado: EstadoSolicitud;
+  receta_path: string | null;
+  receta_fecha_vencimiento: string | null;
+  direccion_entrega: string | null;
+  direccion_farmacia: string | null;
+  creado_en: string;
+  enviado_en: string | null;
+  cancelado_en: string | null;
+  codigo_entrega: string | null;
+  paciente_nombre: string | null;
+  paciente_correo: string;
+  paciente_telefono: string | null;
+  paciente_cedula_frente_path: string | null;
+  paciente_cedula_reverso_path: string | null;
+  domiciliario_nombre: string | null;
+  domiciliario_correo: string | null;
+  domiciliario_telefono: string | null;
 };
 
 type FilaNovedadAbierta = {
@@ -648,6 +671,95 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         creadoEn: fila.creado_en,
         enviadoEn: fila.enviado_en,
       }));
+    });
+  }
+
+  obtenerPedidoAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<PedidoAdminDetalle | null> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<FilaPedidoAdminDetalle>(
+        'select * from app.obtener_pedido_admin($1, $2)',
+        [adminId, solicitudId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return {
+        id: fila.id,
+        codigoPedido: fila.codigo_pedido,
+        estado: fila.estado,
+        recetaPath: fila.receta_path,
+        recetaFechaVencimiento: fila.receta_fecha_vencimiento,
+        direccionEntrega: fila.direccion_entrega,
+        direccionFarmacia: fila.direccion_farmacia,
+        creadoEn: fila.creado_en,
+        enviadoEn: fila.enviado_en,
+        canceladoEn: fila.cancelado_en,
+        codigoEntrega: fila.codigo_entrega,
+        pacienteNombre: fila.paciente_nombre,
+        pacienteCorreo: fila.paciente_correo,
+        pacienteTelefono: fila.paciente_telefono,
+        pacienteCedulaFrentePath: fila.paciente_cedula_frente_path,
+        pacienteCedulaReversoPath: fila.paciente_cedula_reverso_path,
+        domiciliarioNombre: fila.domiciliario_nombre,
+        domiciliarioCorreo: fila.domiciliario_correo,
+        domiciliarioTelefono: fila.domiciliario_telefono,
+      };
+    });
+  }
+
+  listarMedicamentosPedidoAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<Medicamento[]> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<FilaMedicamento>(
+        'select * from app.listar_medicamentos_pedido_admin($1, $2)',
+        [adminId, solicitudId],
+      );
+      return result.rows.map((fila) => ({
+        nombre: fila.nombre,
+        concentracion: fila.concentracion,
+        formaFarmaceutica: fila.forma_farmaceutica,
+        cantidad: fila.cantidad,
+        posologia: fila.posologia,
+      }));
+    });
+  }
+
+  listarHistorialPedidoAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<EventoHistorial[]> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<FilaHistorial>(
+        'select * from app.listar_historial_pedido_admin($1, $2)',
+        [adminId, solicitudId],
+      );
+      return result.rows.map((fila) => ({
+        estado: fila.estado,
+        creadoEn: fila.creado_en,
+      }));
+    });
+  }
+
+  obtenerNovedadAbiertaPedidoAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<NovedadDelPaciente | null> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<FilaNovedadDelPaciente>(
+        'select * from app.obtener_novedad_abierta_pedido_admin($1, $2)',
+        [adminId, solicitudId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return { id: fila.id, detalle: fila.detalle, creadoEn: fila.creado_en };
     });
   }
 }

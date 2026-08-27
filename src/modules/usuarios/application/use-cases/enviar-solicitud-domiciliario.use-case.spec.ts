@@ -16,6 +16,8 @@ describe('EnviarSolicitudDomiciliarioUseCase', () => {
     solicitarRolDomiciliario: jest.fn(),
     enviarSolicitudDomiciliario: jest.fn(),
     crearAdministrador: jest.fn(),
+    listarAdministradores: jest.fn(),
+    obtenerAdministrador: jest.fn(),
   };
   const useCase = new EnviarSolicitudDomiciliarioUseCase(usuarios);
 

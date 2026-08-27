@@ -11,6 +11,8 @@ import { CrearAdministradorUseCase } from './application/use-cases/crear-adminis
 import { DesactivarCuentaUseCase } from './application/use-cases/desactivar-cuenta.use-case';
 import { EnviarSolicitudDomiciliarioUseCase } from './application/use-cases/enviar-solicitud-domiciliario.use-case';
 import { IniciarSesionUseCase } from './application/use-cases/iniciar-sesion.use-case';
+import { ListarAdministradoresUseCase } from './application/use-cases/listar-administradores.use-case';
+import { ObtenerAdministradorUseCase } from './application/use-cases/obtener-administrador.use-case';
 import { ObtenerPerfilUseCase } from './application/use-cases/obtener-perfil.use-case';
 import { ObtenerSesionActualUseCase } from './application/use-cases/obtener-sesion-actual.use-case';
 import { RefrescarSesionUseCase } from './application/use-cases/refrescar-sesion.use-case';
@@ -78,6 +80,8 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
   providers: [
     RegistrarUsuarioUseCase,
     CrearAdministradorUseCase,
+    ListarAdministradoresUseCase,
+    ObtenerAdministradorUseCase,
     IniciarSesionUseCase,
     RefrescarSesionUseCase,
     ObtenerSesionActualUseCase,

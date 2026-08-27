@@ -39,6 +39,10 @@ describe('ObtenerSolicitudUseCase', () => {
     obtenerNovedadPropiaAbierta: jest.fn(),
     obtenerDocumentosPacienteParaRecoger: jest.fn(),
     listarPedidosAdmin: jest.fn(),
+    obtenerPedidoAdmin: jest.fn(),
+    listarMedicamentosPedidoAdmin: jest.fn(),
+    listarHistorialPedidoAdmin: jest.fn(),
+    obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
   };
   const almacenamiento: AlmacenamientoArchivosPort = {
     subir: jest.fn(),

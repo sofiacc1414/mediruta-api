@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import {
+  AdministradorDetalle,
+  AdministradorResumen,
   CrearAdministradorInput,
   CredencialesLogin,
   CuentaActual,
@@ -166,5 +168,56 @@ export class PostgresUsuarioRepository extends UsuarioRepositoryPort {
       }
       throw error;
     }
+  }
+
+  listarAdministradores(adminId: string): Promise<AdministradorResumen[]> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<{
+        id: string;
+        correo: string;
+        nombre_completo: string | null;
+        telefono: string | null;
+        estado_cuenta: AdministradorResumen['estadoCuenta'];
+        creado_en: string;
+      }>('select * from app.listar_administradores($1)', [adminId]);
+      return result.rows.map((fila) => ({
+        id: fila.id,
+        correo: fila.correo,
+        nombreCompleto: fila.nombre_completo,
+        telefono: fila.telefono,
+        estadoCuenta: fila.estado_cuenta,
+        creadoEn: fila.creado_en,
+      }));
+    });
+  }
+
+  obtenerAdministrador(
+    adminId: string,
+    usuarioId: string,
+  ): Promise<AdministradorDetalle | null> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<{
+        id: string;
+        correo: string;
+        nombre_completo: string | null;
+        telefono: string | null;
+        estado_cuenta: AdministradorResumen['estadoCuenta'];
+        foto_perfil_path: string | null;
+        creado_en: string;
+      }>('select * from app.obtener_administrador($1, $2)', [adminId, usuarioId]);
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return {
+        id: fila.id,
+        correo: fila.correo,
+        nombreCompleto: fila.nombre_completo,
+        telefono: fila.telefono,
+        estadoCuenta: fila.estado_cuenta,
+        fotoPerfilPath: fila.foto_perfil_path,
+        creadoEn: fila.creado_en,
+      };
+    });
   }
 }

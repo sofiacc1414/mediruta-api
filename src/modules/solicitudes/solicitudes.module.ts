@@ -14,6 +14,7 @@ import { ListarPedidosDisponiblesUseCase } from './application/use-cases/listar-
 import { ListarSolicitudesUseCase } from './application/use-cases/listar-solicitudes.use-case';
 import { MarcarEnSitioUseCase } from './application/use-cases/marcar-en-sitio.use-case';
 import { MarcarMedicamentosRecogidosUseCase } from './application/use-cases/marcar-medicamentos-recogidos.use-case';
+import { ObtenerDetallePedidoAdminUseCase } from './application/use-cases/obtener-detalle-pedido-admin.use-case';
 import { ObtenerDocumentosPacienteParaRecogerUseCase } from './application/use-cases/obtener-documentos-paciente-para-recoger.use-case';
 import { ObtenerPedidoActivoUseCase } from './application/use-cases/obtener-pedido-activo.use-case';
 import { ObtenerSolicitudUseCase } from './application/use-cases/obtener-solicitud.use-case';
@@ -63,6 +64,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     ListarHistorialPedidosUseCase,
     ObtenerDocumentosPacienteParaRecogerUseCase,
     ListarPedidosAdminUseCase,
+    ObtenerDetallePedidoAdminUseCase,
     {
       provide: SolicitudRepositoryPort,
       useClass: PostgresSolicitudRepository,
