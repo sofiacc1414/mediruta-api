@@ -24,9 +24,11 @@ export type ObtenerSolicitudResultado = {
   creadoEn: string;
   enviadoEn: string | null;
   canceladoEn: string | null;
-  /** URL firmada de `perfil_paciente.foto_cedula_path` (HU-02) —
-   * referencia viva, nunca se copia a la solicitud. */
-  cedulaUrl: string | null;
+  /** URL firmada de `perfil_paciente.foto_cedula_frente_path`/
+   * `foto_cedula_reverso_path` (HU-02) — referencia viva, nunca se
+   * copia a la solicitud. */
+  cedulaFrenteUrl: string | null;
+  cedulaReversoUrl: string | null;
   medicamentos: Medicamento[];
   historial: EventoHistorial[];
   /** HU-09 — el paciente se lo dicta al Domiciliario al recibir el
@@ -66,9 +68,10 @@ export class ObtenerSolicitudUseCase {
       throw new SolicitudNoEncontradaError();
     }
 
-    const [recetaUrl, cedulaUrl] = await Promise.all([
+    const [recetaUrl, cedulaFrenteUrl, cedulaReversoUrl] = await Promise.all([
       this.urlFirmadaOpcional(detalle.recetaPath),
-      this.urlFirmadaOpcional(detalle.cedulaPath),
+      this.urlFirmadaOpcional(detalle.cedulaFrentePath),
+      this.urlFirmadaOpcional(detalle.cedulaReversoPath),
     ]);
 
     return {
@@ -82,7 +85,8 @@ export class ObtenerSolicitudUseCase {
       creadoEn: detalle.creadoEn,
       enviadoEn: detalle.enviadoEn,
       canceladoEn: detalle.canceladoEn,
-      cedulaUrl,
+      cedulaFrenteUrl,
+      cedulaReversoUrl,
       medicamentos,
       historial,
       codigoEntrega: detalle.codigoEntrega,

@@ -45,7 +45,8 @@ describe('ObtenerDetalleDomiciliarioUseCase', () => {
       direccion: 'Avenida 45',
       vehiculoTipo: 'Moto',
       vehiculoPlaca: 'ABC123',
-      cedulaPath: 'domiciliario/usuario-uuid/cedula.jpg',
+      cedulaFrentePath: 'domiciliario/usuario-uuid/cedula_frente.jpg',
+      cedulaReversoPath: 'domiciliario/usuario-uuid/cedula_reverso.jpg',
       licenciaPath: null,
       soatPath: null,
       tecnicomecanicaPath: null,
@@ -54,13 +55,16 @@ describe('ObtenerDetalleDomiciliarioUseCase', () => {
 
     const resultado = await useCase.execute('admin-uuid', 'usuario-uuid');
 
-    expect(resultado.cedulaUrl).toBe(
-      'https://firmada.test/domiciliario/usuario-uuid/cedula.jpg',
+    expect(resultado.cedulaFrenteUrl).toBe(
+      'https://firmada.test/domiciliario/usuario-uuid/cedula_frente.jpg',
+    );
+    expect(resultado.cedulaReversoUrl).toBe(
+      'https://firmada.test/domiciliario/usuario-uuid/cedula_reverso.jpg',
     );
     expect(resultado.licenciaUrl).toBeNull();
     expect(almacenamiento.obtenerUrlFirmada).toHaveBeenCalledWith(
       BUCKET_PERFILES,
-      'domiciliario/usuario-uuid/cedula.jpg',
+      'domiciliario/usuario-uuid/cedula_frente.jpg',
       URL_FIRMADA_EXPIRA_SEGUNDOS,
     );
     expect(validaciones.obtenerDetalle).toHaveBeenCalledWith(
@@ -78,7 +82,8 @@ describe('ObtenerDetalleDomiciliarioUseCase', () => {
       direccion: null,
       vehiculoTipo: null,
       vehiculoPlaca: null,
-      cedulaPath: null,
+      cedulaFrentePath: null,
+      cedulaReversoPath: null,
       licenciaPath: null,
       soatPath: null,
       tecnicomecanicaPath: null,
@@ -115,7 +120,8 @@ describe('ObtenerDetalleDomiciliarioUseCase', () => {
       direccion: 'Avenida 45',
       vehiculoTipo: 'Moto',
       vehiculoPlaca: 'ABC123',
-      cedulaPath: 'fake/cedula.jpg',
+      cedulaFrentePath: 'fake/cedula_frente.jpg',
+      cedulaReversoPath: 'fake/cedula_reverso.jpg',
       licenciaPath: null,
       soatPath: null,
       tecnicomecanicaPath: null,
@@ -126,6 +132,7 @@ describe('ObtenerDetalleDomiciliarioUseCase', () => {
 
     const resultado = await useCase.execute('admin-uuid', 'usuario-uuid');
 
-    expect(resultado.cedulaUrl).toBeNull();
+    expect(resultado.cedulaFrenteUrl).toBeNull();
+    expect(resultado.cedulaReversoUrl).toBeNull();
   });
 });

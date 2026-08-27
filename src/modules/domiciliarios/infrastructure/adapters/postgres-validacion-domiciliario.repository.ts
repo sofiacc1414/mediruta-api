@@ -24,7 +24,8 @@ type FilaDetalle = {
   direccion: string | null;
   vehiculo_tipo: string | null;
   vehiculo_placa: string | null;
-  cedula_path: string | null;
+  cedula_frente_path: string | null;
+  cedula_reverso_path: string | null;
   licencia_path: string | null;
   soat_path: string | null;
   tecnicomecanica_path: string | null;
@@ -90,7 +91,8 @@ export class PostgresValidacionDomiciliarioRepository extends ValidacionDomicili
         direccion: fila.direccion,
         vehiculoTipo: fila.vehiculo_tipo,
         vehiculoPlaca: fila.vehiculo_placa,
-        cedulaPath: fila.cedula_path,
+        cedulaFrentePath: fila.cedula_frente_path,
+        cedulaReversoPath: fila.cedula_reverso_path,
         licenciaPath: fila.licencia_path,
         soatPath: fila.soat_path,
         tecnicomecanicaPath: fila.tecnicomecanica_path,

@@ -32,6 +32,7 @@ import { ActualizarDisponibilidadDomiciliarioDto } from '../dtos/actualizar-disp
 import { ActualizarPerfilDomiciliarioDto } from '../dtos/actualizar-perfil-domiciliario.dto';
 import { ActualizarPerfilPacienteDto } from '../dtos/actualizar-perfil-paciente.dto';
 import { SubirDocumentoDomiciliarioDto } from '../dtos/subir-documento-domiciliario.dto';
+import { SubirFotoCedulaPacienteDto } from '../dtos/subir-foto-cedula-paciente.dto';
 import { DominioHttpFilter } from '../filters/dominio-http.filter';
 import { AccessAuthGuard } from '../guards/access-auth.guard';
 
@@ -100,10 +101,12 @@ export class PerfilController {
   @UseInterceptors(FileInterceptor('archivo'))
   subirFotoCedula(
     @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Body() dto: SubirFotoCedulaPacienteDto,
     @UploadedFile(VALIDADOR_ARCHIVO) archivo: Express.Multer.File,
   ) {
     return this.subirFotoCedulaPaciente.execute({
       usuarioId: identidad.usuarioId,
+      lado: dto.lado,
       contenido: archivo.buffer,
       contentType: archivo.mimetype,
       extension: extensionDesde(archivo.mimetype),

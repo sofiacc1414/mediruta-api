@@ -21,6 +21,7 @@ obtenerDatosGeocodificacionFarmacia: jest.fn(),    obtenerNovedadAbierta: jest.f
     listarHistorialPedidos: jest.fn(),
     listarHistorialPedidoActivo: jest.fn(),
     obtenerNovedadPropiaAbierta: jest.fn(),
+    obtenerDocumentosPacienteParaRecoger: jest.fn(),
   };
   const useCase = new CancelarSolicitudUseCase(solicitudes);
 

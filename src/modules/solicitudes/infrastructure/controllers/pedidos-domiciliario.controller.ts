@@ -20,6 +20,7 @@ import { AceptarPedidoUseCase } from '../../application/use-cases/aceptar-pedido
 import { EntregarPedidoUseCase } from '../../application/use-cases/entregar-pedido.use-case';
 import { IniciarEntregaUseCase } from '../../application/use-cases/iniciar-entrega.use-case';
 import { ListarHistorialPedidosUseCase } from '../../application/use-cases/listar-historial-pedidos.use-case';
+import { ObtenerDocumentosPacienteParaRecogerUseCase } from '../../application/use-cases/obtener-documentos-paciente-para-recoger.use-case';
 import { ListarPedidosDisponiblesUseCase } from '../../application/use-cases/listar-pedidos-disponibles.use-case';
 import { MarcarEnSitioUseCase } from '../../application/use-cases/marcar-en-sitio.use-case';
 import { MarcarMedicamentosRecogidosUseCase } from '../../application/use-cases/marcar-medicamentos-recogidos.use-case';
@@ -48,6 +49,7 @@ export class PedidosDomiciliarioController {
     private readonly reportarNovedad: ReportarNovedadUseCase,
     private readonly obtenerPedidoActivo: ObtenerPedidoActivoUseCase,
     private readonly listarHistorialPedidos: ListarHistorialPedidosUseCase,
+    private readonly obtenerDocumentosPacienteParaRecoger: ObtenerDocumentosPacienteParaRecogerUseCase,
   ) {}
 
   @Get('disponibles')
@@ -70,6 +72,22 @@ export class PedidosDomiciliarioController {
   @HttpCode(HttpStatus.OK)
   miActivo(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
     return this.obtenerPedidoActivo.execute(identidad.usuarioId);
+  }
+
+  /** HU-07/HU-09 — cédula del Paciente (ambos lados), para mostrar en
+   * la farmacia al reclamar el medicamento. Solo devuelve algo mientras
+   * el pedido está `asignado_en_camino_farmacia` — ver
+   * `ObtenerDocumentosPacienteParaRecogerUseCase`. */
+  @Get(':id/documentos-paciente')
+  @HttpCode(HttpStatus.OK)
+  documentosPaciente(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+  ) {
+    return this.obtenerDocumentosPacienteParaRecoger.execute(
+      identidad.usuarioId,
+      solicitudId,
+    );
   }
 
   @Post(':id/aceptar')

@@ -14,7 +14,8 @@ export type ObtenerPerfilResultado = {
   paciente: {
     direccion: string | null;
     fechaNacimiento: string | null;
-    fotoCedulaUrl: string | null;
+    fotoCedulaFrenteUrl: string | null;
+    fotoCedulaReversoUrl: string | null;
     departamento: string | null;
     ciudad: string | null;
   } | null;
@@ -22,7 +23,8 @@ export type ObtenerPerfilResultado = {
     direccion: string | null;
     vehiculoTipo: string | null;
     vehiculoPlaca: string | null;
-    cedulaUrl: string | null;
+    cedulaFrenteUrl: string | null;
+    cedulaReversoUrl: string | null;
     licenciaUrl: string | null;
     soatUrl: string | null;
     tecnicomecanicaUrl: string | null;
@@ -52,15 +54,19 @@ export class ObtenerPerfilUseCase {
 
     const [
       fotoPerfilUrl,
-      fotoCedulaUrl,
-      cedulaUrl,
+      fotoCedulaFrenteUrl,
+      fotoCedulaReversoUrl,
+      cedulaFrenteUrl,
+      cedulaReversoUrl,
       licenciaUrl,
       soatUrl,
       tecnicomecanicaUrl,
     ] = await Promise.all([
       this.urlFirmadaOpcional(perfil.fotoPerfilPath),
-      this.urlFirmadaOpcional(perfil.paciente?.fotoCedulaPath ?? null),
-      this.urlFirmadaOpcional(perfil.domiciliario?.cedulaPath ?? null),
+      this.urlFirmadaOpcional(perfil.paciente?.fotoCedulaFrentePath ?? null),
+      this.urlFirmadaOpcional(perfil.paciente?.fotoCedulaReversoPath ?? null),
+      this.urlFirmadaOpcional(perfil.domiciliario?.cedulaFrentePath ?? null),
+      this.urlFirmadaOpcional(perfil.domiciliario?.cedulaReversoPath ?? null),
       this.urlFirmadaOpcional(perfil.domiciliario?.licenciaPath ?? null),
       this.urlFirmadaOpcional(perfil.domiciliario?.soatPath ?? null),
       this.urlFirmadaOpcional(perfil.domiciliario?.tecnicomecanicaPath ?? null),
@@ -74,7 +80,8 @@ export class ObtenerPerfilUseCase {
         ? {
             direccion: perfil.paciente.direccion,
             fechaNacimiento: perfil.paciente.fechaNacimiento,
-            fotoCedulaUrl,
+            fotoCedulaFrenteUrl,
+            fotoCedulaReversoUrl,
             departamento: perfil.paciente.departamento,
             ciudad: perfil.paciente.ciudad,
           }
@@ -84,7 +91,8 @@ export class ObtenerPerfilUseCase {
             direccion: perfil.domiciliario.direccion,
             vehiculoTipo: perfil.domiciliario.vehiculoTipo,
             vehiculoPlaca: perfil.domiciliario.vehiculoPlaca,
-            cedulaUrl,
+            cedulaFrenteUrl,
+            cedulaReversoUrl,
             licenciaUrl,
             soatUrl,
             tecnicomecanicaUrl,

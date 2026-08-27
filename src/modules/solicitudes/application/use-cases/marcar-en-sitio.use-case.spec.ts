@@ -28,6 +28,7 @@ describe('MarcarEnSitioUseCase', () => {
     listarHistorialPedidos: jest.fn(),
     listarHistorialPedidoActivo: jest.fn(),
     obtenerNovedadPropiaAbierta: jest.fn(),
+    obtenerDocumentosPacienteParaRecoger: jest.fn(),
   };
   const useCase = new MarcarEnSitioUseCase(solicitudes);
 

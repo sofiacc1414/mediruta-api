@@ -29,6 +29,7 @@ describe('EntregarPedidoUseCase', () => {
     listarHistorialPedidos: jest.fn(),
     listarHistorialPedidoActivo: jest.fn(),
     obtenerNovedadPropiaAbierta: jest.fn(),
+    obtenerDocumentosPacienteParaRecoger: jest.fn(),
   };
   const useCase = new EntregarPedidoUseCase(solicitudes);
 

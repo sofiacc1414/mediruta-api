@@ -184,10 +184,11 @@ describe('PerfilController', () => {
     const controller = crearController({ subirFotoCedulaPaciente });
     const archivo = archivoFalso({ mimetype: 'image/png' });
 
-    await controller.subirFotoCedula(identidad, archivo);
+    await controller.subirFotoCedula(identidad, { lado: 'frente' }, archivo);
 
     expect(subirFotoCedulaPaciente.execute).toHaveBeenCalledWith({
       usuarioId: 'usuario-desde-guard',
+      lado: 'frente',
       contenido: archivo.buffer,
       contentType: 'image/png',
       extension: 'png',

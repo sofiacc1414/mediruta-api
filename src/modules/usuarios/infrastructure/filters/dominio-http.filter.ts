@@ -10,6 +10,7 @@ import { DomiciliarioNoEncontradoError } from '../../../domiciliarios/domain/err
 import { NoHayBorradorDomiciliarioError } from '../../../domiciliarios/domain/errors/no-hay-borrador-domiciliario.error';
 import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
 import { DomiciliarioConPedidoActivoError } from '../../../solicitudes/domain/errors/domiciliario-con-pedido-activo.error';
+import { DocumentosPacienteNoDisponiblesError } from '../../../solicitudes/domain/errors/documentos-paciente-no-disponibles.error';
 import { NovedadNoEncontradaError } from '../../../solicitudes/domain/errors/novedad-no-encontrada.error';
 import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { PerfilIncompletoError } from '../../../solicitudes/domain/errors/perfil-incompleto.error';
@@ -45,6 +46,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   CodigoEntregaIncorrectoError,
   NovedadNoEncontradaError,
   DomiciliarioConPedidoActivoError,
+  DocumentosPacienteNoDisponiblesError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -89,7 +91,8 @@ export class DominioHttpFilter implements ExceptionFilter {
       exception instanceof DomiciliarioNoEncontradoError ||
       exception instanceof NoHayBorradorDomiciliarioError ||
       exception instanceof SolicitudNoEncontradaError ||
-      exception instanceof NovedadNoEncontradaError
+      exception instanceof NovedadNoEncontradaError ||
+      exception instanceof DocumentosPacienteNoDisponiblesError
     ) {
       response.status(HttpStatus.NOT_FOUND).json({
         statusCode: HttpStatus.NOT_FOUND,

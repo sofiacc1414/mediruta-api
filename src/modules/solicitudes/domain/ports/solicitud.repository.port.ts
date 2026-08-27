@@ -46,9 +46,10 @@ export type SolicitudDetalle = {
   creadoEn: string;
   enviadoEn: string | null;
   canceladoEn: string | null;
-  /** Referencia viva a `perfil_paciente.foto_cedula_path` (HU-02) —
-   * nunca se copia a la solicitud. */
-  cedulaPath: string | null;
+  /** Referencia viva a `perfil_paciente.foto_cedula_frente_path`/
+   * `foto_cedula_reverso_path` (HU-02) — nunca se copia a la solicitud. */
+  cedulaFrentePath: string | null;
+  cedulaReversoPath: string | null;
   /** Solo existe una vez enviada (G05), igual que codigoPedido — el
    * paciente lo ve en el detalle de su pedido para dárselo al
    * domiciliario al recibirlo. */
@@ -90,6 +91,12 @@ export type PedidoActivoDomiciliario = {
   direccionEntrega: string | null;
   direccionFarmacia: string | null;
   creadoEn: string;
+};
+
+/** HU-07/HU-09 — ver comentario de `obtenerDocumentosPacienteParaRecoger`. */
+export type DocumentosPacienteParaRecoger = {
+  cedulaFrentePath: string | null;
+  cedulaReversoPath: string | null;
 };
 
 /** HU-07 — un incidente reportado por el Domiciliario sobre un pedido
@@ -321,6 +328,16 @@ export abstract class SolicitudRepositoryPort {
     domiciliarioId: string,
     solicitudId: string,
   ): Promise<NovedadDelPaciente | null>;
+
+  /** HU-07/HU-09 — la cédula del Paciente (ambos lados), para que el
+   * Domiciliario la muestre en la farmacia al retirar el medicamento a
+   * su nombre. `null` si el pedido no es del Domiciliario o no está en
+   * `asignado_en_camino_farmacia` — por seguridad/privacidad solo se
+   * expone en esa ventana puntual, ni antes ni después. */
+  abstract obtenerDocumentosPacienteParaRecoger(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<DocumentosPacienteParaRecoger | null>;
 
   // --- Administrador (novedades) ---
 

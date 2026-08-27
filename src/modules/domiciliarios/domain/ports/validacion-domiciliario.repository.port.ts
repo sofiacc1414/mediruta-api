@@ -13,7 +13,8 @@ export type PerfilDomiciliarioValidacion = {
   direccion: string | null;
   vehiculoTipo: string | null;
   vehiculoPlaca: string | null;
-  cedulaPath: string | null;
+  cedulaFrentePath: string | null;
+  cedulaReversoPath: string | null;
   licenciaPath: string | null;
   soatPath: string | null;
   tecnicomecanicaPath: string | null;

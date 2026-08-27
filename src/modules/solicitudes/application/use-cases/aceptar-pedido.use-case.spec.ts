@@ -30,6 +30,7 @@ describe('AceptarPedidoUseCase', () => {
     listarHistorialPedidos: jest.fn(),
     listarHistorialPedidoActivo: jest.fn(),
     obtenerNovedadPropiaAbierta: jest.fn(),
+    obtenerDocumentosPacienteParaRecoger: jest.fn(),
   };
   const useCase = new AceptarPedidoUseCase(solicitudes);
 

@@ -29,14 +29,14 @@ describe('SubirFotoCedulaPacienteUseCase', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     (almacenamiento.subir as jest.Mock).mockResolvedValue(
-      'paciente/usuario-uuid/cedula.jpg',
+      'paciente/usuario-uuid/cedula_frente.jpg',
     );
     (almacenamiento.obtenerUrlFirmada as jest.Mock).mockResolvedValue(
-      'https://firmada.test/paciente/usuario-uuid/cedula.jpg',
+      'https://firmada.test/paciente/usuario-uuid/cedula_frente.jpg',
     );
   });
 
-  it('G01/G03 — sube el archivo a Storage, persiste el path y devuelve la URL firmada', async () => {
+  it('G01/G03 — sube el archivo a Storage, persiste el path (con el lado) y devuelve la URL firmada', async () => {
     (perfiles.actualizarFotoCedulaPaciente as jest.Mock).mockResolvedValue(
       true,
     );
@@ -44,6 +44,7 @@ describe('SubirFotoCedulaPacienteUseCase', () => {
 
     const resultado = await useCase.execute({
       usuarioId: 'usuario-uuid',
+      lado: 'frente',
       contenido,
       contentType: 'image/jpeg',
       extension: 'jpg',
@@ -51,17 +52,18 @@ describe('SubirFotoCedulaPacienteUseCase', () => {
 
     expect(almacenamiento.subir).toHaveBeenCalledWith(
       BUCKET_PERFILES,
-      'paciente/usuario-uuid/cedula.jpg',
+      'paciente/usuario-uuid/cedula_frente.jpg',
       contenido,
       'image/jpeg',
     );
     expect(perfiles.actualizarFotoCedulaPaciente).toHaveBeenCalledWith(
       'usuario-uuid',
-      'paciente/usuario-uuid/cedula.jpg',
+      'frente',
+      'paciente/usuario-uuid/cedula_frente.jpg',
     );
     expect(resultado).toEqual({
       message: MENSAJE_FOTO_CEDULA_ACTUALIZADA,
-      url: 'https://firmada.test/paciente/usuario-uuid/cedula.jpg',
+      url: 'https://firmada.test/paciente/usuario-uuid/cedula_frente.jpg',
     });
   });
 
@@ -73,6 +75,7 @@ describe('SubirFotoCedulaPacienteUseCase', () => {
     await expect(
       useCase.execute({
         usuarioId: 'usuario-uuid',
+        lado: 'reverso',
         contenido: Buffer.from('foto'),
         contentType: 'image/jpeg',
         extension: 'jpg',

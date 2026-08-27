@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import {
+  DocumentosPacienteParaRecoger,
   EstadoSolicitud,
   EventoHistorial,
   Medicamento,
@@ -40,7 +41,8 @@ type FilaDetalle = {
   creado_en: string;
   enviado_en: string | null;
   cancelado_en: string | null;
-  cedula_path: string | null;
+  cedula_frente_path: string | null;
+  cedula_reverso_path: string | null;
   codigo_entrega: string | null;
 };
 
@@ -74,6 +76,11 @@ type FilaPedidoActivoDomiciliario = {
   direccion_entrega: string | null;
   direccion_farmacia: string | null;
   creado_en: string;
+};
+
+type FilaDocumentosPacienteParaRecoger = {
+  cedula_frente_path: string | null;
+  cedula_reverso_path: string | null;
 };
 
 type FilaNovedadAbierta = {
@@ -200,7 +207,8 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         creadoEn: fila.creado_en,
         enviadoEn: fila.enviado_en,
         canceladoEn: fila.cancelado_en,
-        cedulaPath: fila.cedula_path,
+        cedulaFrentePath: fila.cedula_frente_path,
+        cedulaReversoPath: fila.cedula_reverso_path,
         codigoEntrega: fila.codigo_entrega,
       };
     });
@@ -543,6 +551,26 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       }
       const fila = result.rows[0];
       return { id: fila.id, detalle: fila.detalle, creadoEn: fila.creado_en };
+    });
+  }
+
+  obtenerDocumentosPacienteParaRecoger(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<DocumentosPacienteParaRecoger | null> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<FilaDocumentosPacienteParaRecoger>(
+        'select * from app.obtener_documentos_paciente_para_recoger($1, $2)',
+        [domiciliarioId, solicitudId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return {
+        cedulaFrentePath: fila.cedula_frente_path,
+        cedulaReversoPath: fila.cedula_reverso_path,
+      };
     });
   }
 

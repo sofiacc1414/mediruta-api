@@ -67,7 +67,8 @@ describe('ObtenerPerfilUseCase', () => {
       paciente: {
         direccion: 'Calle 123',
         fechaNacimiento: '1990-05-10',
-        fotoCedulaPath: 'paciente/usuario-uuid/cedula.jpg',
+        fotoCedulaFrentePath: 'paciente/usuario-uuid/cedula_frente.jpg',
+        fotoCedulaReversoPath: 'paciente/usuario-uuid/cedula_reverso.jpg',
         departamento: 'Cundinamarca',
         ciudad: 'Bogotá',
       },
@@ -75,7 +76,8 @@ describe('ObtenerPerfilUseCase', () => {
         direccion: 'Avenida 45',
         vehiculoTipo: 'Moto',
         vehiculoPlaca: 'ABC123',
-        cedulaPath: 'domiciliario/usuario-uuid/cedula.jpg',
+        cedulaFrentePath: 'domiciliario/usuario-uuid/cedula_frente.jpg',
+        cedulaReversoPath: 'domiciliario/usuario-uuid/cedula_reverso.jpg',
         licenciaPath: null,
         soatPath: null,
         tecnicomecanicaPath: null,
@@ -88,11 +90,17 @@ describe('ObtenerPerfilUseCase', () => {
     expect(resultado.fotoPerfilUrl).toBe(
       'https://firmada.test/perfil/usuario-uuid/foto.jpg',
     );
-    expect(resultado.paciente?.fotoCedulaUrl).toBe(
-      'https://firmada.test/paciente/usuario-uuid/cedula.jpg',
+    expect(resultado.paciente?.fotoCedulaFrenteUrl).toBe(
+      'https://firmada.test/paciente/usuario-uuid/cedula_frente.jpg',
     );
-    expect(resultado.domiciliario?.cedulaUrl).toBe(
-      'https://firmada.test/domiciliario/usuario-uuid/cedula.jpg',
+    expect(resultado.paciente?.fotoCedulaReversoUrl).toBe(
+      'https://firmada.test/paciente/usuario-uuid/cedula_reverso.jpg',
+    );
+    expect(resultado.domiciliario?.cedulaFrenteUrl).toBe(
+      'https://firmada.test/domiciliario/usuario-uuid/cedula_frente.jpg',
+    );
+    expect(resultado.domiciliario?.cedulaReversoUrl).toBe(
+      'https://firmada.test/domiciliario/usuario-uuid/cedula_reverso.jpg',
     );
     expect(resultado.domiciliario?.licenciaUrl).toBeNull();
     expect(resultado.paciente?.departamento).toBe('Cundinamarca');

@@ -2,7 +2,8 @@ import { IsIn } from 'class-validator';
 import type { TipoDocumentoDomiciliario } from '../../domain/ports/perfil.repository.port';
 
 const TIPOS_VALIDOS: TipoDocumentoDomiciliario[] = [
-  'cedula',
+  'cedula_frente',
+  'cedula_reverso',
   'licencia',
   'soat',
   'tecnicomecanica',

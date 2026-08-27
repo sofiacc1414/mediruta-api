@@ -1,7 +1,11 @@
 export type PerfilPaciente = {
   direccion: string | null;
   fechaNacimiento: string | null;
-  fotoCedulaPath: string | null;
+  /** La cédula colombiana trae información necesaria en las dos caras
+   * — ambos lados son obligatorios para poder enviar una solicitud
+   * (`app.crear_solicitud` exige los dos). */
+  fotoCedulaFrentePath: string | null;
+  fotoCedulaReversoPath: string | null;
   /** HU-09 — contexto para geocodificar tanto esta dirección (default
    * de la de entrega en una solicitud) como la de farmacia de cada
    * pedido (se asume la misma ciudad del paciente). */
@@ -21,7 +25,8 @@ export type PerfilDomiciliario = {
   direccion: string | null;
   vehiculoTipo: string | null;
   vehiculoPlaca: string | null;
-  cedulaPath: string | null;
+  cedulaFrentePath: string | null;
+  cedulaReversoPath: string | null;
   licenciaPath: string | null;
   soatPath: string | null;
   tecnicomecanicaPath: string | null;
@@ -36,7 +41,15 @@ export type Perfil = {
 };
 
 export type TipoDocumentoDomiciliario =
-  'cedula' | 'licencia' | 'soat' | 'tecnicomecanica';
+  | 'cedula_frente'
+  | 'cedula_reverso'
+  | 'licencia'
+  | 'soat'
+  | 'tecnicomecanica';
+
+/** Lado de la cédula del Paciente — la API exige los dos antes de dejar
+ * enviar una solicitud (`app.crear_solicitud`). */
+export type LadoDocumento = 'frente' | 'reverso';
 
 export abstract class PerfilRepositoryPort {
   /** G02. `null` si la cuenta no existe o no está activa. */
@@ -60,9 +73,11 @@ export abstract class PerfilRepositoryPort {
     ciudad: string,
   ): Promise<boolean>;
 
-  /** G01/G03 — foto de cédula del Paciente (ya subida a Storage). */
+  /** G01/G03 — foto de un lado de la cédula del Paciente (ya subida a
+   * Storage). */
   abstract actualizarFotoCedulaPaciente(
     usuarioId: string,
+    lado: LadoDocumento,
     path: string,
   ): Promise<boolean>;
 

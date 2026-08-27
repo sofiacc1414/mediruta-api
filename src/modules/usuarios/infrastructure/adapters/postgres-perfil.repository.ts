@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import {
+  LadoDocumento,
   Perfil,
   PerfilRepositoryPort,
   ResultadoActualizarDisponibilidad,
@@ -13,13 +14,15 @@ type FilaPerfil = {
   foto_perfil_path: string | null;
   pac_direccion: string | null;
   pac_fecha_nacimiento: string | null;
-  pac_foto_cedula_path: string | null;
+  pac_foto_cedula_frente_path: string | null;
+  pac_foto_cedula_reverso_path: string | null;
   pac_departamento: string | null;
   pac_ciudad: string | null;
   dom_direccion: string | null;
   dom_vehiculo_tipo: string | null;
   dom_vehiculo_placa: string | null;
-  dom_cedula_path: string | null;
+  dom_cedula_frente_path: string | null;
+  dom_cedula_reverso_path: string | null;
   dom_licencia_path: string | null;
   dom_soat_path: string | null;
   dom_tecnicomecanica_path: string | null;
@@ -46,14 +49,16 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
       const tienePaciente =
         fila.pac_direccion !== null ||
         fila.pac_fecha_nacimiento !== null ||
-        fila.pac_foto_cedula_path !== null ||
+        fila.pac_foto_cedula_frente_path !== null ||
+        fila.pac_foto_cedula_reverso_path !== null ||
         fila.pac_departamento !== null ||
         fila.pac_ciudad !== null;
       const tieneDomiciliario =
         fila.dom_direccion !== null ||
         fila.dom_vehiculo_tipo !== null ||
         fila.dom_vehiculo_placa !== null ||
-        fila.dom_cedula_path !== null ||
+        fila.dom_cedula_frente_path !== null ||
+        fila.dom_cedula_reverso_path !== null ||
         fila.dom_licencia_path !== null ||
         fila.dom_soat_path !== null ||
         fila.dom_tecnicomecanica_path !== null;
@@ -66,7 +71,8 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
           ? {
               direccion: fila.pac_direccion,
               fechaNacimiento: fila.pac_fecha_nacimiento,
-              fotoCedulaPath: fila.pac_foto_cedula_path,
+              fotoCedulaFrentePath: fila.pac_foto_cedula_frente_path,
+              fotoCedulaReversoPath: fila.pac_foto_cedula_reverso_path,
               departamento: fila.pac_departamento,
               ciudad: fila.pac_ciudad,
             }
@@ -76,7 +82,8 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
               direccion: fila.dom_direccion,
               vehiculoTipo: fila.dom_vehiculo_tipo,
               vehiculoPlaca: fila.dom_vehiculo_placa,
-              cedulaPath: fila.dom_cedula_path,
+              cedulaFrentePath: fila.dom_cedula_frente_path,
+              cedulaReversoPath: fila.dom_cedula_reverso_path,
               licenciaPath: fila.dom_licencia_path,
               soatPath: fila.dom_soat_path,
               tecnicomecanicaPath: fila.dom_tecnicomecanica_path,
@@ -118,14 +125,15 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
 
   actualizarFotoCedulaPaciente(
     usuarioId: string,
+    lado: LadoDocumento,
     path: string,
   ): Promise<boolean> {
     return this.db.withUserContext(usuarioId, async (client) => {
       const result = await client.query<{
         actualizar_foto_cedula_paciente: boolean;
       }>(
-        'select app.actualizar_foto_cedula_paciente($1, $2) as actualizar_foto_cedula_paciente',
-        [usuarioId, path],
+        'select app.actualizar_foto_cedula_paciente($1, $2, $3) as actualizar_foto_cedula_paciente',
+        [usuarioId, lado, path],
       );
       return result.rows[0].actualizar_foto_cedula_paciente;
     });

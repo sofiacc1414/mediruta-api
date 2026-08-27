@@ -37,6 +37,7 @@ describe('ObtenerSolicitudUseCase', () => {
     listarHistorialPedidos: jest.fn(),
     listarHistorialPedidoActivo: jest.fn(),
     obtenerNovedadPropiaAbierta: jest.fn(),
+    obtenerDocumentosPacienteParaRecoger: jest.fn(),
   };
   const almacenamiento: AlmacenamientoArchivosPort = {
     subir: jest.fn(),
@@ -67,7 +68,8 @@ describe('ObtenerSolicitudUseCase', () => {
       creadoEn: '2026-08-20T10:00:00.000Z',
       enviadoEn: null,
       canceladoEn: null,
-      cedulaPath: 'paciente/usuario-uuid/cedula.jpg',
+      cedulaFrentePath: 'paciente/usuario-uuid/cedula_frente.jpg',
+      cedulaReversoPath: 'paciente/usuario-uuid/cedula_reverso.jpg',
       codigoEntrega: '8SBM9J',
     };
     const medicamentos: Medicamento[] = [
@@ -96,8 +98,11 @@ describe('ObtenerSolicitudUseCase', () => {
     expect(resultado.recetaUrl).toBe(
       'https://firmada.test/solicitud/solicitud-uuid/receta.jpg',
     );
-    expect(resultado.cedulaUrl).toBe(
-      'https://firmada.test/paciente/usuario-uuid/cedula.jpg',
+    expect(resultado.cedulaFrenteUrl).toBe(
+      'https://firmada.test/paciente/usuario-uuid/cedula_frente.jpg',
+    );
+    expect(resultado.cedulaReversoUrl).toBe(
+      'https://firmada.test/paciente/usuario-uuid/cedula_reverso.jpg',
     );
     expect(resultado.medicamentos).toBe(medicamentos);
     expect(resultado.historial).toBe(historial);
@@ -120,7 +125,8 @@ describe('ObtenerSolicitudUseCase', () => {
       creadoEn: '2026-08-20T10:00:00.000Z',
       enviadoEn: null,
       canceladoEn: null,
-      cedulaPath: null,
+      cedulaFrentePath: null,
+      cedulaReversoPath: null,
       codigoEntrega: '8SBM9J',
     });
     (solicitudes.obtenerNovedadAbierta as jest.Mock).mockResolvedValue({
@@ -149,14 +155,16 @@ describe('ObtenerSolicitudUseCase', () => {
       creadoEn: '2026-08-20T10:00:00.000Z',
       enviadoEn: null,
       canceladoEn: null,
-      cedulaPath: null,
+      cedulaFrentePath: null,
+      cedulaReversoPath: null,
       codigoEntrega: null,
     });
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
     expect(resultado.recetaUrl).toBeNull();
-    expect(resultado.cedulaUrl).toBeNull();
+    expect(resultado.cedulaFrenteUrl).toBeNull();
+    expect(resultado.cedulaReversoUrl).toBeNull();
     expect(almacenamiento.obtenerUrlFirmada).not.toHaveBeenCalled();
   });
 
@@ -168,7 +176,7 @@ describe('ObtenerSolicitudUseCase', () => {
     ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
   });
 
-  it('recetaUrl/cedulaUrl quedan null (no revienta con 500) si Storage no puede firmar la URL', async () => {
+  it('recetaUrl/cedulaFrenteUrl/cedulaReversoUrl quedan null (no revienta con 500) si Storage no puede firmar la URL', async () => {
     (solicitudes.obtener as jest.Mock).mockResolvedValue({
       id: 'solicitud-uuid',
       codigoPedido: 'MR-000123',
@@ -180,7 +188,8 @@ describe('ObtenerSolicitudUseCase', () => {
       creadoEn: '2026-08-20T10:00:00.000Z',
       enviadoEn: null,
       canceladoEn: null,
-      cedulaPath: 'fake/cedula.jpg',
+      cedulaFrentePath: 'fake/cedula_frente.jpg',
+      cedulaReversoPath: 'fake/cedula_reverso.jpg',
       codigoEntrega: null,
     });
     (almacenamiento.obtenerUrlFirmada as jest.Mock).mockRejectedValue(
@@ -190,6 +199,7 @@ describe('ObtenerSolicitudUseCase', () => {
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
     expect(resultado.recetaUrl).toBeNull();
-    expect(resultado.cedulaUrl).toBeNull();
+    expect(resultado.cedulaFrenteUrl).toBeNull();
+    expect(resultado.cedulaReversoUrl).toBeNull();
   });
 });
