@@ -9,6 +9,7 @@ import { EnviarSolicitudUseCase } from './application/use-cases/enviar-solicitud
 import { IniciarEntregaUseCase } from './application/use-cases/iniciar-entrega.use-case';
 import { ListarHistorialPedidosUseCase } from './application/use-cases/listar-historial-pedidos.use-case';
 import { ListarNovedadesAbiertasUseCase } from './application/use-cases/listar-novedades-abiertas.use-case';
+import { ListarPedidosAdminUseCase } from './application/use-cases/listar-pedidos-admin.use-case';
 import { ListarPedidosDisponiblesUseCase } from './application/use-cases/listar-pedidos-disponibles.use-case';
 import { ListarSolicitudesUseCase } from './application/use-cases/listar-solicitudes.use-case';
 import { MarcarEnSitioUseCase } from './application/use-cases/marcar-en-sitio.use-case';
@@ -24,6 +25,7 @@ import { SolicitudRepositoryPort } from './domain/ports/solicitud.repository.por
 import { NominatimGeocodificacionAdapter } from './infrastructure/adapters/nominatim-geocodificacion.adapter';
 import { PostgresSolicitudRepository } from './infrastructure/adapters/postgres-solicitud.repository';
 import { NovedadesAdminController } from './infrastructure/controllers/novedades-admin.controller';
+import { PedidosAdminController } from './infrastructure/controllers/pedidos-admin.controller';
 import { PedidosDomiciliarioController } from './infrastructure/controllers/pedidos-domiciliario.controller';
 import { SolicitudesController } from './infrastructure/controllers/solicitudes.controller';
 
@@ -38,6 +40,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     SolicitudesController,
     PedidosDomiciliarioController,
     NovedadesAdminController,
+    PedidosAdminController,
   ],
   providers: [
     CrearSolicitudUseCase,
@@ -59,6 +62,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     ObtenerPedidoActivoUseCase,
     ListarHistorialPedidosUseCase,
     ObtenerDocumentosPacienteParaRecogerUseCase,
+    ListarPedidosAdminUseCase,
     {
       provide: SolicitudRepositoryPort,
       useClass: PostgresSolicitudRepository,

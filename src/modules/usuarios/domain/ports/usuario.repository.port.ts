@@ -13,6 +13,13 @@ export type RegistrarUsuarioInput = {
 
 export type ResultadoSolicitarRol = 'agregado' | 'ya_lo_tenia';
 
+export type CrearAdministradorInput = {
+  correo: string;
+  passwordHash: string;
+  nombreCompleto?: string;
+  telefono?: string;
+};
+
 export type ResultadoEnviarSolicitudDomiciliario =
   | { resultado: 'enviada' }
   | { resultado: 'incompleta'; faltantes: string[] }
@@ -76,4 +83,8 @@ export abstract class UsuarioRepositoryPort {
   abstract enviarSolicitudDomiciliario(
     usuarioId: string,
   ): Promise<ResultadoEnviarSolicitudDomiciliario>;
+
+  /** Solo ROOT — crea una cuenta ADMINISTRADOR directa (habilitada de
+   * una, sin pasar por registro público ni validación). */
+  abstract crearAdministrador(input: CrearAdministradorInput): Promise<string>;
 }

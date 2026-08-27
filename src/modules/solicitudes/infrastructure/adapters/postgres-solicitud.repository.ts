@@ -4,10 +4,12 @@ import {
   DocumentosPacienteParaRecoger,
   EstadoSolicitud,
   EventoHistorial,
+  FiltrosPedidosAdmin,
   Medicamento,
   NovedadAbierta,
   NovedadDelPaciente,
   PedidoActivoDomiciliario,
+  PedidoAdmin,
   PedidoDisponible,
   PedidoHistorialDomiciliario,
   ResultadoAceptarPedido,
@@ -81,6 +83,20 @@ type FilaPedidoActivoDomiciliario = {
 type FilaDocumentosPacienteParaRecoger = {
   cedula_frente_path: string | null;
   cedula_reverso_path: string | null;
+};
+
+type FilaPedidoAdmin = {
+  id: string;
+  codigo_pedido: string;
+  estado: EstadoSolicitud;
+  paciente_nombre: string | null;
+  paciente_correo: string;
+  domiciliario_nombre: string | null;
+  domiciliario_correo: string | null;
+  direccion_entrega: string | null;
+  direccion_farmacia: string | null;
+  creado_en: string;
+  enviado_en: string | null;
 };
 
 type FilaNovedadAbierta = {
@@ -601,6 +617,37 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         [adminId, novedadId],
       );
       return result.rows[0].resultado;
+    });
+  }
+
+  listarPedidosAdmin(
+    adminId: string,
+    filtros: FiltrosPedidosAdmin,
+  ): Promise<PedidoAdmin[]> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<FilaPedidoAdmin>(
+        'select * from app.listar_pedidos_admin($1, $2, $3, $4, $5)',
+        [
+          adminId,
+          filtros.estado ?? null,
+          filtros.desde ?? null,
+          filtros.hasta ?? null,
+          filtros.busqueda ?? null,
+        ],
+      );
+      return result.rows.map((fila) => ({
+        id: fila.id,
+        codigoPedido: fila.codigo_pedido,
+        estado: fila.estado,
+        pacienteNombre: fila.paciente_nombre,
+        pacienteCorreo: fila.paciente_correo,
+        domiciliarioNombre: fila.domiciliario_nombre,
+        domiciliarioCorreo: fila.domiciliario_correo,
+        direccionEntrega: fila.direccion_entrega,
+        direccionFarmacia: fila.direccion_farmacia,
+        creadoEn: fila.creado_en,
+        enviadoEn: fila.enviado_en,
+      }));
     });
   }
 }

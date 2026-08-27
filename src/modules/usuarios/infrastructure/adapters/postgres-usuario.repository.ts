@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import {
+  CrearAdministradorInput,
   CredencialesLogin,
   CuentaActual,
   RegistrarUsuarioInput,
@@ -143,5 +144,27 @@ export class PostgresUsuarioRepository extends UsuarioRepositoryPort {
         `Resultado inesperado de app.enviar_solicitud_domiciliario: ${fila.resultado}`,
       );
     });
+  }
+
+  async crearAdministrador(input: CrearAdministradorInput): Promise<string> {
+    try {
+      return await this.db.withAppRole(async (client) => {
+        const result = await client.query<{ id: string }>(
+          'select app.crear_administrador($1, $2, $3, $4) as id',
+          [
+            input.correo,
+            input.passwordHash,
+            input.nombreCompleto ?? null,
+            input.telefono ?? null,
+          ],
+        );
+        return result.rows[0].id;
+      });
+    } catch (error) {
+      if (esViolacionCorreoUnico(error)) {
+        throw new CorreoYaRegistradoError();
+      }
+      throw error;
+    }
   }
 }

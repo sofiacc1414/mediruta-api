@@ -99,6 +99,30 @@ export type DocumentosPacienteParaRecoger = {
   cedulaReversoPath: string | null;
 };
 
+/** Panel admin — fila de "ver y filtrar pedidos". Solo pedidos reales
+ * (con `codigoPedido`) — las solicitudes en Borrador nunca aparecen
+ * acá, no son un "pedido" todavía desde la perspectiva del admin. */
+export type PedidoAdmin = {
+  id: string;
+  codigoPedido: string;
+  estado: EstadoSolicitud;
+  pacienteNombre: string | null;
+  pacienteCorreo: string;
+  domiciliarioNombre: string | null;
+  domiciliarioCorreo: string | null;
+  direccionEntrega: string | null;
+  direccionFarmacia: string | null;
+  creadoEn: string;
+  enviadoEn: string | null;
+};
+
+export type FiltrosPedidosAdmin = {
+  estado?: EstadoSolicitud;
+  desde?: string;
+  hasta?: string;
+  busqueda?: string;
+};
+
 /** HU-07 — un incidente reportado por el Domiciliario sobre un pedido
  * en curso, visible para el Administrador hasta que lo resuelva. No
  * reemplaza el `estado` real del pedido (ver ports comment en la
@@ -339,7 +363,14 @@ export abstract class SolicitudRepositoryPort {
     solicitudId: string,
   ): Promise<DocumentosPacienteParaRecoger | null>;
 
-  // --- Administrador (novedades) ---
+  // --- Administrador (pedidos/novedades) ---
+
+  /** Panel admin — "ver y filtrar pedidos", más recientes primero,
+   * tope de 200 filas (sin paginación todavía). */
+  abstract listarPedidosAdmin(
+    adminId: string,
+    filtros: FiltrosPedidosAdmin,
+  ): Promise<PedidoAdmin[]>;
 
   abstract listarNovedadesAbiertas(adminId: string): Promise<NovedadAbierta[]>;
 

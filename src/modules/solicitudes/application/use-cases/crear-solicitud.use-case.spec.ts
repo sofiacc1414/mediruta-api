@@ -33,6 +33,7 @@ obtenerDatosGeocodificacionFarmacia: jest.fn(),    obtenerNovedadAbierta: jest.f
     listarHistorialPedidoActivo: jest.fn(),
     obtenerNovedadPropiaAbierta: jest.fn(),
     obtenerDocumentosPacienteParaRecoger: jest.fn(),
+    listarPedidosAdmin: jest.fn(),
   };
   const useCase = new CrearSolicitudUseCase(solicitudes);
 

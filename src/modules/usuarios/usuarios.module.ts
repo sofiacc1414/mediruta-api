@@ -7,6 +7,7 @@ import { ActualizarPerfilDomiciliarioUseCase } from './application/use-cases/act
 import { ActualizarPerfilPacienteUseCase } from './application/use-cases/actualizar-perfil-paciente.use-case';
 import { CambiarContrasenaUseCase } from './application/use-cases/cambiar-contrasena.use-case';
 import { CerrarSesionUseCase } from './application/use-cases/cerrar-sesion.use-case';
+import { CrearAdministradorUseCase } from './application/use-cases/crear-administrador.use-case';
 import { DesactivarCuentaUseCase } from './application/use-cases/desactivar-cuenta.use-case';
 import { EnviarSolicitudDomiciliarioUseCase } from './application/use-cases/enviar-solicitud-domiciliario.use-case';
 import { IniciarSesionUseCase } from './application/use-cases/iniciar-sesion.use-case';
@@ -45,6 +46,7 @@ import { PostgresUsuarioRepository } from './infrastructure/adapters/postgres-us
 import { SupabaseAlmacenamientoAdapter } from './infrastructure/adapters/supabase-almacenamiento.adapter';
 import { AuthController } from './infrastructure/controllers/auth.controller';
 import { PerfilController } from './infrastructure/controllers/perfil.controller';
+import { UsuariosAdminController } from './infrastructure/controllers/usuarios-admin.controller';
 import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
 import { RolesGuard } from './infrastructure/guards/roles.guard';
 
@@ -72,9 +74,10 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
       },
     }),
   ],
-  controllers: [AuthController, PerfilController],
+  controllers: [AuthController, PerfilController, UsuariosAdminController],
   providers: [
     RegistrarUsuarioUseCase,
+    CrearAdministradorUseCase,
     IniciarSesionUseCase,
     RefrescarSesionUseCase,
     ObtenerSesionActualUseCase,
