@@ -18,6 +18,10 @@ describe('EnviarSolicitudDomiciliarioUseCase', () => {
     crearAdministrador: jest.fn(),
     listarAdministradores: jest.fn(),
     obtenerAdministrador: jest.fn(),
+    listarCuentasAdmin: jest.fn(),
+    obtenerCuentaAdmin: jest.fn(),
+    bloquearCuenta: jest.fn(),
+    desbloquearCuenta: jest.fn(),
   };
   const useCase = new EnviarSolicitudDomiciliarioUseCase(usuarios);
 
@@ -32,8 +36,12 @@ describe('EnviarSolicitudDomiciliarioUseCase', () => {
 
     const resultado = await useCase.execute('usuario-uuid');
 
-    expect(resultado).toEqual({ message: MENSAJE_SOLICITUD_DOMICILIARIO_ENVIADA });
-    expect(usuarios.enviarSolicitudDomiciliario).toHaveBeenCalledWith('usuario-uuid');
+    expect(resultado).toEqual({
+      message: MENSAJE_SOLICITUD_DOMICILIARIO_ENVIADA,
+    });
+    expect(usuarios.enviarSolicitudDomiciliario).toHaveBeenCalledWith(
+      'usuario-uuid',
+    );
   });
 
   it('lanza DocumentacionIncompletaError con lo que falta', async () => {
@@ -42,7 +50,9 @@ describe('EnviarSolicitudDomiciliarioUseCase', () => {
       faltantes: ['Cédula', 'SOAT'],
     });
 
-    const error = await useCase.execute('usuario-uuid').catch((e: unknown) => e);
+    const error = await useCase
+      .execute('usuario-uuid')
+      .catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(DocumentacionIncompletaError);
     expect((error as DocumentacionIncompletaError).faltantes).toEqual([

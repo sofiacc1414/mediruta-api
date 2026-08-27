@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
 
-export const MENSAJE_EN_SITIO = 'Marcado — llegaste a la dirección del paciente.';
+export const MENSAJE_EN_SITIO =
+  'Marcado — llegaste a la dirección del paciente.';
 
 /** HU-07 — solo si el pedido está `en_camino_entrega` y es del
  * Domiciliario que llama. */

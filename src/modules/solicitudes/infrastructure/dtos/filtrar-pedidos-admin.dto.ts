@@ -1,4 +1,10 @@
-import { IsIn, IsISO8601, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsIn,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import type { EstadoSolicitud } from '../../domain/ports/solicitud.repository.port';
 
 const ESTADOS_VALIDOS: EstadoSolicitud[] = [
@@ -17,7 +23,9 @@ const ESTADOS_VALIDOS: EstadoSolicitud[] = [
  * todos opcionales (sin filtro = todos los pedidos). */
 export class FiltrarPedidosAdminDto {
   @IsOptional()
-  @IsIn(ESTADOS_VALIDOS, { message: `estado debe ser uno de: ${ESTADOS_VALIDOS.join(', ')}.` })
+  @IsIn(ESTADOS_VALIDOS, {
+    message: `estado debe ser uno de: ${ESTADOS_VALIDOS.join(', ')}.`,
+  })
   estado?: EstadoSolicitud;
 
   @IsOptional()
@@ -32,4 +40,14 @@ export class FiltrarPedidosAdminDto {
   @IsString()
   @MaxLength(100)
   busqueda?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  pacienteBusqueda?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  domiciliarioBusqueda?: string;
 }

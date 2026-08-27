@@ -27,7 +27,9 @@ export class CrearAdministradorUseCase {
     private readonly usuarios: UsuarioRepositoryPort,
   ) {}
 
-  async execute(command: CrearAdministradorCommand): Promise<CrearAdministradorResultado> {
+  async execute(
+    command: CrearAdministradorCommand,
+  ): Promise<CrearAdministradorResultado> {
     const correo = command.correo.trim().toLowerCase();
     const passwordHash = await this.passwordHasher.hash(command.password);
 

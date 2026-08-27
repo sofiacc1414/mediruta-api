@@ -145,7 +145,9 @@ describe('PerfilController', () => {
     const actualizarDisponibilidadDomiciliario = {
       execute: jest.fn().mockResolvedValue({ message: 'ok' }),
     };
-    const controller = crearController({ actualizarDisponibilidadDomiciliario });
+    const controller = crearController({
+      actualizarDisponibilidadDomiciliario,
+    });
 
     await controller.actualizarDisponibilidad(identidad, {
       disponible: true,
@@ -165,7 +167,9 @@ describe('PerfilController', () => {
     const actualizarDisponibilidadDomiciliario = {
       execute: jest.fn().mockResolvedValue({ message: 'ok' }),
     };
-    const controller = crearController({ actualizarDisponibilidadDomiciliario });
+    const controller = crearController({
+      actualizarDisponibilidadDomiciliario,
+    });
 
     await controller.actualizarDisponibilidad(identidad, { disponible: false });
 

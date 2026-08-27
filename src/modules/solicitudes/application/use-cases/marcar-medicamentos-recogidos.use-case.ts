@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
 
-export const MENSAJE_MEDICAMENTOS_RECOGIDOS = 'Marcado — medicamentos recogidos.';
+export const MENSAJE_MEDICAMENTOS_RECOGIDOS =
+  'Marcado — medicamentos recogidos.';
 
 /** HU-07 — solo si el pedido está `asignado_en_camino_farmacia` y es
  * del Domiciliario que llama. */

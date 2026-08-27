@@ -38,7 +38,9 @@ describe('ResendCorreoRecuperacionAdapter', () => {
   });
 
   it('usa RESEND_API_KEY y RESEND_FROM_EMAIL configurados', async () => {
-    const adapter = new ResendCorreoRecuperacionAdapter(configCon(configValida));
+    const adapter = new ResendCorreoRecuperacionAdapter(
+      configCon(configValida),
+    );
 
     await adapter.enviarCodigoRecuperacion('persona@mail.com', '000042');
 
@@ -53,7 +55,9 @@ describe('ResendCorreoRecuperacionAdapter', () => {
   });
 
   it('incluye el OTP y la expiración de 10 minutos en HTML y texto', async () => {
-    const adapter = new ResendCorreoRecuperacionAdapter(configCon(configValida));
+    const adapter = new ResendCorreoRecuperacionAdapter(
+      configCon(configValida),
+    );
 
     await adapter.enviarCodigoRecuperacion('persona@mail.com', '000042');
 
@@ -76,7 +80,9 @@ describe('ResendCorreoRecuperacionAdapter', () => {
       data: null,
       error: { message: 'rate_limit', name: 'application_error' },
     });
-    const adapter = new ResendCorreoRecuperacionAdapter(configCon(configValida));
+    const adapter = new ResendCorreoRecuperacionAdapter(
+      configCon(configValida),
+    );
 
     await expect(
       adapter.enviarCodigoRecuperacion('persona@mail.com', '000042'),
@@ -89,7 +95,9 @@ describe('ResendCorreoRecuperacionAdapter', () => {
 
   it('si el SDK lanza, falla de forma genérica', async () => {
     sendMock.mockRejectedValue(new Error('socket hang up'));
-    const adapter = new ResendCorreoRecuperacionAdapter(configCon(configValida));
+    const adapter = new ResendCorreoRecuperacionAdapter(
+      configCon(configValida),
+    );
 
     await expect(
       adapter.enviarCodigoRecuperacion('persona@mail.com', '000042'),
@@ -98,7 +106,9 @@ describe('ResendCorreoRecuperacionAdapter', () => {
 
   it('el error genérico no incluye OTP ni API key', async () => {
     sendMock.mockRejectedValue(new Error('socket hang up'));
-    const adapter = new ResendCorreoRecuperacionAdapter(configCon(configValida));
+    const adapter = new ResendCorreoRecuperacionAdapter(
+      configCon(configValida),
+    );
 
     await expect(
       adapter.enviarCodigoRecuperacion('persona@mail.com', '000042'),

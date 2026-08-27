@@ -43,7 +43,8 @@ describe('DominioHttpFilter', () => {
     expect(status).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.UNAUTHORIZED,
-      message: 'Correo o contraseña incorrectos, o la cuenta no está disponible.',
+      message:
+        'Correo o contraseña incorrectos, o la cuenta no está disponible.',
     });
   });
 
@@ -79,7 +80,8 @@ describe('DominioHttpFilter', () => {
     expect(status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.BAD_REQUEST,
-      message: 'El código de recuperación no es válido o ya no está disponible.',
+      message:
+        'El código de recuperación no es válido o ya no está disponible.',
     });
   });
 
@@ -104,7 +106,8 @@ describe('DominioHttpFilter', () => {
     expect(status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.BAD_REQUEST,
-      message: 'La nueva contraseña debe ser diferente de la contraseña actual.',
+      message:
+        'La nueva contraseña debe ser diferente de la contraseña actual.',
     });
   });
 

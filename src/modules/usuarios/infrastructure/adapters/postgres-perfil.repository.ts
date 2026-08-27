@@ -201,12 +201,10 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
     return this.db.withUserContext(usuarioId, async (client) => {
       const result = await client.query<{
         resultado: ResultadoActualizarDisponibilidad;
-      }>('select * from app.actualizar_disponibilidad_domiciliario($1, $2, $3, $4)', [
-        usuarioId,
-        disponible,
-        lat,
-        lng,
-      ]);
+      }>(
+        'select * from app.actualizar_disponibilidad_domiciliario($1, $2, $3, $4)',
+        [usuarioId, disponible, lat, lng],
+      );
       return result.rows[0].resultado;
     });
   }

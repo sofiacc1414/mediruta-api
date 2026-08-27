@@ -44,7 +44,9 @@ export class IniciarSesionUseCase {
     private readonly accessTokens: AccessTokenPort,
   ) {}
 
-  async execute(command: IniciarSesionCommand): Promise<IniciarSesionResultado> {
+  async execute(
+    command: IniciarSesionCommand,
+  ): Promise<IniciarSesionResultado> {
     const correo = command.correo.trim().toLowerCase();
     const credenciales = await this.usuarios.obtenerCredencialesLogin(correo);
 

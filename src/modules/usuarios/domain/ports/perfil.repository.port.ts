@@ -17,9 +17,7 @@ export type PerfilPaciente = {
  * pedidos". `no_autorizado` si la cuenta no tiene DOMICILIARIO
  * habilitado. */
 export type ResultadoActualizarDisponibilidad =
-  | 'actualizado'
-  | 'no_autorizado'
-  | 'no_encontrado';
+  'actualizado' | 'no_autorizado' | 'no_encontrado';
 
 export type PerfilDomiciliario = {
   direccion: string | null;
@@ -41,11 +39,7 @@ export type Perfil = {
 };
 
 export type TipoDocumentoDomiciliario =
-  | 'cedula_frente'
-  | 'cedula_reverso'
-  | 'licencia'
-  | 'soat'
-  | 'tecnicomecanica';
+  'cedula_frente' | 'cedula_reverso' | 'licencia' | 'soat' | 'tecnicomecanica';
 
 /** Lado de la cédula del Paciente — la API exige los dos antes de dejar
  * enviar una solicitud (`app.crear_solicitud`). */

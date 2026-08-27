@@ -33,7 +33,10 @@ describe('FiltrarPedidosAdminDto', () => {
 
   it('acepta desde/hasta en formato ISO 8601', async () => {
     await expect(
-      validar({ desde: '2026-08-01T00:00:00.000Z', hasta: '2026-08-31T23:59:59.000Z' }),
+      validar({
+        desde: '2026-08-01T00:00:00.000Z',
+        hasta: '2026-08-31T23:59:59.000Z',
+      }),
     ).resolves.toHaveLength(0);
   });
 

@@ -30,7 +30,9 @@ export class RegistrarUsuarioUseCase {
     private readonly usuarios: UsuarioRepositoryPort,
   ) {}
 
-  async execute(command: RegistrarUsuarioCommand): Promise<RegistrarUsuarioResultado> {
+  async execute(
+    command: RegistrarUsuarioCommand,
+  ): Promise<RegistrarUsuarioResultado> {
     const correo = command.correo.trim().toLowerCase();
 
     if (!esTipoRegistroPublico(command.tipoRegistro)) {

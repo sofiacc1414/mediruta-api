@@ -8,12 +8,15 @@ async function validar(body: Record<string, unknown>) {
 }
 
 describe('SubirDocumentoDomiciliarioDto', () => {
-  it.each(['cedula_frente', 'cedula_reverso', 'licencia', 'soat', 'tecnicomecanica'])(
-    'acepta tipo %s',
-    async (tipo) => {
-      await expect(validar({ tipo })).resolves.toHaveLength(0);
-    },
-  );
+  it.each([
+    'cedula_frente',
+    'cedula_reverso',
+    'licencia',
+    'soat',
+    'tecnicomecanica',
+  ])('acepta tipo %s', async (tipo) => {
+    await expect(validar({ tipo })).resolves.toHaveLength(0);
+  });
 
   it('rechaza un tipo fuera del catálogo', async () => {
     const errores = await validar({ tipo: 'antecedentes' });

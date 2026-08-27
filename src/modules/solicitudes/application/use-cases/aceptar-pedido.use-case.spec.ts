@@ -2,7 +2,10 @@ import { DomiciliarioConPedidoActivoError } from '../../domain/errors/domiciliar
 import { PedidoYaAsignadoError } from '../../domain/errors/pedido-ya-asignado.error';
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
-import { AceptarPedidoUseCase, MENSAJE_PEDIDO_ACEPTADO } from './aceptar-pedido.use-case';
+import {
+  AceptarPedidoUseCase,
+  MENSAJE_PEDIDO_ACEPTADO,
+} from './aceptar-pedido.use-case';
 
 describe('AceptarPedidoUseCase', () => {
   const solicitudes: SolicitudRepositoryPort = {
@@ -36,6 +39,11 @@ describe('AceptarPedidoUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const useCase = new AceptarPedidoUseCase(solicitudes);
 
@@ -44,7 +52,10 @@ describe('AceptarPedidoUseCase', () => {
   it('G03 — acepta y devuelve el mensaje de éxito', async () => {
     (solicitudes.aceptarPedido as jest.Mock).mockResolvedValue('aceptado');
 
-    const resultado = await useCase.execute('domiciliario-uuid', 'solicitud-uuid');
+    const resultado = await useCase.execute(
+      'domiciliario-uuid',
+      'solicitud-uuid',
+    );
 
     expect(resultado).toEqual({ message: MENSAJE_PEDIDO_ACEPTADO });
     expect(solicitudes.aceptarPedido).toHaveBeenCalledWith(
@@ -62,7 +73,9 @@ describe('AceptarPedidoUseCase', () => {
   });
 
   it('lanza DomiciliarioConPedidoActivoError si ya tiene un pedido en curso', async () => {
-    (solicitudes.aceptarPedido as jest.Mock).mockResolvedValue('ya_tiene_pedido_activo');
+    (solicitudes.aceptarPedido as jest.Mock).mockResolvedValue(
+      'ya_tiene_pedido_activo',
+    );
 
     await expect(
       useCase.execute('domiciliario-uuid', 'solicitud-uuid'),

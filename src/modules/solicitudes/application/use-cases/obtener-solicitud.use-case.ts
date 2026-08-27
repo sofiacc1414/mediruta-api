@@ -57,12 +57,13 @@ export class ObtenerSolicitudUseCase {
     pacienteId: string,
     solicitudId: string,
   ): Promise<ObtenerSolicitudResultado> {
-    const [detalle, medicamentos, historial, novedadAbierta] = await Promise.all([
-      this.solicitudes.obtener(pacienteId, solicitudId),
-      this.solicitudes.listarMedicamentos(pacienteId, solicitudId),
-      this.solicitudes.listarHistorial(pacienteId, solicitudId),
-      this.solicitudes.obtenerNovedadAbierta(pacienteId, solicitudId),
-    ]);
+    const [detalle, medicamentos, historial, novedadAbierta] =
+      await Promise.all([
+        this.solicitudes.obtener(pacienteId, solicitudId),
+        this.solicitudes.listarMedicamentos(pacienteId, solicitudId),
+        this.solicitudes.listarHistorial(pacienteId, solicitudId),
+        this.solicitudes.obtenerNovedadAbierta(pacienteId, solicitudId),
+      ]);
 
     if (!detalle) {
       throw new SolicitudNoEncontradaError();

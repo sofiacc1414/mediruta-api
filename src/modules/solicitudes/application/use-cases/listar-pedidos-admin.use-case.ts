@@ -12,7 +12,10 @@ import {
 export class ListarPedidosAdminUseCase {
   constructor(private readonly solicitudes: SolicitudRepositoryPort) {}
 
-  execute(adminId: string, filtros: FiltrosPedidosAdmin): Promise<PedidoAdmin[]> {
+  execute(
+    adminId: string,
+    filtros: FiltrosPedidosAdmin,
+  ): Promise<PedidoAdmin[]> {
     return this.solicitudes.listarPedidosAdmin(adminId, filtros);
   }
 }

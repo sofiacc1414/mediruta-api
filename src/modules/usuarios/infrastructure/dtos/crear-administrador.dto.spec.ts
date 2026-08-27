@@ -19,12 +19,19 @@ describe('CrearAdministradorDto', () => {
 
   it('acepta con nombreCompleto y telefono', async () => {
     await expect(
-      validar({ ...valido, nombreCompleto: 'Ana Admin', telefono: '3001234567' }),
+      validar({
+        ...valido,
+        nombreCompleto: 'Ana Admin',
+        telefono: '3001234567',
+      }),
     ).resolves.toHaveLength(0);
   });
 
   it('normaliza espacios y mayúsculas del correo antes de validar', async () => {
-    const dto = plainToInstance(CrearAdministradorDto, { ...valido, correo: '  Admin@MAIL.COM  ' });
+    const dto = plainToInstance(CrearAdministradorDto, {
+      ...valido,
+      correo: '  Admin@MAIL.COM  ',
+    });
     const errores = await validate(dto);
 
     expect(dto.correo).toBe('admin@mail.com');

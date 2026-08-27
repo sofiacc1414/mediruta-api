@@ -60,13 +60,17 @@ export class ObtenerDetallePedidoAdminUseCase {
     private readonly almacenamiento: AlmacenamientoArchivosPort,
   ) {}
 
-  async execute(adminId: string, solicitudId: string): Promise<DetallePedidoAdminResultado> {
-    const [detalle, medicamentos, historial, novedadAbierta] = await Promise.all([
-      this.solicitudes.obtenerPedidoAdmin(adminId, solicitudId),
-      this.solicitudes.listarMedicamentosPedidoAdmin(adminId, solicitudId),
-      this.solicitudes.listarHistorialPedidoAdmin(adminId, solicitudId),
-      this.solicitudes.obtenerNovedadAbiertaPedidoAdmin(adminId, solicitudId),
-    ]);
+  async execute(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<DetallePedidoAdminResultado> {
+    const [detalle, medicamentos, historial, novedadAbierta] =
+      await Promise.all([
+        this.solicitudes.obtenerPedidoAdmin(adminId, solicitudId),
+        this.solicitudes.listarMedicamentosPedidoAdmin(adminId, solicitudId),
+        this.solicitudes.listarHistorialPedidoAdmin(adminId, solicitudId),
+        this.solicitudes.obtenerNovedadAbiertaPedidoAdmin(adminId, solicitudId),
+      ]);
 
     if (!detalle) {
       throw new SolicitudNoEncontradaError();
@@ -116,7 +120,9 @@ export class ObtenerDetallePedidoAdminUseCase {
    * detalle entero con un 500 (mismo criterio que
    * `ObtenerSolicitudUseCase`).
    */
-  private async urlFirmadaOpcional(path: string | null): Promise<string | null> {
+  private async urlFirmadaOpcional(
+    path: string | null,
+  ): Promise<string | null> {
     if (!path) {
       return null;
     }

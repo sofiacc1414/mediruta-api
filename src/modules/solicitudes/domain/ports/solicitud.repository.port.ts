@@ -114,6 +114,11 @@ export type PedidoAdmin = {
   direccionFarmacia: string | null;
   creadoEn: string;
   enviadoEn: string | null;
+  /** Desde cuándo está en `en_asignacion` (`null` si nunca pasó por
+   * ahí, o si ya tiene domiciliario) — con esto el panel admin calcula
+   * "está demorado" contra el umbral configurable, sin hornear el
+   * número acá. */
+  enAsignacionDesde: string | null;
 };
 
 export type FiltrosPedidosAdmin = {
@@ -121,6 +126,8 @@ export type FiltrosPedidosAdmin = {
   desde?: string;
   hasta?: string;
   busqueda?: string;
+  pacienteBusqueda?: string;
+  domiciliarioBusqueda?: string;
 };
 
 /** Panel admin — detalle completo de UN pedido (no solo la fila del
@@ -147,18 +154,47 @@ export type PedidoAdminDetalle = {
   domiciliarioNombre: string | null;
   domiciliarioCorreo: string | null;
   domiciliarioTelefono: string | null;
+  enAsignacionDesde: string | null;
 };
+
+/** Panel admin — fila de "domiciliarios cercanos a la farmacia de este
+ * pedido", para la asignación manual de un pedido demorado. */
+export type DomiciliarioCercanoAdmin = {
+  usuarioId: string;
+  nombreCompleto: string | null;
+  telefono: string | null;
+  distanciaMetros: number;
+};
+
+export type ResultadoAsignarDomiciliarioAdmin =
+  | 'asignado'
+  | 'ya_asignado'
+  | 'no_encontrado'
+  | 'no_autorizado'
+  | 'domiciliario_no_disponible';
+
+export type ConfiguracionAdmin = {
+  umbralDemoraAsignacionMinutos: number;
+};
+
+export type ResultadoActualizarConfiguracionAdmin =
+  'actualizado' | 'invalido' | 'no_autorizado';
 
 /** HU-07 — un incidente reportado por el Domiciliario sobre un pedido
  * en curso, visible para el Administrador hasta que lo resuelva. No
  * reemplaza el `estado` real del pedido (ver ports comment en la
  * migración) — es información aparte. */
+/** Quién reportó la novedad — hasta esta ronda solo el Domiciliario
+ * podía; ahora el Paciente también (ver `reportarNovedadPaciente`). */
+export type OrigenNovedad = 'domiciliario' | 'paciente';
+
 export type NovedadAbierta = {
   id: string;
   solicitudId: string;
   codigoPedido: string | null;
   detalle: string;
   reportadaPorCorreo: string;
+  origen: OrigenNovedad;
   creadoEn: string;
 };
 
@@ -166,6 +202,12 @@ export type NovedadDelPaciente = {
   id: string;
   detalle: string;
   creadoEn: string;
+};
+
+/** Igual que `NovedadDelPaciente` pero con `origen` — solo la usa el
+ * detalle de pedido del panel admin (ver `obtenerNovedadAbiertaPedidoAdmin`). */
+export type NovedadAbiertaPedidoAdmin = NovedadDelPaciente & {
+  origen: OrigenNovedad;
 };
 
 export type EventoHistorial = {
@@ -190,23 +232,17 @@ export type ResultadoCancelar = 'cancelada' | 'no_encontrada';
  * vez, no un error — el guard atómico de `app.aceptar_pedido` decide
  * quién gana. */
 export type ResultadoAceptarPedido =
-  | 'aceptado'
-  | 'ya_asignado'
-  | 'ya_tiene_pedido_activo'
-  | 'no_encontrado';
+  'aceptado' | 'ya_asignado' | 'ya_tiene_pedido_activo' | 'no_encontrado';
 
 /** HU-07 — resultado común de las transiciones manuales del
  * Domiciliario (recogido, iniciar entrega, en sitio). */
 export type ResultadoTransicionPedido = 'actualizado' | 'no_encontrado';
 
 export type ResultadoEntregarPedido =
-  | 'entregado'
-  | 'codigo_incorrecto'
-  | 'no_encontrado';
+  'entregado' | 'codigo_incorrecto' | 'no_encontrado';
 
 export type ResultadoReportarNovedad =
-  | { resultado: 'reportada'; id: string }
-  | { resultado: 'no_encontrado' };
+  { resultado: 'reportada'; id: string } | { resultado: 'no_encontrado' };
 
 export type ResultadoResolverNovedad = 'resuelta' | 'no_encontrado';
 
@@ -301,6 +337,15 @@ export abstract class SolicitudRepositoryPort {
     pacienteId: string,
     solicitudId: string,
   ): Promise<NovedadDelPaciente | null>;
+
+  /** El Paciente reporta una novedad sobre su propio pedido — mismo
+   * criterio que `reportarNovedad` (Domiciliario), pero guardado contra
+   * `paciente_id` y con `origen = 'paciente'`. */
+  abstract reportarNovedadPaciente(
+    pacienteId: string,
+    solicitudId: string,
+    detalle: string,
+  ): Promise<ResultadoReportarNovedad>;
 
   // --- Domiciliario (HU-09/HU-07) ---
 
@@ -419,7 +464,7 @@ export abstract class SolicitudRepositoryPort {
   abstract obtenerNovedadAbiertaPedidoAdmin(
     adminId: string,
     solicitudId: string,
-  ): Promise<NovedadDelPaciente | null>;
+  ): Promise<NovedadAbiertaPedidoAdmin | null>;
 
   abstract listarNovedadesAbiertas(adminId: string): Promise<NovedadAbierta[]>;
 
@@ -427,4 +472,29 @@ export abstract class SolicitudRepositoryPort {
     adminId: string,
     novedadId: string,
   ): Promise<ResultadoResolverNovedad>;
+
+  /** Panel admin — "pedido demorado sin domiciliario": candidatos
+   * disponibles más cercanos a la farmacia de ese pedido, tope 20. */
+  abstract listarDomiciliariosCercanosAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<DomiciliarioCercanoAdmin[]>;
+
+  /** Asignación manual — misma transición que `aceptarPedido` (el
+   * Domiciliario aceptando su propio pedido), pero elegida por el admin. */
+  abstract asignarDomiciliarioAdmin(
+    adminId: string,
+    solicitudId: string,
+    domiciliarioId: string,
+  ): Promise<ResultadoAsignarDomiciliarioAdmin>;
+
+  /** Umbral de "pedido demorado" — configurable, no fijo en código. */
+  abstract obtenerConfiguracionAdmin(
+    adminId: string,
+  ): Promise<ConfiguracionAdmin | null>;
+
+  abstract actualizarConfiguracionAdmin(
+    adminId: string,
+    umbralMinutos: number,
+  ): Promise<ResultadoActualizarConfiguracionAdmin>;
 }

@@ -37,6 +37,11 @@ describe('MarcarMedicamentosRecogidosUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const useCase = new MarcarMedicamentosRecogidosUseCase(solicitudes);
 
@@ -47,7 +52,10 @@ describe('MarcarMedicamentosRecogidosUseCase', () => {
       'actualizado',
     );
 
-    const resultado = await useCase.execute('domiciliario-uuid', 'solicitud-uuid');
+    const resultado = await useCase.execute(
+      'domiciliario-uuid',
+      'solicitud-uuid',
+    );
 
     expect(resultado).toEqual({ message: MENSAJE_MEDICAMENTOS_RECOGIDOS });
     expect(solicitudes.marcarMedicamentosRecogidos).toHaveBeenCalledWith(

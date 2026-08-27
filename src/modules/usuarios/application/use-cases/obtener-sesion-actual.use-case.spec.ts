@@ -14,6 +14,10 @@ describe('ObtenerSesionActualUseCase', () => {
     crearAdministrador: jest.fn(),
     listarAdministradores: jest.fn(),
     obtenerAdministrador: jest.fn(),
+    listarCuentasAdmin: jest.fn(),
+    obtenerCuentaAdmin: jest.fn(),
+    bloquearCuenta: jest.fn(),
+    desbloquearCuenta: jest.fn(),
   };
   const useCase = new ObtenerSesionActualUseCase(usuarios);
 

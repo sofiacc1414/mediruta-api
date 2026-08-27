@@ -105,7 +105,10 @@ export class PedidosDomiciliarioController {
     @UsuarioAutenticado() identidad: IdentidadAutenticada,
     @Param('id', ParseUUIDPipe) solicitudId: string,
   ) {
-    return this.marcarMedicamentosRecogidos.execute(identidad.usuarioId, solicitudId);
+    return this.marcarMedicamentosRecogidos.execute(
+      identidad.usuarioId,
+      solicitudId,
+    );
   }
 
   @Post(':id/iniciar-entrega')
@@ -133,7 +136,11 @@ export class PedidosDomiciliarioController {
     @Param('id', ParseUUIDPipe) solicitudId: string,
     @Body() dto: EntregarPedidoDto,
   ) {
-    return this.entregarPedido.execute(identidad.usuarioId, solicitudId, dto.codigo);
+    return this.entregarPedido.execute(
+      identidad.usuarioId,
+      solicitudId,
+      dto.codigo,
+    );
   }
 
   @Post(':id/novedad')
@@ -143,6 +150,10 @@ export class PedidosDomiciliarioController {
     @Param('id', ParseUUIDPipe) solicitudId: string,
     @Body() dto: ReportarNovedadDto,
   ) {
-    return this.reportarNovedad.execute(identidad.usuarioId, solicitudId, dto.detalle);
+    return this.reportarNovedad.execute(
+      identidad.usuarioId,
+      solicitudId,
+      dto.detalle,
+    );
   }
 }

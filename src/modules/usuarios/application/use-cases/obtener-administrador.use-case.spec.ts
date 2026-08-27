@@ -19,6 +19,10 @@ describe('ObtenerAdministradorUseCase', () => {
     crearAdministrador: jest.fn(),
     listarAdministradores: jest.fn(),
     obtenerAdministrador: jest.fn(),
+    listarCuentasAdmin: jest.fn(),
+    obtenerCuentaAdmin: jest.fn(),
+    bloquearCuenta: jest.fn(),
+    desbloquearCuenta: jest.fn(),
   };
   const almacenamiento: AlmacenamientoArchivosPort = {
     subir: jest.fn(),
@@ -29,7 +33,8 @@ describe('ObtenerAdministradorUseCase', () => {
   beforeEach(() => {
     jest.resetAllMocks();
     (almacenamiento.obtenerUrlFirmada as jest.Mock).mockImplementation(
-      (_bucket: string, path: string) => Promise.resolve(`https://firmada.test/${path}`),
+      (_bucket: string, path: string) =>
+        Promise.resolve(`https://firmada.test/${path}`),
     );
   });
 
@@ -46,7 +51,9 @@ describe('ObtenerAdministradorUseCase', () => {
 
     const resultado = await useCase.execute('root-uuid', 'admin-uuid');
 
-    expect(resultado.fotoPerfilUrl).toBe('https://firmada.test/perfil/admin-uuid/foto.jpg');
+    expect(resultado.fotoPerfilUrl).toBe(
+      'https://firmada.test/perfil/admin-uuid/foto.jpg',
+    );
     expect(almacenamiento.obtenerUrlFirmada).toHaveBeenCalledWith(
       BUCKET_PERFILES,
       'perfil/admin-uuid/foto.jpg',
@@ -74,8 +81,8 @@ describe('ObtenerAdministradorUseCase', () => {
   it('lanza AdministradorNoEncontradoError si no existe', async () => {
     (usuarios.obtenerAdministrador as jest.Mock).mockResolvedValue(null);
 
-    await expect(useCase.execute('root-uuid', 'admin-uuid')).rejects.toBeInstanceOf(
-      AdministradorNoEncontradoError,
-    );
+    await expect(
+      useCase.execute('root-uuid', 'admin-uuid'),
+    ).rejects.toBeInstanceOf(AdministradorNoEncontradoError);
   });
 });

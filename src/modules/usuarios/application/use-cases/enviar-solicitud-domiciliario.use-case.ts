@@ -18,7 +18,8 @@ export class EnviarSolicitudDomiciliarioUseCase {
   constructor(private readonly usuarios: UsuarioRepositoryPort) {}
 
   async execute(usuarioId: string): Promise<{ message: string }> {
-    const resultado = await this.usuarios.enviarSolicitudDomiciliario(usuarioId);
+    const resultado =
+      await this.usuarios.enviarSolicitudDomiciliario(usuarioId);
 
     switch (resultado.resultado) {
       case 'enviada':

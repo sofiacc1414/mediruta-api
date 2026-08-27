@@ -1,4 +1,9 @@
-import { IsBoolean, IsLatitude, IsLongitude, IsOptional } from 'class-validator';
+import {
+  IsBoolean,
+  IsLatitude,
+  IsLongitude,
+  IsOptional,
+} from 'class-validator';
 
 export class ActualizarDisponibilidadDomiciliarioDto {
   @IsBoolean()

@@ -32,10 +32,9 @@ export class RolesGuard implements CanActivate {
     // clase, dejando pasar a cualquiera sin importar su rol. Se detectó
     // probando en vivo: una cuenta sin rol ADMINISTRADOR/ROOT pasaba el
     // guard igual.
-    const rolesRequeridos = this.reflector.getAllAndOverride<CodigoRol[] | undefined>(
-      ROLES_METADATA_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const rolesRequeridos = this.reflector.getAllAndOverride<
+      CodigoRol[] | undefined
+    >(ROLES_METADATA_KEY, [context.getHandler(), context.getClass()]);
     if (!rolesRequeridos || rolesRequeridos.length === 0) {
       return true;
     }

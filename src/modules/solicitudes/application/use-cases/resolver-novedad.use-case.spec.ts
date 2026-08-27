@@ -1,6 +1,9 @@
 import { NovedadNoEncontradaError } from '../../domain/errors/novedad-no-encontrada.error';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
-import { MENSAJE_NOVEDAD_RESUELTA, ResolverNovedadUseCase } from './resolver-novedad.use-case';
+import {
+  MENSAJE_NOVEDAD_RESUELTA,
+  ResolverNovedadUseCase,
+} from './resolver-novedad.use-case';
 
 describe('ResolverNovedadUseCase', () => {
   const solicitudes: SolicitudRepositoryPort = {
@@ -34,6 +37,11 @@ describe('ResolverNovedadUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const useCase = new ResolverNovedadUseCase(solicitudes);
 
@@ -52,7 +60,9 @@ describe('ResolverNovedadUseCase', () => {
   });
 
   it('lanza NovedadNoEncontradaError si no existe o ya estaba resuelta', async () => {
-    (solicitudes.resolverNovedad as jest.Mock).mockResolvedValue('no_encontrado');
+    (solicitudes.resolverNovedad as jest.Mock).mockResolvedValue(
+      'no_encontrado',
+    );
 
     await expect(
       useCase.execute('admin-uuid', 'novedad-uuid'),

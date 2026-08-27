@@ -5,14 +5,18 @@ import { ActualizarDatosComunesUseCase } from './application/use-cases/actualiza
 import { ActualizarDisponibilidadDomiciliarioUseCase } from './application/use-cases/actualizar-disponibilidad-domiciliario.use-case';
 import { ActualizarPerfilDomiciliarioUseCase } from './application/use-cases/actualizar-perfil-domiciliario.use-case';
 import { ActualizarPerfilPacienteUseCase } from './application/use-cases/actualizar-perfil-paciente.use-case';
+import { BloquearCuentaUseCase } from './application/use-cases/bloquear-cuenta.use-case';
 import { CambiarContrasenaUseCase } from './application/use-cases/cambiar-contrasena.use-case';
 import { CerrarSesionUseCase } from './application/use-cases/cerrar-sesion.use-case';
 import { CrearAdministradorUseCase } from './application/use-cases/crear-administrador.use-case';
 import { DesactivarCuentaUseCase } from './application/use-cases/desactivar-cuenta.use-case';
+import { DesbloquearCuentaUseCase } from './application/use-cases/desbloquear-cuenta.use-case';
 import { EnviarSolicitudDomiciliarioUseCase } from './application/use-cases/enviar-solicitud-domiciliario.use-case';
 import { IniciarSesionUseCase } from './application/use-cases/iniciar-sesion.use-case';
 import { ListarAdministradoresUseCase } from './application/use-cases/listar-administradores.use-case';
+import { ListarCuentasAdminUseCase } from './application/use-cases/listar-cuentas-admin.use-case';
 import { ObtenerAdministradorUseCase } from './application/use-cases/obtener-administrador.use-case';
+import { ObtenerCuentaAdminUseCase } from './application/use-cases/obtener-cuenta-admin.use-case';
 import { ObtenerPerfilUseCase } from './application/use-cases/obtener-perfil.use-case';
 import { ObtenerSesionActualUseCase } from './application/use-cases/obtener-sesion-actual.use-case';
 import { RefrescarSesionUseCase } from './application/use-cases/refrescar-sesion.use-case';
@@ -47,6 +51,7 @@ import { PostgresSesionRepository } from './infrastructure/adapters/postgres-ses
 import { PostgresUsuarioRepository } from './infrastructure/adapters/postgres-usuario.repository';
 import { SupabaseAlmacenamientoAdapter } from './infrastructure/adapters/supabase-almacenamiento.adapter';
 import { AuthController } from './infrastructure/controllers/auth.controller';
+import { CuentasAdminController } from './infrastructure/controllers/cuentas-admin.controller';
 import { PerfilController } from './infrastructure/controllers/perfil.controller';
 import { UsuariosAdminController } from './infrastructure/controllers/usuarios-admin.controller';
 import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
@@ -76,12 +81,21 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
       },
     }),
   ],
-  controllers: [AuthController, PerfilController, UsuariosAdminController],
+  controllers: [
+    AuthController,
+    PerfilController,
+    UsuariosAdminController,
+    CuentasAdminController,
+  ],
   providers: [
     RegistrarUsuarioUseCase,
     CrearAdministradorUseCase,
     ListarAdministradoresUseCase,
     ObtenerAdministradorUseCase,
+    ListarCuentasAdminUseCase,
+    ObtenerCuentaAdminUseCase,
+    BloquearCuentaUseCase,
+    DesbloquearCuentaUseCase,
     IniciarSesionUseCase,
     RefrescarSesionUseCase,
     ObtenerSesionActualUseCase,

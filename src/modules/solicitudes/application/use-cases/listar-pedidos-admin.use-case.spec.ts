@@ -33,6 +33,11 @@ describe('ListarPedidosAdminUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const useCase = new ListarPedidosAdminUseCase(solicitudes);
 
@@ -59,7 +64,10 @@ describe('ListarPedidosAdminUseCase', () => {
     const filtros = { estado: 'entregado' as const, busqueda: 'MR-000123' };
     const resultado = await useCase.execute('admin-uuid', filtros);
 
-    expect(solicitudes.listarPedidosAdmin).toHaveBeenCalledWith('admin-uuid', filtros);
+    expect(solicitudes.listarPedidosAdmin).toHaveBeenCalledWith(
+      'admin-uuid',
+      filtros,
+    );
     expect(resultado).toBe(pedidos);
   });
 
@@ -68,6 +76,9 @@ describe('ListarPedidosAdminUseCase', () => {
 
     await useCase.execute('admin-uuid', {});
 
-    expect(solicitudes.listarPedidosAdmin).toHaveBeenCalledWith('admin-uuid', {});
+    expect(solicitudes.listarPedidosAdmin).toHaveBeenCalledWith(
+      'admin-uuid',
+      {},
+    );
   });
 });

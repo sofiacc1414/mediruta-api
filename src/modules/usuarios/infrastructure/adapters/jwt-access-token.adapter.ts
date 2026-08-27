@@ -40,9 +40,7 @@ export class JwtAccessTokenAdapter extends AccessTokenPort {
   }
 }
 
-function esPayloadAccess(
-  payload: unknown,
-): payload is AccessTokenPayload {
+function esPayloadAccess(payload: unknown): payload is AccessTokenPayload {
   if (!payload || typeof payload !== 'object') {
     return false;
   }

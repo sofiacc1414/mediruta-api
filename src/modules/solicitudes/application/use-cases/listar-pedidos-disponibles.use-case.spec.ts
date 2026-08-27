@@ -33,6 +33,11 @@ describe('ListarPedidosDisponiblesUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const useCase = new ListarPedidosDisponiblesUseCase(solicitudes);
 

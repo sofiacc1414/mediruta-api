@@ -127,7 +127,9 @@ describe('PostgresUsuarioRepository', () => {
   });
 
   it('registrar() manda altaPaciente=true por defecto si no se especifica', async () => {
-    const query = jest.fn().mockResolvedValue({ rows: [{ id: 'usuario-uuid' }] });
+    const query = jest
+      .fn()
+      .mockResolvedValue({ rows: [{ id: 'usuario-uuid' }] });
     const db = {
       withAppRole: jest.fn(async (callback) => callback({ query })),
     } as unknown as DatabaseService;
@@ -146,7 +148,9 @@ describe('PostgresUsuarioRepository', () => {
   });
 
   it('registrar() propaga altaPaciente en false explícito', async () => {
-    const query = jest.fn().mockResolvedValue({ rows: [{ id: 'usuario-uuid' }] });
+    const query = jest
+      .fn()
+      .mockResolvedValue({ rows: [{ id: 'usuario-uuid' }] });
     const db = {
       withAppRole: jest.fn(async (callback) => callback({ query })),
     } as unknown as DatabaseService;
@@ -169,7 +173,9 @@ describe('PostgresUsuarioRepository', () => {
     const query = jest.fn().mockResolvedValue({
       rows: [{ solicitar_rol_paciente: 'agregado' }],
     });
-    const withUserContext = jest.fn(async (_id, callback) => callback({ query }));
+    const withUserContext = jest.fn(async (_id, callback) =>
+      callback({ query }),
+    );
     const db = { withUserContext } as unknown as DatabaseService;
 
     const repository = new PostgresUsuarioRepository(db);
@@ -190,7 +196,9 @@ describe('PostgresUsuarioRepository', () => {
     const query = jest.fn().mockResolvedValue({
       rows: [{ solicitar_rol_domiciliario: 'ya_lo_tenia' }],
     });
-    const withUserContext = jest.fn(async (_id, callback) => callback({ query }));
+    const withUserContext = jest.fn(async (_id, callback) =>
+      callback({ query }),
+    );
     const db = { withUserContext } as unknown as DatabaseService;
 
     const repository = new PostgresUsuarioRepository(db);
@@ -211,11 +219,14 @@ describe('PostgresUsuarioRepository', () => {
     const query = jest.fn().mockResolvedValue({
       rows: [{ resultado: 'incompleta', faltantes: ['Cédula'] }],
     });
-    const withUserContext = jest.fn(async (_id, callback) => callback({ query }));
+    const withUserContext = jest.fn(async (_id, callback) =>
+      callback({ query }),
+    );
     const db = { withUserContext } as unknown as DatabaseService;
 
     const repository = new PostgresUsuarioRepository(db);
-    const resultado = await repository.enviarSolicitudDomiciliario('usuario-uuid');
+    const resultado =
+      await repository.enviarSolicitudDomiciliario('usuario-uuid');
 
     expect(withUserContext).toHaveBeenCalledWith(
       'usuario-uuid',
@@ -225,6 +236,9 @@ describe('PostgresUsuarioRepository', () => {
       'select * from app.enviar_solicitud_domiciliario($1)',
       ['usuario-uuid'],
     );
-    expect(resultado).toEqual({ resultado: 'incompleta', faltantes: ['Cédula'] });
+    expect(resultado).toEqual({
+      resultado: 'incompleta',
+      faltantes: ['Cédula'],
+    });
   });
 });

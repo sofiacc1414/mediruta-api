@@ -1,19 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import {
+  ConfiguracionAdmin,
   DocumentosPacienteParaRecoger,
+  DomiciliarioCercanoAdmin,
   EstadoSolicitud,
   EventoHistorial,
   FiltrosPedidosAdmin,
   Medicamento,
   NovedadAbierta,
+  NovedadAbiertaPedidoAdmin,
   NovedadDelPaciente,
+  OrigenNovedad,
   PedidoActivoDomiciliario,
   PedidoAdmin,
   PedidoAdminDetalle,
   PedidoDisponible,
   PedidoHistorialDomiciliario,
   ResultadoAceptarPedido,
+  ResultadoActualizarConfiguracionAdmin,
+  ResultadoAsignarDomiciliarioAdmin,
   ResultadoCancelar,
   ResultadoCrear,
   ResultadoEnviar,
@@ -98,6 +104,7 @@ type FilaPedidoAdmin = {
   direccion_farmacia: string | null;
   creado_en: string;
   enviado_en: string | null;
+  en_asignacion_desde: string | null;
 };
 
 type FilaPedidoAdminDetalle = {
@@ -120,6 +127,18 @@ type FilaPedidoAdminDetalle = {
   domiciliario_nombre: string | null;
   domiciliario_correo: string | null;
   domiciliario_telefono: string | null;
+  en_asignacion_desde: string | null;
+};
+
+type FilaDomiciliarioCercanoAdmin = {
+  usuario_id: string;
+  nombre_completo: string | null;
+  telefono: string | null;
+  distancia_metros: number;
+};
+
+type FilaConfiguracionAdmin = {
+  umbral_demora_asignacion_minutos: number;
 };
 
 type FilaNovedadAbierta = {
@@ -128,6 +147,7 @@ type FilaNovedadAbierta = {
   codigo_pedido: string | null;
   detalle: string;
   reportada_por_correo: string;
+  origen: OrigenNovedad;
   creado_en: string;
 };
 
@@ -135,6 +155,10 @@ type FilaNovedadDelPaciente = {
   id: string;
   detalle: string;
   creado_en: string;
+};
+
+type FilaNovedadAbiertaPedidoAdmin = FilaNovedadDelPaciente & {
+  origen: OrigenNovedad;
 };
 
 type FilaMedicamento = {
@@ -414,7 +438,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     });
   }
 
-  listarPedidosDisponibles(domiciliarioId: string): Promise<PedidoDisponible[]> {
+  listarPedidosDisponibles(
+    domiciliarioId: string,
+  ): Promise<PedidoDisponible[]> {
     return this.db.withUserContext(domiciliarioId, async (client) => {
       const result = await client.query<FilaPedidoDisponible>(
         'select * from app.listar_pedidos_disponibles($1)',
@@ -431,7 +457,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     });
   }
 
-  listarHistorialPedidos(domiciliarioId: string): Promise<PedidoHistorialDomiciliario[]> {
+  listarHistorialPedidos(
+    domiciliarioId: string,
+  ): Promise<PedidoHistorialDomiciliario[]> {
     return this.db.withUserContext(domiciliarioId, async (client) => {
       const result = await client.query<FilaPedidoHistorialDomiciliario>(
         'select * from app.listar_historial_pedidos_domiciliario($1)',
@@ -525,10 +553,14 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     detalle: string,
   ): Promise<ResultadoReportarNovedad> {
     return this.db.withUserContext(domiciliarioId, async (client) => {
-      const result = await client.query<{ resultado: string; id: string | null }>(
-        'select * from app.reportar_novedad($1, $2, $3)',
-        [domiciliarioId, solicitudId, detalle],
-      );
+      const result = await client.query<{
+        resultado: string;
+        id: string | null;
+      }>('select * from app.reportar_novedad($1, $2, $3)', [
+        domiciliarioId,
+        solicitudId,
+        detalle,
+      ]);
       const fila = result.rows[0];
       if (fila.resultado === 'reportada' && fila.id) {
         return { resultado: 'reportada', id: fila.id };
@@ -625,6 +657,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         codigoPedido: fila.codigo_pedido,
         detalle: fila.detalle,
         reportadaPorCorreo: fila.reportada_por_correo,
+        origen: fila.origen,
         creadoEn: fila.creado_en,
       }));
     });
@@ -635,10 +668,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     novedadId: string,
   ): Promise<ResultadoResolverNovedad> {
     return this.db.withUserContext(adminId, async (client) => {
-      const result = await client.query<{ resultado: ResultadoResolverNovedad }>(
-        'select * from app.resolver_novedad($1, $2)',
-        [adminId, novedadId],
-      );
+      const result = await client.query<{
+        resultado: ResultadoResolverNovedad;
+      }>('select * from app.resolver_novedad($1, $2)', [adminId, novedadId]);
       return result.rows[0].resultado;
     });
   }
@@ -649,13 +681,15 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
   ): Promise<PedidoAdmin[]> {
     return this.db.withUserContext(adminId, async (client) => {
       const result = await client.query<FilaPedidoAdmin>(
-        'select * from app.listar_pedidos_admin($1, $2, $3, $4, $5)',
+        'select * from app.listar_pedidos_admin($1, $2, $3, $4, $5, $6, $7)',
         [
           adminId,
           filtros.estado ?? null,
           filtros.desde ?? null,
           filtros.hasta ?? null,
           filtros.busqueda ?? null,
+          filtros.pacienteBusqueda ?? null,
+          filtros.domiciliarioBusqueda ?? null,
         ],
       );
       return result.rows.map((fila) => ({
@@ -670,6 +704,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         direccionFarmacia: fila.direccion_farmacia,
         creadoEn: fila.creado_en,
         enviadoEn: fila.enviado_en,
+        enAsignacionDesde: fila.en_asignacion_desde,
       }));
     });
   }
@@ -707,6 +742,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         domiciliarioNombre: fila.domiciliario_nombre,
         domiciliarioCorreo: fila.domiciliario_correo,
         domiciliarioTelefono: fila.domiciliario_telefono,
+        enAsignacionDesde: fila.en_asignacion_desde,
       };
     });
   }
@@ -749,9 +785,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
   obtenerNovedadAbiertaPedidoAdmin(
     adminId: string,
     solicitudId: string,
-  ): Promise<NovedadDelPaciente | null> {
+  ): Promise<NovedadAbiertaPedidoAdmin | null> {
     return this.db.withUserContext(adminId, async (client) => {
-      const result = await client.query<FilaNovedadDelPaciente>(
+      const result = await client.query<FilaNovedadAbiertaPedidoAdmin>(
         'select * from app.obtener_novedad_abierta_pedido_admin($1, $2)',
         [adminId, solicitudId],
       );
@@ -759,7 +795,102 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         return null;
       }
       const fila = result.rows[0];
-      return { id: fila.id, detalle: fila.detalle, creadoEn: fila.creado_en };
+      return {
+        id: fila.id,
+        detalle: fila.detalle,
+        origen: fila.origen,
+        creadoEn: fila.creado_en,
+      };
+    });
+  }
+
+  reportarNovedadPaciente(
+    pacienteId: string,
+    solicitudId: string,
+    detalle: string,
+  ): Promise<ResultadoReportarNovedad> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<{
+        resultado: string;
+        id: string | null;
+      }>('select * from app.reportar_novedad_paciente($1, $2, $3)', [
+        pacienteId,
+        solicitudId,
+        detalle,
+      ]);
+      const fila = result.rows[0];
+      if (fila.resultado === 'reportada' && fila.id) {
+        return { resultado: 'reportada', id: fila.id };
+      }
+      return { resultado: 'no_encontrado' };
+    });
+  }
+
+  listarDomiciliariosCercanosAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<DomiciliarioCercanoAdmin[]> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<FilaDomiciliarioCercanoAdmin>(
+        'select * from app.listar_domiciliarios_cercanos_admin($1, $2)',
+        [adminId, solicitudId],
+      );
+      return result.rows.map((fila) => ({
+        usuarioId: fila.usuario_id,
+        nombreCompleto: fila.nombre_completo,
+        telefono: fila.telefono,
+        distanciaMetros: fila.distancia_metros,
+      }));
+    });
+  }
+
+  asignarDomiciliarioAdmin(
+    adminId: string,
+    solicitudId: string,
+    domiciliarioId: string,
+  ): Promise<ResultadoAsignarDomiciliarioAdmin> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<{
+        resultado: ResultadoAsignarDomiciliarioAdmin;
+      }>('select * from app.asignar_domiciliario_admin($1, $2, $3)', [
+        adminId,
+        solicitudId,
+        domiciliarioId,
+      ]);
+      return result.rows[0].resultado;
+    });
+  }
+
+  obtenerConfiguracionAdmin(
+    adminId: string,
+  ): Promise<ConfiguracionAdmin | null> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<FilaConfiguracionAdmin>(
+        'select * from app.obtener_configuracion_admin($1)',
+        [adminId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      return {
+        umbralDemoraAsignacionMinutos:
+          result.rows[0].umbral_demora_asignacion_minutos,
+      };
+    });
+  }
+
+  actualizarConfiguracionAdmin(
+    adminId: string,
+    umbralMinutos: number,
+  ): Promise<ResultadoActualizarConfiguracionAdmin> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<{
+        resultado: ResultadoActualizarConfiguracionAdmin;
+      }>('select * from app.actualizar_configuracion_admin($1, $2)', [
+        adminId,
+        umbralMinutos,
+      ]);
+      return result.rows[0].resultado;
     });
   }
 }

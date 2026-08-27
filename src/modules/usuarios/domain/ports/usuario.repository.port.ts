@@ -42,6 +42,50 @@ export type ResultadoEnviarSolicitudDomiciliario =
 
 export type EstadoCuenta = 'activa' | 'bloqueada' | 'desactivada';
 
+/** Panel admin — "administrar todas las cuentas" (Paciente/Domiciliario/
+ * Administrador), fila de la lista. */
+export type CuentaAdminResumen = {
+  id: string;
+  correo: string;
+  nombreCompleto: string | null;
+  telefono: string | null;
+  estadoCuenta: EstadoCuenta;
+  creadoEn: string;
+  roles: CodigoRol[];
+};
+
+/** Panel admin — ficha de una cuenta puntual, con los campos
+ * específicos de perfil_paciente/perfil_domiciliario que apliquen
+ * (vienen `null` si la cuenta no tiene ese rol). */
+export type CuentaAdminDetalle = CuentaAdminResumen & {
+  fotoPerfilPath: string | null;
+  pacDireccion: string | null;
+  pacFotoCedulaFrentePath: string | null;
+  pacFotoCedulaReversoPath: string | null;
+  domDireccion: string | null;
+  domVehiculoTipo: string | null;
+  domVehiculoPlaca: string | null;
+  domCedulaFrentePath: string | null;
+  domCedulaReversoPath: string | null;
+  domLicenciaPath: string | null;
+  domSoatPath: string | null;
+  domTecnicomecanicaPath: string | null;
+  domDisponible: boolean | null;
+};
+
+export type FiltrosCuentasAdmin = {
+  rol?: CodigoRol;
+  estado?: EstadoCuenta;
+  busqueda?: string;
+};
+
+export type ResultadoAccionCuenta =
+  | 'bloqueada'
+  | 'desbloqueada'
+  | 'ya_en_ese_estado'
+  | 'no_encontrado'
+  | 'no_autorizado';
+
 export type CredencialesLogin = {
   usuarioId: string;
   correo: string;
@@ -56,10 +100,7 @@ export type CodigoRol = 'PACIENTE' | 'DOMICILIARIO' | 'ADMINISTRADOR' | 'ROOT';
  * `enviar_solicitud_domiciliario`). PACIENTE nunca pasa por `borrador`
  * ni por `pendiente_validacion` — se otorga directo en `habilitado`. */
 export type EstadoRol =
-  | 'borrador'
-  | 'habilitado'
-  | 'pendiente_validacion'
-  | 'rechazado';
+  'borrador' | 'habilitado' | 'pendiente_validacion' | 'rechazado';
 
 export type UsuarioRol = {
   codigo: CodigoRol;
@@ -82,7 +123,9 @@ export abstract class UsuarioRepositoryPort {
 
   /** Agrega el rol PACIENTE a una cuenta que todavía no lo tiene — sin
    * validación (mismo criterio que un registro directo como PACIENTE). */
-  abstract solicitarRolPaciente(usuarioId: string): Promise<ResultadoSolicitarRol>;
+  abstract solicitarRolPaciente(
+    usuarioId: string,
+  ): Promise<ResultadoSolicitarRol>;
 
   /** Agrega el rol DOMICILIARIO en `borrador` a una cuenta que todavía
    * no lo tiene — invisible para el admin hasta que se envíe la
@@ -106,10 +149,38 @@ export abstract class UsuarioRepositoryPort {
   /** Panel admin — "administrar usuarios creados", más recientes
    * primero. Visible para Administrador/Root (crear sigue siendo solo
    * ROOT). */
-  abstract listarAdministradores(adminId: string): Promise<AdministradorResumen[]>;
+  abstract listarAdministradores(
+    adminId: string,
+  ): Promise<AdministradorResumen[]>;
 
   abstract obtenerAdministrador(
     adminId: string,
     usuarioId: string,
   ): Promise<AdministradorDetalle | null>;
+
+  /** Panel admin — "administrar usuarios" ampliado a cualquier rol
+   * (Paciente/Domiciliario/Administrador), con filtros opcionales. */
+  abstract listarCuentasAdmin(
+    adminId: string,
+    filtros: FiltrosCuentasAdmin,
+  ): Promise<CuentaAdminResumen[]>;
+
+  abstract obtenerCuentaAdmin(
+    adminId: string,
+    usuarioId: string,
+  ): Promise<CuentaAdminDetalle | null>;
+
+  /** Bloqueo administrativo — distinto de `desactivarCuenta`
+   * (autoservicio): revoca sesiones activas igual que esa, pero queda
+   * registrado en `cambios_estado_cuenta` con quién y por qué. */
+  abstract bloquearCuenta(
+    adminId: string,
+    usuarioId: string,
+    motivo: string,
+  ): Promise<ResultadoAccionCuenta>;
+
+  abstract desbloquearCuenta(
+    adminId: string,
+    usuarioId: string,
+  ): Promise<ResultadoAccionCuenta>;
 }

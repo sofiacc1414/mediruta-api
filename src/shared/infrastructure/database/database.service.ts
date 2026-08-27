@@ -40,7 +40,10 @@ export class DatabaseService implements OnModuleDestroy {
   ): Promise<T> {
     return this.inTransaction(async (client) => {
       await client.query('SET LOCAL ROLE mediruta_app');
-      await client.query('SELECT set_config($1, $2, true)', ['app.current_user_id', userId]);
+      await client.query('SELECT set_config($1, $2, true)', [
+        'app.current_user_id',
+        userId,
+      ]);
       return callback(client);
     });
   }
@@ -49,7 +52,9 @@ export class DatabaseService implements OnModuleDestroy {
    * Transacción sin usuario autenticado, con el rol de mínimo privilegio.
    * Para registro y otras operaciones públicas que invocan funciones app.*.
    */
-  async withAppRole<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+  async withAppRole<T>(
+    callback: (client: PoolClient) => Promise<T>,
+  ): Promise<T> {
     return this.inTransaction(async (client) => {
       await client.query('SET LOCAL ROLE mediruta_app');
       return callback(client);
@@ -57,7 +62,9 @@ export class DatabaseService implements OnModuleDestroy {
   }
 
   /** Para operaciones internas/administrativas sin usuario autenticado (usar con criterio). */
-  async withoutUserContext<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+  async withoutUserContext<T>(
+    callback: (client: PoolClient) => Promise<T>,
+  ): Promise<T> {
     const client = await this.pool.connect();
     try {
       return await callback(client);

@@ -56,14 +56,19 @@ export class ObtenerDetalleDomiciliarioUseCase {
       throw new DomiciliarioNoEncontradoError();
     }
 
-    const [cedulaFrenteUrl, cedulaReversoUrl, licenciaUrl, soatUrl, tecnicomecanicaUrl] =
-      await Promise.all([
-        this.urlFirmadaOpcional(detalle.cedulaFrentePath),
-        this.urlFirmadaOpcional(detalle.cedulaReversoPath),
-        this.urlFirmadaOpcional(detalle.licenciaPath),
-        this.urlFirmadaOpcional(detalle.soatPath),
-        this.urlFirmadaOpcional(detalle.tecnicomecanicaPath),
-      ]);
+    const [
+      cedulaFrenteUrl,
+      cedulaReversoUrl,
+      licenciaUrl,
+      soatUrl,
+      tecnicomecanicaUrl,
+    ] = await Promise.all([
+      this.urlFirmadaOpcional(detalle.cedulaFrentePath),
+      this.urlFirmadaOpcional(detalle.cedulaReversoPath),
+      this.urlFirmadaOpcional(detalle.licenciaPath),
+      this.urlFirmadaOpcional(detalle.soatPath),
+      this.urlFirmadaOpcional(detalle.tecnicomecanicaPath),
+    ]);
 
     return {
       nombreCompleto: detalle.nombreCompleto,

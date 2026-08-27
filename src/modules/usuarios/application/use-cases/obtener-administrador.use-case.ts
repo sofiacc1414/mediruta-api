@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AdministradorNoEncontradoError } from '../../domain/errors/administrador-no-encontrado.error';
 import { AlmacenamientoArchivosPort } from '../../domain/ports/almacenamiento-archivos.port';
 import { UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
-import { BUCKET_PERFILES, URL_FIRMADA_EXPIRA_SEGUNDOS } from './subir-foto-cedula-paciente.use-case';
+import {
+  BUCKET_PERFILES,
+  URL_FIRMADA_EXPIRA_SEGUNDOS,
+} from './subir-foto-cedula-paciente.use-case';
 
 export type AdministradorDetalleResultado = {
   id: string;
@@ -25,8 +28,14 @@ export class ObtenerAdministradorUseCase {
     private readonly almacenamiento: AlmacenamientoArchivosPort,
   ) {}
 
-  async execute(adminId: string, usuarioId: string): Promise<AdministradorDetalleResultado> {
-    const detalle = await this.usuarios.obtenerAdministrador(adminId, usuarioId);
+  async execute(
+    adminId: string,
+    usuarioId: string,
+  ): Promise<AdministradorDetalleResultado> {
+    const detalle = await this.usuarios.obtenerAdministrador(
+      adminId,
+      usuarioId,
+    );
     if (!detalle) {
       throw new AdministradorNoEncontradoError();
     }

@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { AceptarPedidoUseCase } from './application/use-cases/aceptar-pedido.use-case';
+import { ActualizarConfiguracionAdminUseCase } from './application/use-cases/actualizar-configuracion-admin.use-case';
 import { ActualizarSolicitudUseCase } from './application/use-cases/actualizar-solicitud.use-case';
+import { AsignarDomiciliarioAdminUseCase } from './application/use-cases/asignar-domiciliario-admin.use-case';
 import { CancelarSolicitudUseCase } from './application/use-cases/cancelar-solicitud.use-case';
 import { CrearSolicitudUseCase } from './application/use-cases/crear-solicitud.use-case';
 import { EntregarPedidoUseCase } from './application/use-cases/entregar-pedido.use-case';
 import { EnviarSolicitudUseCase } from './application/use-cases/enviar-solicitud.use-case';
 import { IniciarEntregaUseCase } from './application/use-cases/iniciar-entrega.use-case';
+import { ListarDomiciliariosCercanosAdminUseCase } from './application/use-cases/listar-domiciliarios-cercanos-admin.use-case';
 import { ListarHistorialPedidosUseCase } from './application/use-cases/listar-historial-pedidos.use-case';
 import { ListarNovedadesAbiertasUseCase } from './application/use-cases/listar-novedades-abiertas.use-case';
 import { ListarPedidosAdminUseCase } from './application/use-cases/listar-pedidos-admin.use-case';
@@ -14,10 +17,12 @@ import { ListarPedidosDisponiblesUseCase } from './application/use-cases/listar-
 import { ListarSolicitudesUseCase } from './application/use-cases/listar-solicitudes.use-case';
 import { MarcarEnSitioUseCase } from './application/use-cases/marcar-en-sitio.use-case';
 import { MarcarMedicamentosRecogidosUseCase } from './application/use-cases/marcar-medicamentos-recogidos.use-case';
+import { ObtenerConfiguracionAdminUseCase } from './application/use-cases/obtener-configuracion-admin.use-case';
 import { ObtenerDetallePedidoAdminUseCase } from './application/use-cases/obtener-detalle-pedido-admin.use-case';
 import { ObtenerDocumentosPacienteParaRecogerUseCase } from './application/use-cases/obtener-documentos-paciente-para-recoger.use-case';
 import { ObtenerPedidoActivoUseCase } from './application/use-cases/obtener-pedido-activo.use-case';
 import { ObtenerSolicitudUseCase } from './application/use-cases/obtener-solicitud.use-case';
+import { ReportarNovedadPacienteUseCase } from './application/use-cases/reportar-novedad-paciente.use-case';
 import { ReportarNovedadUseCase } from './application/use-cases/reportar-novedad.use-case';
 import { ResolverNovedadUseCase } from './application/use-cases/resolver-novedad.use-case';
 import { SubirRecetaUseCase } from './application/use-cases/subir-receta.use-case';
@@ -25,6 +30,7 @@ import { GeocodificacionPort } from './domain/ports/geocodificacion.port';
 import { SolicitudRepositoryPort } from './domain/ports/solicitud.repository.port';
 import { NominatimGeocodificacionAdapter } from './infrastructure/adapters/nominatim-geocodificacion.adapter';
 import { PostgresSolicitudRepository } from './infrastructure/adapters/postgres-solicitud.repository';
+import { ConfiguracionAdminController } from './infrastructure/controllers/configuracion-admin.controller';
 import { NovedadesAdminController } from './infrastructure/controllers/novedades-admin.controller';
 import { PedidosAdminController } from './infrastructure/controllers/pedidos-admin.controller';
 import { PedidosDomiciliarioController } from './infrastructure/controllers/pedidos-domiciliario.controller';
@@ -42,6 +48,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     PedidosDomiciliarioController,
     NovedadesAdminController,
     PedidosAdminController,
+    ConfiguracionAdminController,
   ],
   providers: [
     CrearSolicitudUseCase,
@@ -58,6 +65,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     MarcarEnSitioUseCase,
     EntregarPedidoUseCase,
     ReportarNovedadUseCase,
+    ReportarNovedadPacienteUseCase,
     ListarNovedadesAbiertasUseCase,
     ResolverNovedadUseCase,
     ObtenerPedidoActivoUseCase,
@@ -65,6 +73,10 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     ObtenerDocumentosPacienteParaRecogerUseCase,
     ListarPedidosAdminUseCase,
     ObtenerDetallePedidoAdminUseCase,
+    ListarDomiciliariosCercanosAdminUseCase,
+    AsignarDomiciliarioAdminUseCase,
+    ObtenerConfiguracionAdminUseCase,
+    ActualizarConfiguracionAdminUseCase,
     {
       provide: SolicitudRepositoryPort,
       useClass: PostgresSolicitudRepository,

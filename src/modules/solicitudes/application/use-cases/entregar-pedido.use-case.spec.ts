@@ -1,7 +1,10 @@
 import { CodigoEntregaIncorrectoError } from '../../domain/errors/codigo-entrega-incorrecto.error';
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
-import { EntregarPedidoUseCase, MENSAJE_PEDIDO_ENTREGADO } from './entregar-pedido.use-case';
+import {
+  EntregarPedidoUseCase,
+  MENSAJE_PEDIDO_ENTREGADO,
+} from './entregar-pedido.use-case';
 
 describe('EntregarPedidoUseCase', () => {
   const solicitudes: SolicitudRepositoryPort = {
@@ -35,6 +38,11 @@ describe('EntregarPedidoUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const useCase = new EntregarPedidoUseCase(solicitudes);
 
@@ -58,7 +66,9 @@ describe('EntregarPedidoUseCase', () => {
   });
 
   it('lanza CodigoEntregaIncorrectoError si el código no coincide', async () => {
-    (solicitudes.entregarPedido as jest.Mock).mockResolvedValue('codigo_incorrecto');
+    (solicitudes.entregarPedido as jest.Mock).mockResolvedValue(
+      'codigo_incorrecto',
+    );
 
     await expect(
       useCase.execute('domiciliario-uuid', 'solicitud-uuid', 'ZZZZZZ'),
@@ -66,7 +76,9 @@ describe('EntregarPedidoUseCase', () => {
   });
 
   it('lanza SolicitudNoEncontradaError si no es del dueño o no está en_sitio', async () => {
-    (solicitudes.entregarPedido as jest.Mock).mockResolvedValue('no_encontrado');
+    (solicitudes.entregarPedido as jest.Mock).mockResolvedValue(
+      'no_encontrado',
+    );
 
     await expect(
       useCase.execute('domiciliario-uuid', 'solicitud-uuid', '8SBM9J'),

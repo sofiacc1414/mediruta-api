@@ -10,14 +10,17 @@ import { DomiciliarioNoEncontradoError } from '../../../domiciliarios/domain/err
 import { NoHayBorradorDomiciliarioError } from '../../../domiciliarios/domain/errors/no-hay-borrador-domiciliario.error';
 import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
 import { DomiciliarioConPedidoActivoError } from '../../../solicitudes/domain/errors/domiciliario-con-pedido-activo.error';
+import { DomiciliarioNoDisponibleParaAsignarError } from '../../../solicitudes/domain/errors/domiciliario-no-disponible-para-asignar.error';
 import { DocumentosPacienteNoDisponiblesError } from '../../../solicitudes/domain/errors/documentos-paciente-no-disponibles.error';
 import { NovedadNoEncontradaError } from '../../../solicitudes/domain/errors/novedad-no-encontrada.error';
 import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { PerfilIncompletoError } from '../../../solicitudes/domain/errors/perfil-incompleto.error';
 import { SolicitudIncompletaError } from '../../../solicitudes/domain/errors/solicitud-incompleta.error';
 import { SolicitudNoEncontradaError } from '../../../solicitudes/domain/errors/solicitud-no-encontrada.error';
+import { AccionCuentaNoAutorizadaError } from '../../domain/errors/accion-cuenta-no-autorizada.error';
 import { AdministradorNoEncontradoError } from '../../domain/errors/administrador-no-encontrado.error';
 import { CambioContrasenaInvalidoError } from '../../domain/errors/cambio-contrasena-invalido.error';
+import { CuentaNoEncontradaError } from '../../domain/errors/cuenta-no-encontrada.error';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
@@ -49,6 +52,9 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   DomiciliarioConPedidoActivoError,
   DocumentosPacienteNoDisponiblesError,
   AdministradorNoEncontradoError,
+  CuentaNoEncontradaError,
+  AccionCuentaNoAutorizadaError,
+  DomiciliarioNoDisponibleParaAsignarError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -57,7 +63,8 @@ export class DominioHttpFilter implements ExceptionFilter {
     if (
       exception instanceof CorreoYaRegistradoError ||
       exception instanceof PedidoYaAsignadoError ||
-      exception instanceof DomiciliarioConPedidoActivoError
+      exception instanceof DomiciliarioConPedidoActivoError ||
+      exception instanceof DomiciliarioNoDisponibleParaAsignarError
     ) {
       response.status(HttpStatus.CONFLICT).json({
         statusCode: HttpStatus.CONFLICT,
@@ -80,7 +87,8 @@ export class DominioHttpFilter implements ExceptionFilter {
 
     if (
       exception instanceof RolNoAutorizadoError ||
-      exception instanceof PerfilIncompletoError
+      exception instanceof PerfilIncompletoError ||
+      exception instanceof AccionCuentaNoAutorizadaError
     ) {
       response.status(HttpStatus.FORBIDDEN).json({
         statusCode: HttpStatus.FORBIDDEN,
@@ -95,7 +103,8 @@ export class DominioHttpFilter implements ExceptionFilter {
       exception instanceof SolicitudNoEncontradaError ||
       exception instanceof NovedadNoEncontradaError ||
       exception instanceof DocumentosPacienteNoDisponiblesError ||
-      exception instanceof AdministradorNoEncontradoError
+      exception instanceof AdministradorNoEncontradoError ||
+      exception instanceof CuentaNoEncontradaError
     ) {
       response.status(HttpStatus.NOT_FOUND).json({
         statusCode: HttpStatus.NOT_FOUND,

@@ -29,9 +29,7 @@ export class CryptoRefreshTokenAdapter extends RefreshTokenPort {
   }
 
   hash(token: string): string {
-    return createHmac('sha256', this.refreshSecret)
-      .update(token)
-      .digest('hex');
+    return createHmac('sha256', this.refreshSecret).update(token).digest('hex');
   }
 
   generar(): RefreshTokenGenerado {

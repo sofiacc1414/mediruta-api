@@ -1,6 +1,9 @@
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
-import { MENSAJE_NOVEDAD_REPORTADA, ReportarNovedadUseCase } from './reportar-novedad.use-case';
+import {
+  MENSAJE_NOVEDAD_REPORTADA,
+  ReportarNovedadUseCase,
+} from './reportar-novedad.use-case';
 
 describe('ReportarNovedadUseCase', () => {
   const solicitudes: SolicitudRepositoryPort = {
@@ -34,6 +37,11 @@ describe('ReportarNovedadUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const useCase = new ReportarNovedadUseCase(solicitudes);
 

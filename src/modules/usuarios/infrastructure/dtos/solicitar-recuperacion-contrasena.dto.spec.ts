@@ -9,9 +9,9 @@ async function validar(body: Record<string, unknown>) {
 
 describe('SolicitarRecuperacionContrasenaDto', () => {
   it('acepta un correo válido', async () => {
-    await expect(
-      validar({ correo: 'persona@mail.com' }),
-    ).resolves.toHaveLength(0);
+    await expect(validar({ correo: 'persona@mail.com' })).resolves.toHaveLength(
+      0,
+    );
   });
 
   it('normaliza espacios y mayúsculas del correo antes de validar', async () => {

@@ -27,10 +27,12 @@ import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicit
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
 import { ListarSolicitudesUseCase } from '../../application/use-cases/listar-solicitudes.use-case';
 import { ObtenerSolicitudUseCase } from '../../application/use-cases/obtener-solicitud.use-case';
+import { ReportarNovedadPacienteUseCase } from '../../application/use-cases/reportar-novedad-paciente.use-case';
 import { SubirRecetaUseCase } from '../../application/use-cases/subir-receta.use-case';
 import { Medicamento } from '../../domain/ports/solicitud.repository.port';
 import { DatosSolicitudDto } from '../dtos/datos-solicitud.dto';
 import { MedicamentoDto } from '../dtos/medicamento.dto';
+import { ReportarNovedadDto } from '../dtos/reportar-novedad.dto';
 
 const VALIDADOR_ARCHIVO = new ParseFilePipeBuilder()
   .addFileTypeValidator({
@@ -76,6 +78,7 @@ export class SolicitudesController {
     private readonly subirReceta: SubirRecetaUseCase,
     private readonly enviarSolicitud: EnviarSolicitudUseCase,
     private readonly cancelarSolicitud: CancelarSolicitudUseCase,
+    private readonly reportarNovedadPaciente: ReportarNovedadPacienteUseCase,
   ) {}
 
   @Post()
@@ -158,5 +161,21 @@ export class SolicitudesController {
     @Param('id', ParseUUIDPipe) solicitudId: string,
   ) {
     return this.cancelarSolicitud.execute(identidad.usuarioId, solicitudId);
+  }
+
+  /** HU-07 (ronda 2) — el Paciente también puede reportar una novedad
+   * sobre su propio pedido (antes solo el Domiciliario podía). */
+  @Post(':id/novedad')
+  @HttpCode(HttpStatus.OK)
+  novedad(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+    @Body() dto: ReportarNovedadDto,
+  ) {
+    return this.reportarNovedadPaciente.execute(
+      identidad.usuarioId,
+      solicitudId,
+      dto.detalle,
+    );
   }
 }

@@ -36,7 +36,8 @@ const PLANTILLAS_POR_CONSTRAINT: Record<string, ConstructorMensaje> = {
   isUrl: (etiqueta) => `El campo «${etiqueta}» debe ser una URL válida.`,
   isUuid: (etiqueta) => `El campo «${etiqueta}» no tiene un formato válido.`,
   isLatitude: (etiqueta) => `El campo «${etiqueta}» no es una latitud válida.`,
-  isLongitude: (etiqueta) => `El campo «${etiqueta}» no es una longitud válida.`,
+  isLongitude: (etiqueta) =>
+    `El campo «${etiqueta}» no es una longitud válida.`,
   whitelistValidation: (etiqueta) =>
     `El campo «${etiqueta}» no es un campo permitido.`,
   maxLength: (etiqueta, mensajeOriginal) => {

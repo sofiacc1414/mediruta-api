@@ -37,10 +37,11 @@ export class ObtenerDocumentosPacienteParaRecogerUseCase {
     domiciliarioId: string,
     solicitudId: string,
   ): Promise<ObtenerDocumentosPacienteParaRecogerResultado> {
-    const documentos = await this.solicitudes.obtenerDocumentosPacienteParaRecoger(
-      domiciliarioId,
-      solicitudId,
-    );
+    const documentos =
+      await this.solicitudes.obtenerDocumentosPacienteParaRecoger(
+        domiciliarioId,
+        solicitudId,
+      );
 
     if (!documentos) {
       throw new DocumentosPacienteNoDisponiblesError();

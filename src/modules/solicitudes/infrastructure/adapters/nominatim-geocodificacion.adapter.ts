@@ -12,7 +12,8 @@ const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 // solicitud, no en cada request de la API), pero igual se respeta la
 // cola mínima en vez de asumir que nunca se van a superponer dos
 // llamadas.
-const USER_AGENT = 'MediRuta/1.0 (+https://github.com/sofiacc1414/mediruta-api)';
+const USER_AGENT =
+  'MediRuta/1.0 (+https://github.com/sofiacc1414/mediruta-api)';
 const INTERVALO_MINIMO_MS = 1100;
 
 type ResultadoNominatim = { lat: string; lon: string };
@@ -25,7 +26,8 @@ type ResultadoNominatim = { lat: string; lon: string };
 // escribir "#" a mano. "número"/"numero" ya cubre con y sin tilde (el
 // alternativo u|ú). "n." exige el punto pegado — sin eso "n" sola
 // colisionaría con inicios de palabra como "Norte".
-const PATRON_NUMERAL = /\bn(u|ú)mero\b\.?|\bn(u|ú)m\b\.?|\bnro\b\.?|\bno\b\.|\bn\./gi;
+const PATRON_NUMERAL =
+  /\bn(u|ú)mero\b\.?|\bn(u|ú)m\b\.?|\bnro\b\.?|\bno\b\.|\bn\./gi;
 
 export function normalizarDireccion(direccion: string): string {
   return direccion.replace(PATRON_NUMERAL, '#').replace(/\s+/g, ' ').trim();
@@ -49,7 +51,12 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     ciudad: string | null,
     departamento: string | null,
   ): Promise<Coordenadas | null> {
-    const consulta = [normalizarDireccion(direccion), ciudad, departamento, 'Colombia']
+    const consulta = [
+      normalizarDireccion(direccion),
+      ciudad,
+      departamento,
+      'Colombia',
+    ]
       .filter((parte): parte is string => !!parte && parte.trim().length > 0)
       .join(', ');
 

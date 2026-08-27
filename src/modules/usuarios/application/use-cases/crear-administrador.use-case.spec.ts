@@ -18,6 +18,10 @@ describe('CrearAdministradorUseCase', () => {
     crearAdministrador: jest.fn(),
     listarAdministradores: jest.fn(),
     obtenerAdministrador: jest.fn(),
+    listarCuentasAdmin: jest.fn(),
+    obtenerCuentaAdmin: jest.fn(),
+    bloquearCuenta: jest.fn(),
+    desbloquearCuenta: jest.fn(),
   };
 
   const useCase = new CrearAdministradorUseCase(passwordHasher, usuarios);
@@ -43,11 +47,17 @@ describe('CrearAdministradorUseCase', () => {
       nombreCompleto: 'Ana Admin',
       telefono: '3001234567',
     });
-    expect(resultado).toEqual({ usuarioId: 'admin-uuid', correo: 'admin@mail.com' });
+    expect(resultado).toEqual({
+      usuarioId: 'admin-uuid',
+      correo: 'admin@mail.com',
+    });
   });
 
   it('nombreCompleto/telefono quedan undefined si no se mandan', async () => {
-    await useCase.execute({ correo: 'admin@mail.com', password: 'ClaveSegura1!' });
+    await useCase.execute({
+      correo: 'admin@mail.com',
+      password: 'ClaveSegura1!',
+    });
 
     expect(usuarios.crearAdministrador).toHaveBeenCalledWith({
       correo: 'admin@mail.com',

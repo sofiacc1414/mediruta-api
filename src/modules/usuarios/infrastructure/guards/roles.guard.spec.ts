@@ -53,6 +53,10 @@ describe('RolesGuard', () => {
     crearAdministrador: jest.fn(),
     listarAdministradores: jest.fn(),
     obtenerAdministrador: jest.fn(),
+    listarCuentasAdmin: jest.fn(),
+    obtenerCuentaAdmin: jest.fn(),
+    bloquearCuenta: jest.fn(),
+    desbloquearCuenta: jest.fn(),
   };
   const guard = new RolesGuard(reflector, usuarios);
 
@@ -86,7 +90,10 @@ describe('RolesGuard', () => {
 
     await expect(
       guard.canActivate(
-        contextoCon(ControllerDeRolesEnLaClase, { usuarioId: USUARIO_ID, sid: 'sid' }),
+        contextoCon(ControllerDeRolesEnLaClase, {
+          usuarioId: USUARIO_ID,
+          sid: 'sid',
+        }),
       ),
     ).rejects.toBeInstanceOf(RolNoAutorizadoError);
   });
@@ -98,7 +105,10 @@ describe('RolesGuard', () => {
 
     await expect(
       guard.canActivate(
-        contextoCon(ControllerDeRolesEnLaClase, { usuarioId: USUARIO_ID, sid: 'sid' }),
+        contextoCon(ControllerDeRolesEnLaClase, {
+          usuarioId: USUARIO_ID,
+          sid: 'sid',
+        }),
       ),
     ).rejects.toBeInstanceOf(RolNoAutorizadoError);
   });
@@ -110,7 +120,10 @@ describe('RolesGuard', () => {
 
     await expect(
       guard.canActivate(
-        contextoCon(ControllerDeRolesEnLaClase, { usuarioId: USUARIO_ID, sid: 'sid' }),
+        contextoCon(ControllerDeRolesEnLaClase, {
+          usuarioId: USUARIO_ID,
+          sid: 'sid',
+        }),
       ),
     ).resolves.toBe(true);
   });

@@ -24,9 +24,9 @@ describe('ActualizarDisponibilidadDomiciliarioUseCase', () => {
   });
 
   it('activa disponibilidad con ubicación y delega tal cual', async () => {
-    (perfiles.actualizarDisponibilidadDomiciliario as jest.Mock).mockResolvedValue(
-      'actualizado',
-    );
+    (
+      perfiles.actualizarDisponibilidadDomiciliario as jest.Mock
+    ).mockResolvedValue('actualizado');
 
     const resultado = await useCase.execute({
       usuarioId: 'domiciliario-uuid',
@@ -45,9 +45,9 @@ describe('ActualizarDisponibilidadDomiciliarioUseCase', () => {
   });
 
   it('desactiva sin necesitar ubicación', async () => {
-    (perfiles.actualizarDisponibilidadDomiciliario as jest.Mock).mockResolvedValue(
-      'actualizado',
-    );
+    (
+      perfiles.actualizarDisponibilidadDomiciliario as jest.Mock
+    ).mockResolvedValue('actualizado');
 
     await useCase.execute({
       usuarioId: 'domiciliario-uuid',
@@ -65,9 +65,9 @@ describe('ActualizarDisponibilidadDomiciliarioUseCase', () => {
   });
 
   it('lanza RolNoAutorizadoError si la cuenta no tiene DOMICILIARIO habilitado', async () => {
-    (perfiles.actualizarDisponibilidadDomiciliario as jest.Mock).mockResolvedValue(
-      'no_autorizado',
-    );
+    (
+      perfiles.actualizarDisponibilidadDomiciliario as jest.Mock
+    ).mockResolvedValue('no_autorizado');
 
     await expect(
       useCase.execute({

@@ -39,6 +39,11 @@ describe('EnviarSolicitudUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const geocodificacion: GeocodificacionPort = {
     geocodificar: jest.fn(),
@@ -47,7 +52,9 @@ describe('EnviarSolicitudUseCase', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    (solicitudes.obtenerDatosGeocodificacionFarmacia as jest.Mock).mockResolvedValue({
+    (
+      solicitudes.obtenerDatosGeocodificacionFarmacia as jest.Mock
+    ).mockResolvedValue({
       direccionFarmacia: 'Farmacia La Rebaja Cl 80',
       ciudad: 'Bogotá',
       departamento: 'Cundinamarca',
@@ -101,7 +108,9 @@ describe('EnviarSolicitudUseCase', () => {
   });
 
   it('sin dirección de farmacia todavía, no llama a geocodificar', async () => {
-    (solicitudes.obtenerDatosGeocodificacionFarmacia as jest.Mock).mockResolvedValue({
+    (
+      solicitudes.obtenerDatosGeocodificacionFarmacia as jest.Mock
+    ).mockResolvedValue({
       direccionFarmacia: null,
       ciudad: null,
       departamento: null,

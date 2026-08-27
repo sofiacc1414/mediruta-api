@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { AdministradorResumen, UsuarioRepositoryPort } from '../../domain/ports/usuario.repository.port';
+import {
+  AdministradorResumen,
+  UsuarioRepositoryPort,
+} from '../../domain/ports/usuario.repository.port';
 
 /** Panel admin — "administrar usuarios creados". Delegación fina. */
 @Injectable()

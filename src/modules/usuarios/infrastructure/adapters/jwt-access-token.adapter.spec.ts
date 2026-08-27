@@ -55,21 +55,27 @@ describe('JwtAccessTokenAdapter', () => {
     const { adapter } = adapterCon('test-secret', '0s');
     const token = await adapter.sign({ sub: SUB, sid: SID });
 
-    await expect(adapter.verify(token)).rejects.toBeInstanceOf(NoAutorizadoError);
+    await expect(adapter.verify(token)).rejects.toBeInstanceOf(
+      NoAutorizadoError,
+    );
   });
 
   it('rechaza un payload sin sub', async () => {
     const { jwt, adapter } = adapterCon();
     const token = await jwt.signAsync({ sid: SID });
 
-    await expect(adapter.verify(token)).rejects.toBeInstanceOf(NoAutorizadoError);
+    await expect(adapter.verify(token)).rejects.toBeInstanceOf(
+      NoAutorizadoError,
+    );
   });
 
   it('rechaza un payload sin sid', async () => {
     const { jwt, adapter } = adapterCon();
     const token = await jwt.signAsync({ sub: SUB });
 
-    await expect(adapter.verify(token)).rejects.toBeInstanceOf(NoAutorizadoError);
+    await expect(adapter.verify(token)).rejects.toBeInstanceOf(
+      NoAutorizadoError,
+    );
   });
 
   it('rechaza sub o sid que no son UUID', async () => {
@@ -79,6 +85,8 @@ describe('JwtAccessTokenAdapter', () => {
       sid: SID,
     });
 
-    await expect(adapter.verify(token)).rejects.toBeInstanceOf(NoAutorizadoError);
+    await expect(adapter.verify(token)).rejects.toBeInstanceOf(
+      NoAutorizadoError,
+    );
   });
 });

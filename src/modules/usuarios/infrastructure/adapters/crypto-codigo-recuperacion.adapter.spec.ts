@@ -3,7 +3,8 @@ import { createHmac, randomInt } from 'node:crypto';
 import { CryptoCodigoRecuperacionAdapter } from './crypto-codigo-recuperacion.adapter';
 
 jest.mock('node:crypto', () => {
-  const actual = jest.requireActual<typeof import('node:crypto')>('node:crypto');
+  const actual =
+    jest.requireActual<typeof import('node:crypto')>('node:crypto');
   return {
     ...actual,
     randomInt: jest.fn(actual.randomInt),
@@ -70,15 +71,13 @@ describe('CryptoCodigoRecuperacionAdapter', () => {
       configCon({ PASSWORD_RECOVERY_PEPPER: 'pepper-de-prueba' }),
     );
 
-    expect(adapter.hashCodigo('000042')).not.toBe(
-      adapter.hashCodigo('000043'),
-    );
+    expect(adapter.hashCodigo('000042')).not.toBe(adapter.hashCodigo('000043'));
   });
 
   it('falla al inicializar si falta PASSWORD_RECOVERY_PEPPER', () => {
-    expect(
-      () => new CryptoCodigoRecuperacionAdapter(configCon({})),
-    ).toThrow('Falta la variable de entorno PASSWORD_RECOVERY_PEPPER.');
+    expect(() => new CryptoCodigoRecuperacionAdapter(configCon({}))).toThrow(
+      'Falta la variable de entorno PASSWORD_RECOVERY_PEPPER.',
+    );
   });
 
   it('falla al inicializar si PASSWORD_RECOVERY_PEPPER está vacía', () => {

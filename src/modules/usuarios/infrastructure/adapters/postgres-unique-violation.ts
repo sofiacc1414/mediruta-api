@@ -6,5 +6,7 @@ export function esViolacionCorreoUnico(error: unknown): boolean {
   }
 
   const pgError = error as { code?: string; constraint?: string };
-  return pgError.code === '23505' && pgError.constraint === CORREO_UNIQUE_CONSTRAINT;
+  return (
+    pgError.code === '23505' && pgError.constraint === CORREO_UNIQUE_CONSTRAINT
+  );
 }

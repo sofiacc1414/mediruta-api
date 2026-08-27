@@ -10,8 +10,14 @@ export const MENSAJE_NOVEDAD_RESUELTA = 'Novedad marcada como resuelta.';
 export class ResolverNovedadUseCase {
   constructor(private readonly solicitudes: SolicitudRepositoryPort) {}
 
-  async execute(adminId: string, novedadId: string): Promise<{ message: string }> {
-    const resultado = await this.solicitudes.resolverNovedad(adminId, novedadId);
+  async execute(
+    adminId: string,
+    novedadId: string,
+  ): Promise<{ message: string }> {
+    const resultado = await this.solicitudes.resolverNovedad(
+      adminId,
+      novedadId,
+    );
     if (resultado === 'no_encontrado') {
       throw new NovedadNoEncontradaError();
     }

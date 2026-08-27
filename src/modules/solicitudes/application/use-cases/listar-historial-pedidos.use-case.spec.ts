@@ -36,6 +36,11 @@ describe('ListarHistorialPedidosUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const useCase = new ListarHistorialPedidosUseCase(solicitudes);
 
@@ -60,11 +65,15 @@ describe('ListarHistorialPedidosUseCase', () => {
         creadoEn: '2026-08-22T10:00:00.000Z',
       },
     ];
-    (solicitudes.listarHistorialPedidos as jest.Mock).mockResolvedValue(pedidos);
+    (solicitudes.listarHistorialPedidos as jest.Mock).mockResolvedValue(
+      pedidos,
+    );
 
     const resultado = await useCase.execute('domiciliario-uuid');
 
     expect(resultado).toBe(pedidos);
-    expect(solicitudes.listarHistorialPedidos).toHaveBeenCalledWith('domiciliario-uuid');
+    expect(solicitudes.listarHistorialPedidos).toHaveBeenCalledWith(
+      'domiciliario-uuid',
+    );
   });
 });

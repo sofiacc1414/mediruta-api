@@ -4,7 +4,8 @@ import { PedidoYaAsignadoError } from '../../domain/errors/pedido-ya-asignado.er
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
 
-export const MENSAJE_PEDIDO_ACEPTADO = 'Aceptaste el pedido — vas para la farmacia.';
+export const MENSAJE_PEDIDO_ACEPTADO =
+  'Aceptaste el pedido — vas para la farmacia.';
 
 /** HU-09 — el guard atómico de app.aceptar_pedido decide quién gana si
  * dos Domiciliarios aceptan casi al mismo tiempo. `ya_asignado` no es

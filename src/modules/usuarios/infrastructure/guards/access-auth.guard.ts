@@ -50,7 +50,10 @@ export class AccessAuthGuard implements CanActivate {
 }
 
 function extraerBearer(authorization?: string): string | null {
-  if (typeof authorization !== 'string' || !authorization.startsWith('Bearer ')) {
+  if (
+    typeof authorization !== 'string' ||
+    !authorization.startsWith('Bearer ')
+  ) {
     return null;
   }
 

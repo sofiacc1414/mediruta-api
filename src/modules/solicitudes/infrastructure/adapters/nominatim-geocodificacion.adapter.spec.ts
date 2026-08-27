@@ -14,7 +14,7 @@ describe('NominatimGeocodificacionAdapter', () => {
 
   beforeEach(() => {
     fetchMock = jest.fn();
-    global.fetch = fetchMock as unknown as typeof fetch;
+    global.fetch = fetchMock;
     jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
   });
 
@@ -23,7 +23,9 @@ describe('NominatimGeocodificacionAdapter', () => {
   });
 
   it('arma la consulta con dirección, ciudad, departamento y Colombia', async () => {
-    fetchMock.mockResolvedValue(respuestaJson([{ lat: '4.65', lon: '-74.06' }]));
+    fetchMock.mockResolvedValue(
+      respuestaJson([{ lat: '4.65', lon: '-74.06' }]),
+    );
     const adapter = new NominatimGeocodificacionAdapter();
 
     await adapter.geocodificar('Calle 80 # 20-15', 'Bogotá', 'Cundinamarca');
@@ -37,19 +39,23 @@ describe('NominatimGeocodificacionAdapter', () => {
   });
 
   it('manda un User-Agent identificable (lo exige Nominatim)', async () => {
-    fetchMock.mockResolvedValue(respuestaJson([{ lat: '4.65', lon: '-74.06' }]));
+    fetchMock.mockResolvedValue(
+      respuestaJson([{ lat: '4.65', lon: '-74.06' }]),
+    );
     const adapter = new NominatimGeocodificacionAdapter();
 
     await adapter.geocodificar('Calle 80 # 20-15', 'Bogotá', 'Cundinamarca');
 
     const [, opciones] = fetchMock.mock.calls[0] as [URL, RequestInit];
-    expect((opciones.headers as Record<string, string>)['User-Agent']).toContain(
-      'MediRuta',
-    );
+    expect(
+      (opciones.headers as Record<string, string>)['User-Agent'],
+    ).toContain('MediRuta');
   });
 
   it('normaliza "num"/"número"/"no." a "#" antes de consultar (Nominatim no resuelve la palabra)', async () => {
-    fetchMock.mockResolvedValue(respuestaJson([{ lat: '6.1869475', lon: '-75.6510397' }]));
+    fetchMock.mockResolvedValue(
+      respuestaJson([{ lat: '6.1869475', lon: '-75.6510397' }]),
+    );
     const adapter = new NominatimGeocodificacionAdapter();
 
     await adapter.geocodificar(
@@ -72,7 +78,9 @@ describe('NominatimGeocodificacionAdapter', () => {
     ['Cra 43 Nro 5-100', 'Cra 43 # 5-100'],
     ['Cra 43 Nro. 5-100', 'Cra 43 # 5-100'],
   ])('normaliza otras variantes: "%s"', async (entrada, esperado) => {
-    fetchMock.mockResolvedValue(respuestaJson([{ lat: '4.65', lon: '-74.06' }]));
+    fetchMock.mockResolvedValue(
+      respuestaJson([{ lat: '4.65', lon: '-74.06' }]),
+    );
     const adapter = new NominatimGeocodificacionAdapter();
 
     await adapter.geocodificar(entrada, null, null);
@@ -82,17 +90,23 @@ describe('NominatimGeocodificacionAdapter', () => {
   });
 
   it('no toca "no" cuando no es un numeral (palabra común, ni "Norte")', async () => {
-    fetchMock.mockResolvedValue(respuestaJson([{ lat: '4.65', lon: '-74.06' }]));
+    fetchMock.mockResolvedValue(
+      respuestaJson([{ lat: '4.65', lon: '-74.06' }]),
+    );
     const adapter = new NominatimGeocodificacionAdapter();
 
     await adapter.geocodificar('Avenida Norte con Calle 5', null, null);
 
     const [url] = fetchMock.mock.calls[0] as [URL];
-    expect(url.searchParams.get('q')).toBe('Avenida Norte con Calle 5, Colombia');
+    expect(url.searchParams.get('q')).toBe(
+      'Avenida Norte con Calle 5, Colombia',
+    );
   });
 
   it('omite ciudad/departamento nulos sin dejar comas de más', async () => {
-    fetchMock.mockResolvedValue(respuestaJson([{ lat: '4.65', lon: '-74.06' }]));
+    fetchMock.mockResolvedValue(
+      respuestaJson([{ lat: '4.65', lon: '-74.06' }]),
+    );
     const adapter = new NominatimGeocodificacionAdapter();
 
     await adapter.geocodificar('Calle 80 # 20-15', null, null);
@@ -102,10 +116,16 @@ describe('NominatimGeocodificacionAdapter', () => {
   });
 
   it('devuelve lat/lng numéricos del primer resultado', async () => {
-    fetchMock.mockResolvedValue(respuestaJson([{ lat: '4.6486', lon: '-74.0628' }]));
+    fetchMock.mockResolvedValue(
+      respuestaJson([{ lat: '4.6486', lon: '-74.0628' }]),
+    );
     const adapter = new NominatimGeocodificacionAdapter();
 
-    const resultado = await adapter.geocodificar('Calle 80', 'Bogotá', 'Cundinamarca');
+    const resultado = await adapter.geocodificar(
+      'Calle 80',
+      'Bogotá',
+      'Cundinamarca',
+    );
 
     expect(resultado).toEqual({ lat: 4.6486, lng: -74.0628 });
   });
@@ -114,7 +134,11 @@ describe('NominatimGeocodificacionAdapter', () => {
     fetchMock.mockResolvedValue(respuestaJson([]));
     const adapter = new NominatimGeocodificacionAdapter();
 
-    const resultado = await adapter.geocodificar('dirección inventada', null, null);
+    const resultado = await adapter.geocodificar(
+      'dirección inventada',
+      null,
+      null,
+    );
 
     expect(resultado).toBeNull();
   });
@@ -123,7 +147,11 @@ describe('NominatimGeocodificacionAdapter', () => {
     fetchMock.mockResolvedValue(respuestaJson(null, false, 503));
     const adapter = new NominatimGeocodificacionAdapter();
 
-    const resultado = await adapter.geocodificar('Calle 80', 'Bogotá', 'Cundinamarca');
+    const resultado = await adapter.geocodificar(
+      'Calle 80',
+      'Bogotá',
+      'Cundinamarca',
+    );
 
     expect(resultado).toBeNull();
   });
@@ -132,7 +160,11 @@ describe('NominatimGeocodificacionAdapter', () => {
     fetchMock.mockRejectedValue(new Error('network error'));
     const adapter = new NominatimGeocodificacionAdapter();
 
-    const resultado = await adapter.geocodificar('Calle 80', 'Bogotá', 'Cundinamarca');
+    const resultado = await adapter.geocodificar(
+      'Calle 80',
+      'Bogotá',
+      'Cundinamarca',
+    );
 
     expect(resultado).toBeNull();
   });

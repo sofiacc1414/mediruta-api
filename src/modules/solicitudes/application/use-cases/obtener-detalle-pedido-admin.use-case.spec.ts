@@ -4,7 +4,10 @@ import {
   URL_FIRMADA_EXPIRA_SEGUNDOS,
 } from '../../../usuarios/application/use-cases/subir-foto-cedula-paciente.use-case';
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
-import { PedidoAdminDetalle, SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
+import {
+  PedidoAdminDetalle,
+  SolicitudRepositoryPort,
+} from '../../domain/ports/solicitud.repository.port';
 import { ObtenerDetallePedidoAdminUseCase } from './obtener-detalle-pedido-admin.use-case';
 
 describe('ObtenerDetallePedidoAdminUseCase', () => {
@@ -39,12 +42,20 @@ describe('ObtenerDetallePedidoAdminUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const almacenamiento: AlmacenamientoArchivosPort = {
     subir: jest.fn(),
     obtenerUrlFirmada: jest.fn(),
   };
-  const useCase = new ObtenerDetallePedidoAdminUseCase(solicitudes, almacenamiento);
+  const useCase = new ObtenerDetallePedidoAdminUseCase(
+    solicitudes,
+    almacenamiento,
+  );
 
   const detalle: PedidoAdminDetalle = {
     id: 'solicitud-uuid',
@@ -66,16 +77,22 @@ describe('ObtenerDetallePedidoAdminUseCase', () => {
     domiciliarioNombre: 'Domiciliario de Prueba',
     domiciliarioCorreo: 'domiciliario@mail.com',
     domiciliarioTelefono: '3007654321',
+    enAsignacionDesde: '2026-08-20T10:06:00.000Z',
   };
 
   beforeEach(() => {
     jest.resetAllMocks();
     (almacenamiento.obtenerUrlFirmada as jest.Mock).mockImplementation(
-      (_bucket: string, path: string) => Promise.resolve(`https://firmada.test/${path}`),
+      (_bucket: string, path: string) =>
+        Promise.resolve(`https://firmada.test/${path}`),
     );
-    (solicitudes.listarMedicamentosPedidoAdmin as jest.Mock).mockResolvedValue([]);
+    (solicitudes.listarMedicamentosPedidoAdmin as jest.Mock).mockResolvedValue(
+      [],
+    );
     (solicitudes.listarHistorialPedidoAdmin as jest.Mock).mockResolvedValue([]);
-    (solicitudes.obtenerNovedadAbiertaPedidoAdmin as jest.Mock).mockResolvedValue(null);
+    (
+      solicitudes.obtenerNovedadAbiertaPedidoAdmin as jest.Mock
+    ).mockResolvedValue(null);
   });
 
   it('resuelve receta y cédula (ambos lados) a URLs firmadas, incluye medicamentos e historial', async () => {
@@ -89,20 +106,30 @@ describe('ObtenerDetallePedidoAdminUseCase', () => {
         posologia: 'Cada 8 horas',
       },
     ];
-    const historial = [{ estado: 'entregado' as const, creadoEn: '2026-08-21T10:00:00.000Z' }];
-    (solicitudes.listarMedicamentosPedidoAdmin as jest.Mock).mockResolvedValue(medicamentos);
-    (solicitudes.listarHistorialPedidoAdmin as jest.Mock).mockResolvedValue(historial);
+    const historial = [
+      { estado: 'entregado' as const, creadoEn: '2026-08-21T10:00:00.000Z' },
+    ];
+    (solicitudes.listarMedicamentosPedidoAdmin as jest.Mock).mockResolvedValue(
+      medicamentos,
+    );
+    (solicitudes.listarHistorialPedidoAdmin as jest.Mock).mockResolvedValue(
+      historial,
+    );
 
     const resultado = await useCase.execute('admin-uuid', 'solicitud-uuid');
 
     expect(resultado.codigoPedido).toBe('MR-000123');
-    expect(resultado.recetaUrl).toBe('https://firmada.test/solicitud/solicitud-uuid/receta.jpg');
+    expect(resultado.recetaUrl).toBe(
+      'https://firmada.test/solicitud/solicitud-uuid/receta.jpg',
+    );
     expect(resultado.paciente).toEqual({
       nombre: 'Persona de Prueba',
       correo: 'paciente@mail.com',
       telefono: '3001234567',
-      cedulaFrenteUrl: 'https://firmada.test/paciente/usuario-uuid/cedula_frente.jpg',
-      cedulaReversoUrl: 'https://firmada.test/paciente/usuario-uuid/cedula_reverso.jpg',
+      cedulaFrenteUrl:
+        'https://firmada.test/paciente/usuario-uuid/cedula_frente.jpg',
+      cedulaReversoUrl:
+        'https://firmada.test/paciente/usuario-uuid/cedula_reverso.jpg',
     });
     expect(resultado.domiciliario).toEqual({
       nombre: 'Domiciliario de Prueba',
@@ -134,14 +161,16 @@ describe('ObtenerDetallePedidoAdminUseCase', () => {
   it('lanza SolicitudNoEncontradaError si no existe', async () => {
     (solicitudes.obtenerPedidoAdmin as jest.Mock).mockResolvedValue(null);
 
-    await expect(useCase.execute('admin-uuid', 'solicitud-uuid')).rejects.toBeInstanceOf(
-      SolicitudNoEncontradaError,
-    );
+    await expect(
+      useCase.execute('admin-uuid', 'solicitud-uuid'),
+    ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
   });
 
   it('las URLs quedan null (no revienta con 500) si Storage no puede firmar la URL', async () => {
     (solicitudes.obtenerPedidoAdmin as jest.Mock).mockResolvedValue(detalle);
-    (almacenamiento.obtenerUrlFirmada as jest.Mock).mockRejectedValue(new Error('Object not found'));
+    (almacenamiento.obtenerUrlFirmada as jest.Mock).mockRejectedValue(
+      new Error('Object not found'),
+    );
 
     const resultado = await useCase.execute('admin-uuid', 'solicitud-uuid');
 

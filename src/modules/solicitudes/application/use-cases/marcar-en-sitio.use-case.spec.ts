@@ -1,6 +1,9 @@
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
-import { MarcarEnSitioUseCase, MENSAJE_EN_SITIO } from './marcar-en-sitio.use-case';
+import {
+  MarcarEnSitioUseCase,
+  MENSAJE_EN_SITIO,
+} from './marcar-en-sitio.use-case';
 
 describe('MarcarEnSitioUseCase', () => {
   const solicitudes: SolicitudRepositoryPort = {
@@ -34,6 +37,11 @@ describe('MarcarEnSitioUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const useCase = new MarcarEnSitioUseCase(solicitudes);
 
@@ -42,7 +50,10 @@ describe('MarcarEnSitioUseCase', () => {
   it('G06 — marca en sitio y devuelve el mensaje de éxito', async () => {
     (solicitudes.marcarEnSitio as jest.Mock).mockResolvedValue('actualizado');
 
-    const resultado = await useCase.execute('domiciliario-uuid', 'solicitud-uuid');
+    const resultado = await useCase.execute(
+      'domiciliario-uuid',
+      'solicitud-uuid',
+    );
 
     expect(resultado).toEqual({ message: MENSAJE_EN_SITIO });
     expect(solicitudes.marcarEnSitio).toHaveBeenCalledWith(

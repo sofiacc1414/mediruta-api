@@ -3,7 +3,9 @@
  * a un domiciliario). */
 export class DomiciliarioNoEncontradoError extends Error {
   constructor() {
-    super('No hay una solicitud de validación pendiente para ese domiciliario.');
+    super(
+      'No hay una solicitud de validación pendiente para ese domiciliario.',
+    );
     this.name = 'DomiciliarioNoEncontradoError';
   }
 }

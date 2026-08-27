@@ -33,6 +33,11 @@ describe('ListarNovedadesAbiertasUseCase', () => {
     listarMedicamentosPedidoAdmin: jest.fn(),
     listarHistorialPedidoAdmin: jest.fn(),
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
+    reportarNovedadPaciente: jest.fn(),
+    listarDomiciliariosCercanosAdmin: jest.fn(),
+    asignarDomiciliarioAdmin: jest.fn(),
+    obtenerConfiguracionAdmin: jest.fn(),
+    actualizarConfiguracionAdmin: jest.fn(),
   };
   const useCase = new ListarNovedadesAbiertasUseCase(solicitudes);
 
@@ -49,11 +54,15 @@ describe('ListarNovedadesAbiertasUseCase', () => {
         creadoEn: '2026-08-24T10:00:00.000Z',
       },
     ];
-    (solicitudes.listarNovedadesAbiertas as jest.Mock).mockResolvedValue(novedades);
+    (solicitudes.listarNovedadesAbiertas as jest.Mock).mockResolvedValue(
+      novedades,
+    );
 
     const resultado = await useCase.execute('admin-uuid');
 
-    expect(solicitudes.listarNovedadesAbiertas).toHaveBeenCalledWith('admin-uuid');
+    expect(solicitudes.listarNovedadesAbiertas).toHaveBeenCalledWith(
+      'admin-uuid',
+    );
     expect(resultado).toBe(novedades);
   });
 });

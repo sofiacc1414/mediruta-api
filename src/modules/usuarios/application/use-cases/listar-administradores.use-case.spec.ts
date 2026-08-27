@@ -13,6 +13,10 @@ describe('ListarAdministradoresUseCase', () => {
     crearAdministrador: jest.fn(),
     listarAdministradores: jest.fn(),
     obtenerAdministrador: jest.fn(),
+    listarCuentasAdmin: jest.fn(),
+    obtenerCuentaAdmin: jest.fn(),
+    bloquearCuenta: jest.fn(),
+    desbloquearCuenta: jest.fn(),
   };
   const useCase = new ListarAdministradoresUseCase(usuarios);
 
@@ -29,7 +33,9 @@ describe('ListarAdministradoresUseCase', () => {
         creadoEn: '2026-08-20T10:00:00.000Z',
       },
     ];
-    (usuarios.listarAdministradores as jest.Mock).mockResolvedValue(administradores);
+    (usuarios.listarAdministradores as jest.Mock).mockResolvedValue(
+      administradores,
+    );
 
     const resultado = await useCase.execute('admin-uuid');
 
