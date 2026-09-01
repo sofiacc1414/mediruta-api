@@ -8,7 +8,9 @@ import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicit
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
 import { ListarSolicitudesUseCase } from '../../application/use-cases/listar-solicitudes.use-case';
 import { ObtenerSolicitudUseCase } from '../../application/use-cases/obtener-solicitud.use-case';
+import { ReportarCodigoNoGeneradoUseCase } from '../../application/use-cases/reportar-codigo-no-generado.use-case';
 import { ReportarNovedadPacienteUseCase } from '../../application/use-cases/reportar-novedad-paciente.use-case';
+import { SolicitarEdicionPedidoUseCase } from '../../application/use-cases/solicitar-edicion-pedido.use-case';
 import { SubirRecetaUseCase } from '../../application/use-cases/subir-receta.use-case';
 import { DatosSolicitudDto } from '../dtos/datos-solicitud.dto';
 import { SolicitudesController } from './solicitudes.controller';
@@ -40,6 +42,8 @@ function crearController(overrides?: {
   enviarSolicitud?: { execute: jest.Mock };
   cancelarSolicitud?: { execute: jest.Mock };
   reportarNovedadPaciente?: { execute: jest.Mock };
+  solicitarEdicionPedido?: { execute: jest.Mock };
+  reportarCodigoNoGenerado?: { execute: jest.Mock };
 }) {
   return new SolicitudesController(
     (overrides?.crearSolicitud ?? {
@@ -66,6 +70,12 @@ function crearController(overrides?: {
     (overrides?.reportarNovedadPaciente ?? {
       execute: jest.fn(),
     }) as unknown as ReportarNovedadPacienteUseCase,
+    (overrides?.solicitarEdicionPedido ?? {
+      execute: jest.fn(),
+    }) as unknown as SolicitarEdicionPedidoUseCase,
+    (overrides?.reportarCodigoNoGenerado ?? {
+      execute: jest.fn(),
+    }) as unknown as ReportarCodigoNoGeneradoUseCase,
   );
 }
 

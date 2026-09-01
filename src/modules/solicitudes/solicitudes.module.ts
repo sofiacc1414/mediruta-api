@@ -3,6 +3,7 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
 import { AceptarPedidoUseCase } from './application/use-cases/aceptar-pedido.use-case';
 import { ActualizarConfiguracionAdminUseCase } from './application/use-cases/actualizar-configuracion-admin.use-case';
 import { ActualizarSolicitudUseCase } from './application/use-cases/actualizar-solicitud.use-case';
+import { AprobarEdicionPedidoAdminUseCase } from './application/use-cases/aprobar-edicion-pedido-admin.use-case';
 import { AsignarDomiciliarioAdminUseCase } from './application/use-cases/asignar-domiciliario-admin.use-case';
 import { CancelarSolicitudUseCase } from './application/use-cases/cancelar-solicitud.use-case';
 import { CrearSolicitudUseCase } from './application/use-cases/crear-solicitud.use-case';
@@ -22,14 +23,21 @@ import { ObtenerDetallePedidoAdminUseCase } from './application/use-cases/obtene
 import { ObtenerDocumentosPacienteParaRecogerUseCase } from './application/use-cases/obtener-documentos-paciente-para-recoger.use-case';
 import { ObtenerPedidoActivoUseCase } from './application/use-cases/obtener-pedido-activo.use-case';
 import { ObtenerSolicitudUseCase } from './application/use-cases/obtener-solicitud.use-case';
+import { RechazarEdicionPedidoAdminUseCase } from './application/use-cases/rechazar-edicion-pedido-admin.use-case';
+import { ReenviarCodigoEntregaCorreoAdminUseCase } from './application/use-cases/reenviar-codigo-entrega-correo-admin.use-case';
+import { RegenerarCodigoEntregaAdminUseCase } from './application/use-cases/regenerar-codigo-entrega-admin.use-case';
+import { ReportarCodigoNoGeneradoUseCase } from './application/use-cases/reportar-codigo-no-generado.use-case';
 import { ReportarNovedadPacienteUseCase } from './application/use-cases/reportar-novedad-paciente.use-case';
 import { ReportarNovedadUseCase } from './application/use-cases/reportar-novedad.use-case';
 import { ResolverNovedadUseCase } from './application/use-cases/resolver-novedad.use-case';
+import { SolicitarEdicionPedidoUseCase } from './application/use-cases/solicitar-edicion-pedido.use-case';
 import { SubirRecetaUseCase } from './application/use-cases/subir-receta.use-case';
+import { CorreoCodigoEntregaPort } from './domain/ports/correo-codigo-entrega.port';
 import { GeocodificacionPort } from './domain/ports/geocodificacion.port';
 import { SolicitudRepositoryPort } from './domain/ports/solicitud.repository.port';
 import { NominatimGeocodificacionAdapter } from './infrastructure/adapters/nominatim-geocodificacion.adapter';
 import { PostgresSolicitudRepository } from './infrastructure/adapters/postgres-solicitud.repository';
+import { ResendCorreoCodigoEntregaAdapter } from './infrastructure/adapters/resend-correo-codigo-entrega.adapter';
 import { ConfiguracionAdminController } from './infrastructure/controllers/configuracion-admin.controller';
 import { NovedadesAdminController } from './infrastructure/controllers/novedades-admin.controller';
 import { PedidosAdminController } from './infrastructure/controllers/pedidos-admin.controller';
@@ -66,8 +74,14 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     EntregarPedidoUseCase,
     ReportarNovedadUseCase,
     ReportarNovedadPacienteUseCase,
+    SolicitarEdicionPedidoUseCase,
+    ReportarCodigoNoGeneradoUseCase,
     ListarNovedadesAbiertasUseCase,
     ResolverNovedadUseCase,
+    AprobarEdicionPedidoAdminUseCase,
+    RechazarEdicionPedidoAdminUseCase,
+    RegenerarCodigoEntregaAdminUseCase,
+    ReenviarCodigoEntregaCorreoAdminUseCase,
     ObtenerPedidoActivoUseCase,
     ListarHistorialPedidosUseCase,
     ObtenerDocumentosPacienteParaRecogerUseCase,
@@ -84,6 +98,10 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     {
       provide: GeocodificacionPort,
       useClass: NominatimGeocodificacionAdapter,
+    },
+    {
+      provide: CorreoCodigoEntregaPort,
+      useClass: ResendCorreoCodigoEntregaAdapter,
     },
   ],
 })

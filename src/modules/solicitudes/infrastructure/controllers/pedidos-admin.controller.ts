@@ -21,6 +21,8 @@ import { AsignarDomiciliarioAdminUseCase } from '../../application/use-cases/asi
 import { ListarDomiciliariosCercanosAdminUseCase } from '../../application/use-cases/listar-domiciliarios-cercanos-admin.use-case';
 import { ListarPedidosAdminUseCase } from '../../application/use-cases/listar-pedidos-admin.use-case';
 import { ObtenerDetallePedidoAdminUseCase } from '../../application/use-cases/obtener-detalle-pedido-admin.use-case';
+import { RegenerarCodigoEntregaAdminUseCase } from '../../application/use-cases/regenerar-codigo-entrega-admin.use-case';
+import { ReenviarCodigoEntregaCorreoAdminUseCase } from '../../application/use-cases/reenviar-codigo-entrega-correo-admin.use-case';
 import { AsignarDomiciliarioAdminDto } from '../dtos/asignar-domiciliario-admin.dto';
 import { FiltrarPedidosAdminDto } from '../dtos/filtrar-pedidos-admin.dto';
 
@@ -38,6 +40,8 @@ export class PedidosAdminController {
     private readonly obtenerDetallePedidoAdmin: ObtenerDetallePedidoAdminUseCase,
     private readonly listarDomiciliariosCercanos: ListarDomiciliariosCercanosAdminUseCase,
     private readonly asignarDomiciliario: AsignarDomiciliarioAdminUseCase,
+    private readonly regenerarCodigoEntrega: RegenerarCodigoEntregaAdminUseCase,
+    private readonly reenviarCodigoEntregaCorreo: ReenviarCodigoEntregaCorreoAdminUseCase,
   ) {}
 
   @Get()
@@ -84,6 +88,31 @@ export class PedidosAdminController {
       identidad.usuarioId,
       solicitudId,
       dto.domiciliarioId,
+    );
+  }
+
+  /** HU-07 (ronda 3) — el paciente reportó no ver su código de entrega;
+   * el admin genera uno nuevo. */
+  @Post(':id/regenerar-codigo')
+  @HttpCode(HttpStatus.OK)
+  regenerarCodigo(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+  ) {
+    return this.regenerarCodigoEntrega.execute(identidad.usuarioId, solicitudId);
+  }
+
+  /** HU-07 (ronda 3) — reenvía por correo el código de entrega vigente
+   * (sin regenerarlo). */
+  @Post(':id/reenviar-codigo-correo')
+  @HttpCode(HttpStatus.OK)
+  reenviarCodigoCorreo(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+  ) {
+    return this.reenviarCodigoEntregaCorreo.execute(
+      identidad.usuarioId,
+      solicitudId,
     );
   }
 }

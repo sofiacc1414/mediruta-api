@@ -15,7 +15,9 @@ import { UsuarioAutenticado } from '../../../usuarios/infrastructure/decorators/
 import { DominioHttpFilter } from '../../../usuarios/infrastructure/filters/dominio-http.filter';
 import { AccessAuthGuard } from '../../../usuarios/infrastructure/guards/access-auth.guard';
 import { RolesGuard } from '../../../usuarios/infrastructure/guards/roles.guard';
+import { AprobarEdicionPedidoAdminUseCase } from '../../application/use-cases/aprobar-edicion-pedido-admin.use-case';
 import { ListarNovedadesAbiertasUseCase } from '../../application/use-cases/listar-novedades-abiertas.use-case';
+import { RechazarEdicionPedidoAdminUseCase } from '../../application/use-cases/rechazar-edicion-pedido-admin.use-case';
 import { ResolverNovedadUseCase } from '../../application/use-cases/resolver-novedad.use-case';
 
 /** HU-07 — solo Administrador/Root. Mismo patrón que
@@ -28,6 +30,8 @@ export class NovedadesAdminController {
   constructor(
     private readonly listarNovedadesAbiertas: ListarNovedadesAbiertasUseCase,
     private readonly resolverNovedad: ResolverNovedadUseCase,
+    private readonly aprobarEdicionPedido: AprobarEdicionPedidoAdminUseCase,
+    private readonly rechazarEdicionPedido: RechazarEdicionPedidoAdminUseCase,
   ) {}
 
   @Get()
@@ -43,5 +47,27 @@ export class NovedadesAdminController {
     @Param('id', ParseUUIDPipe) novedadId: string,
   ) {
     return this.resolverNovedad.execute(identidad.usuarioId, novedadId);
+  }
+
+  /** HU-07 (ronda 3) — aplica los datos propuestos de una novedad tipo
+   * 'edicion' al pedido y la cierra. */
+  @Post(':id/aprobar-edicion')
+  @HttpCode(HttpStatus.OK)
+  aprobarEdicion(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) novedadId: string,
+  ) {
+    return this.aprobarEdicionPedido.execute(identidad.usuarioId, novedadId);
+  }
+
+  /** HU-07 (ronda 3) — cierra una novedad tipo 'edicion' sin tocar el
+   * pedido. */
+  @Post(':id/rechazar-edicion')
+  @HttpCode(HttpStatus.OK)
+  rechazarEdicion(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) novedadId: string,
+  ) {
+    return this.rechazarEdicionPedido.execute(identidad.usuarioId, novedadId);
   }
 }

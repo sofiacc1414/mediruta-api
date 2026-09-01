@@ -27,12 +27,16 @@ import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicit
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
 import { ListarSolicitudesUseCase } from '../../application/use-cases/listar-solicitudes.use-case';
 import { ObtenerSolicitudUseCase } from '../../application/use-cases/obtener-solicitud.use-case';
+import { ReportarCodigoNoGeneradoUseCase } from '../../application/use-cases/reportar-codigo-no-generado.use-case';
 import { ReportarNovedadPacienteUseCase } from '../../application/use-cases/reportar-novedad-paciente.use-case';
+import { SolicitarEdicionPedidoUseCase } from '../../application/use-cases/solicitar-edicion-pedido.use-case';
 import { SubirRecetaUseCase } from '../../application/use-cases/subir-receta.use-case';
 import { Medicamento } from '../../domain/ports/solicitud.repository.port';
 import { DatosSolicitudDto } from '../dtos/datos-solicitud.dto';
 import { MedicamentoDto } from '../dtos/medicamento.dto';
+import { ReportarCodigoNoGeneradoDto } from '../dtos/reportar-codigo-no-generado.dto';
 import { ReportarNovedadDto } from '../dtos/reportar-novedad.dto';
+import { SolicitarEdicionPedidoDto } from '../dtos/solicitar-edicion-pedido.dto';
 
 const VALIDADOR_ARCHIVO = new ParseFilePipeBuilder()
   .addFileTypeValidator({
@@ -79,6 +83,8 @@ export class SolicitudesController {
     private readonly enviarSolicitud: EnviarSolicitudUseCase,
     private readonly cancelarSolicitud: CancelarSolicitudUseCase,
     private readonly reportarNovedadPaciente: ReportarNovedadPacienteUseCase,
+    private readonly solicitarEdicionPedido: SolicitarEdicionPedidoUseCase,
+    private readonly reportarCodigoNoGenerado: ReportarCodigoNoGeneradoUseCase,
   ) {}
 
   @Post()
@@ -176,6 +182,41 @@ export class SolicitudesController {
       identidad.usuarioId,
       solicitudId,
       dto.detalle,
+    );
+  }
+
+  /** HU-07 (ronda 3) — el Paciente pide corregir dirección de entrega
+   * y/o de farmacia de un pedido ya enviado. Queda pendiente de
+   * aprobación del admin, no se aplica al instante. */
+  @Post(':id/solicitar-edicion')
+  @HttpCode(HttpStatus.OK)
+  solicitarEdicion(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+    @Body() dto: SolicitarEdicionPedidoDto,
+  ) {
+    return this.solicitarEdicionPedido.execute(
+      identidad.usuarioId,
+      solicitudId,
+      dto.direccionEntrega ?? null,
+      dto.direccionFarmacia ?? null,
+      dto.detalle ?? null,
+    );
+  }
+
+  /** HU-07 (ronda 3) — el Paciente reporta que el código de entrega no
+   * se generó o no lo ve en su pantalla. */
+  @Post(':id/reportar-codigo-no-generado')
+  @HttpCode(HttpStatus.OK)
+  reportarCodigoNoGeneradoAction(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+    @Body() dto: ReportarCodigoNoGeneradoDto,
+  ) {
+    return this.reportarCodigoNoGenerado.execute(
+      identidad.usuarioId,
+      solicitudId,
+      dto.detalle ?? null,
     );
   }
 }

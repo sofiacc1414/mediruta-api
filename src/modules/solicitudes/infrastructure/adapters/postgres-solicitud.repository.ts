@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import {
+  CodigoEntregaParaCorreo,
   ConfiguracionAdmin,
+  DatosEdicionPedido,
   DocumentosPacienteParaRecoger,
   DomiciliarioCercanoAdmin,
   EstadoSolicitud,
@@ -17,6 +19,7 @@ import {
   PedidoAdminDetalle,
   PedidoDisponible,
   PedidoHistorialDomiciliario,
+  ResultadoAccionEdicionPedido,
   ResultadoAceptarPedido,
   ResultadoActualizarConfiguracionAdmin,
   ResultadoAsignarDomiciliarioAdmin,
@@ -24,12 +27,14 @@ import {
   ResultadoCrear,
   ResultadoEnviar,
   ResultadoEntregarPedido,
+  ResultadoRegenerarCodigoEntrega,
   ResultadoReportarNovedad,
   ResultadoResolverNovedad,
   ResultadoTransicionPedido,
   SolicitudDetalle,
   SolicitudRepositoryPort,
   SolicitudResumen,
+  TipoNovedad,
 } from '../../domain/ports/solicitud.repository.port';
 
 type FilaResumen = {
@@ -141,6 +146,11 @@ type FilaConfiguracionAdmin = {
   umbral_demora_asignacion_minutos: number;
 };
 
+type FilaDatosEdicionPedido = {
+  direccionEntrega: string | null;
+  direccionFarmacia: string | null;
+};
+
 type FilaNovedadAbierta = {
   id: string;
   solicitud_id: string;
@@ -148,6 +158,10 @@ type FilaNovedadAbierta = {
   detalle: string;
   reportada_por_correo: string;
   origen: OrigenNovedad;
+  tipo: TipoNovedad;
+  datos_actuales: FilaDatosEdicionPedido | null;
+  datos_propuestos: FilaDatosEdicionPedido | null;
+  codigo_entrega: string | null;
   creado_en: string;
 };
 
@@ -159,7 +173,20 @@ type FilaNovedadDelPaciente = {
 
 type FilaNovedadAbiertaPedidoAdmin = FilaNovedadDelPaciente & {
   origen: OrigenNovedad;
+  tipo: TipoNovedad;
+  datos_actuales: FilaDatosEdicionPedido | null;
+  datos_propuestos: FilaDatosEdicionPedido | null;
 };
+
+function datosEdicionDesde(
+  fila: FilaDatosEdicionPedido | null,
+): DatosEdicionPedido | null {
+  if (!fila) return null;
+  return {
+    direccionEntrega: fila.direccionEntrega,
+    direccionFarmacia: fila.direccionFarmacia,
+  };
+}
 
 type FilaMedicamento = {
   nombre: string | null;
@@ -658,6 +685,10 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         detalle: fila.detalle,
         reportadaPorCorreo: fila.reportada_por_correo,
         origen: fila.origen,
+        tipo: fila.tipo,
+        datosActuales: datosEdicionDesde(fila.datos_actuales),
+        datosPropuestos: datosEdicionDesde(fila.datos_propuestos),
+        codigoEntrega: fila.codigo_entrega,
         creadoEn: fila.creado_en,
       }));
     });
@@ -799,6 +830,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         id: fila.id,
         detalle: fila.detalle,
         origen: fila.origen,
+        tipo: fila.tipo,
+        datosActuales: datosEdicionDesde(fila.datos_actuales),
+        datosPropuestos: datosEdicionDesde(fila.datos_propuestos),
         creadoEn: fila.creado_en,
       };
     });
@@ -823,6 +857,127 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         return { resultado: 'reportada', id: fila.id };
       }
       return { resultado: 'no_encontrado' };
+    });
+  }
+
+  solicitarEdicionPedido(
+    pacienteId: string,
+    solicitudId: string,
+    direccionEntrega: string | null,
+    direccionFarmacia: string | null,
+    detalle: string | null,
+  ): Promise<ResultadoReportarNovedad> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<{
+        resultado: string;
+        id: string | null;
+      }>('select * from app.solicitar_edicion_pedido($1, $2, $3, $4, $5)', [
+        pacienteId,
+        solicitudId,
+        direccionEntrega,
+        direccionFarmacia,
+        detalle,
+      ]);
+      const fila = result.rows[0];
+      if (fila.resultado === 'reportada' && fila.id) {
+        return { resultado: 'reportada', id: fila.id };
+      }
+      return { resultado: 'no_encontrado' };
+    });
+  }
+
+  reportarCodigoNoGenerado(
+    pacienteId: string,
+    solicitudId: string,
+    detalle: string | null,
+  ): Promise<ResultadoReportarNovedad> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<{
+        resultado: string;
+        id: string | null;
+      }>('select * from app.reportar_codigo_no_generado($1, $2, $3)', [
+        pacienteId,
+        solicitudId,
+        detalle,
+      ]);
+      const fila = result.rows[0];
+      if (fila.resultado === 'reportada' && fila.id) {
+        return { resultado: 'reportada', id: fila.id };
+      }
+      return { resultado: 'no_encontrado' };
+    });
+  }
+
+  aprobarEdicionPedidoAdmin(
+    adminId: string,
+    novedadId: string,
+  ): Promise<ResultadoAccionEdicionPedido> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<{
+        resultado: ResultadoAccionEdicionPedido;
+      }>('select * from app.aprobar_edicion_pedido_admin($1, $2)', [
+        adminId,
+        novedadId,
+      ]);
+      return result.rows[0].resultado;
+    });
+  }
+
+  rechazarEdicionPedidoAdmin(
+    adminId: string,
+    novedadId: string,
+  ): Promise<ResultadoAccionEdicionPedido> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<{
+        resultado: ResultadoAccionEdicionPedido;
+      }>('select * from app.rechazar_edicion_pedido_admin($1, $2)', [
+        adminId,
+        novedadId,
+      ]);
+      return result.rows[0].resultado;
+    });
+  }
+
+  regenerarCodigoEntregaAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<ResultadoRegenerarCodigoEntrega> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<{
+        resultado: ResultadoRegenerarCodigoEntrega['resultado'];
+        codigo_entrega: string | null;
+      }>('select * from app.regenerar_codigo_entrega_admin($1, $2)', [
+        adminId,
+        solicitudId,
+      ]);
+      const fila = result.rows[0];
+      return { resultado: fila.resultado, codigoEntrega: fila.codigo_entrega };
+    });
+  }
+
+  obtenerCodigoEntregaParaCorreoAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<CodigoEntregaParaCorreo> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<{
+        resultado: CodigoEntregaParaCorreo['resultado'];
+        codigo_entrega: string | null;
+        codigo_pedido: string | null;
+        paciente_correo: string | null;
+        paciente_nombre: string | null;
+      }>(
+        'select * from app.obtener_codigo_entrega_para_correo_admin($1, $2)',
+        [adminId, solicitudId],
+      );
+      const fila = result.rows[0];
+      return {
+        resultado: fila.resultado,
+        codigoEntrega: fila.codigo_entrega,
+        codigoPedido: fila.codigo_pedido,
+        pacienteCorreo: fila.paciente_correo,
+        pacienteNombre: fila.paciente_nombre,
+      };
     });
   }
 
