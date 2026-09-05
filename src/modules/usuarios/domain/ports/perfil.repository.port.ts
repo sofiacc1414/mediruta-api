@@ -15,9 +15,15 @@ export type PerfilPaciente = {
 
 /** HU-09 — resultado de prender/apagar "Disponible para recibir
  * pedidos". `no_autorizado` si la cuenta no tiene DOMICILIARIO
- * habilitado. */
+ * habilitado. `tiene_pedido_activo` solo puede darse al apagar — el
+ * Domiciliario tiene un pedido en curso (uno de los 4 estados activos,
+ * ver `SolicitudRepositoryPort.obtenerPedidoActivo`) y debe entregarlo
+ * o que se reporte una novedad antes de desconectarse. */
 export type ResultadoActualizarDisponibilidad =
-  'actualizado' | 'no_autorizado' | 'no_encontrado';
+  | 'actualizado'
+  | 'no_autorizado'
+  | 'no_encontrado'
+  | 'tiene_pedido_activo';
 
 export type PerfilDomiciliario = {
   direccion: string | null;

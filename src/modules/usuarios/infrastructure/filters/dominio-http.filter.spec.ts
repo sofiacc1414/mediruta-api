@@ -8,6 +8,7 @@ import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-inva
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
 import { DomiciliarioConPedidoActivoError } from '../../../solicitudes/domain/errors/domiciliario-con-pedido-activo.error';
+import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
 import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { DominioHttpFilter } from './dominio-http.filter';
 
@@ -132,6 +133,22 @@ describe('DominioHttpFilter', () => {
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.CONFLICT,
       message: 'Ya tenés un pedido activo — entregalo antes de aceptar otro.',
+    });
+  });
+
+  it('mapea NoPuedeDesconectarseConPedidoActivoError a HTTP 409', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(
+      new NoPuedeDesconectarseConPedidoActivoError(),
+      host,
+    );
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.CONFLICT,
+      message:
+        'No podés desconectarte mientras tenés un pedido activo — entregalo o reportá una novedad primero.',
     });
   });
 

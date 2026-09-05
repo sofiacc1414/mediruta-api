@@ -468,6 +468,19 @@ del flujo estaba (decisión tomada con el equipo). Un pedido puede tener más de
 novedad a lo largo de su vida; `resuelta_en is null` es la lista de "abiertas" para el
 admin.
 
+`20260901090000_novedad_tipo_edicion_y_codigo_entrega.sql` agrega **`tipo`** (`text`,
+default `'pregunta'`, check `pregunta`\|`edicion`\|`codigo`), **`datos_actuales`**/
+**`datos_propuestos`** (`jsonb`, `{direccionEntrega, direccionFarmacia}` — solo
+`datos_propuestos` es obligatorio cuando `tipo='edicion'`, constraint cruzada) y
+**`accion_edicion`** (`text`, check `aprobada`\|`rechazada`, solo aplica si
+`tipo='edicion'`). `'pregunta'` es el mensaje directo de siempre, sin cambios de
+comportamiento. `'edicion'` — el Paciente pide corregir `direccion_entrega`/
+`direccion_farmacia` de un pedido ya enviado (no Borrador); el admin ve el diff
+(`datos_actuales` vs `datos_propuestos`) y aprueba (aplica los campos no nulos a
+`solicitudes`) o rechaza (no toca el pedido), en ambos casos cierra la novedad.
+`'codigo'` — el Paciente reporta no ver `codigo_entrega`; sin datos propuestos, el
+admin regenera el código o lo reenvía por correo directo sobre el pedido.
+
 **Migraciones de esquema:** `20260824010000_habilitar_postgis.sql`,
 `20260824020000_geolocalizacion_paciente_domiciliario.sql` (`departamento`/`ciudad` en
 `perfil_paciente`, `disponible`/`ubicacion`/`ubicacion_actualizada_en` en
@@ -478,13 +491,19 @@ admin.
 Funciones (`20260824050000_create_funciones_asignacion_domiciliario.sql` salvo que se
 indique otra):
 
-- **`app.actualizar_disponibilidad_domiciliario(p_domiciliario_id, p_disponible, p_lat, p_lng)`** → `(resultado text)`, `actualizado`\|`no_autorizado`\|`no_encontrado`. Guarda `ubicacion` solo si `p_disponible = true`.
+- **`app.actualizar_disponibilidad_domiciliario(p_domiciliario_id, p_disponible, p_lat, p_lng)`** → `(resultado text)`, `actualizado`\|`no_autorizado`\|`no_encontrado`\|`tiene_pedido_activo`. Guarda `ubicacion` solo si `p_disponible = true`. `tiene_pedido_activo` (`20260901083000_bloquear_desconexion_con_pedido_activo.sql`) — al apagar disponibilidad, rechaza si el domiciliario tiene una solicitud en `asignado_en_camino_farmacia`\|`medicamentos_recogidos`\|`en_camino_entrega`\|`en_sitio`.
 - **`app.listar_pedidos_disponibles(p_domiciliario_id)`** → pedidos en `en_asignacion` con `farmacia_ubicacion` no nula **y dentro de un radio de 15km** (`ST_DWithin`, constante `v_radio_metros` en la función — fácil de ajustar), ordenados por `ST_Distance` a la última ubicación del Domiciliario. Vacío (no error) si no está disponible, no tiene ubicación todavía, **o ya tiene un pedido activo** (no tiene sentido ofrecerle algo que no puede aceptar — ver siguiente punto). Redefinida en `20260825010000_un_pedido_activo_y_radio_pool.sql`.
 - **`app.aceptar_pedido(p_domiciliario_id, p_solicitud_id)`** → `(resultado text)`, `aceptado`\|`ya_asignado`\|**`ya_tiene_pedido_activo`**\|`no_encontrado`. `UPDATE ... WHERE estado='en_asignacion' AND domiciliario_id IS NULL` es el guard atómico — dos Domiciliarios aceptando a la vez, el segundo recibe `ya_asignado` (comprobado en vivo, no es teórico). **Un Domiciliario solo puede tener un pedido activo a la vez** (`asignado_en_camino_farmacia`/`medicamentos_recogidos`/`en_camino_entrega`/`en_sitio`) — si ya tiene uno, `ya_tiene_pedido_activo` sin tocar nada (confirmado con el equipo, decisión post-entrega del backend inicial).
 - **`app.marcar_medicamentos_recogidos`**, **`app.iniciar_entrega`**, **`app.marcar_en_sitio`** → `(resultado text)`, `actualizado`\|`no_encontrado` cada una. Validan que sea el Domiciliario asignado y el estado anterior correcto.
 - **`app.entregar_pedido(p_domiciliario_id, p_solicitud_id, p_codigo)`** → `(resultado text)`, `entregado`\|`codigo_incorrecto`\|`no_encontrado`. Compara `p_codigo` contra `codigo_entrega` case-insensitive.
 - **`app.reportar_novedad(p_domiciliario_id, p_solicitud_id, p_detalle)`** → `(resultado text, id uuid)`, `reportada`\|`no_encontrado`. No toca `estado`.
-- **`app.resolver_novedad(p_admin_id, p_novedad_id)`** / **`app.listar_novedades_abiertas(p_admin_id)`** → panel del Administrador, mismo patrón `usuario_tiene_rol_habilitado` de HU-08.
+- **`app.resolver_novedad(p_admin_id, p_novedad_id)`** / **`app.listar_novedades_abiertas(p_admin_id)`** → panel del Administrador, mismo patrón `usuario_tiene_rol_habilitado` de HU-08. `listar_novedades_abiertas` y `obtener_novedad_abierta_pedido_admin` redefinidas en `20260901090000_novedad_tipo_edicion_y_codigo_entrega.sql` (DROP previo — cambia `RETURNS TABLE`) para sumar `tipo`, `datos_actuales`, `datos_propuestos` (y `codigo_entrega` en la primera).
+- **`app.solicitar_edicion_pedido(p_paciente_id, p_solicitud_id, p_direccion_entrega, p_direccion_farmacia, p_detalle)`** → `(resultado text, id uuid)`, `reportada`\|`no_encontrado`. Exige al menos uno de los dos campos; guarda `datos_actuales` (foto de los valores al momento del reporte) + `datos_propuestos`, `tipo='edicion'`. No aplica sobre Borrador/`entregado`/`cancelada`.
+- **`app.reportar_codigo_no_generado(p_paciente_id, p_solicitud_id, p_detalle)`** → `(resultado text, id uuid)`, `reportada`\|`no_encontrado`. `tipo='codigo'`, sin datos propuestos.
+- **`app.aprobar_edicion_pedido_admin(p_admin_id, p_novedad_id)`** → `(resultado text)`, `aprobada`\|`no_encontrado`\|`no_autorizado`. Aplica a `solicitudes` solo los campos no nulos de `datos_propuestos` (`coalesce` contra el valor actual), cierra la novedad con `accion_edicion='aprobada'`.
+- **`app.rechazar_edicion_pedido_admin(p_admin_id, p_novedad_id)`** → `(resultado text)`, `rechazada`\|`no_encontrado`\|`no_autorizado`. No toca `solicitudes`, cierra con `accion_edicion='rechazada'`.
+- **`app.regenerar_codigo_entrega_admin(p_admin_id, p_solicitud_id)`** → `(resultado text, codigo_entrega text)`, `regenerado`\|`no_encontrado`\|`no_autorizado`. Mismo algoritmo de 6 caracteres (sin `0`/`O`/`1`/`I`/`L`) que `app.enviar` al generarlo la primera vez. No aplica sobre `entregado`/`cancelada` ni sobre pedidos sin `codigo_pedido` (Borrador).
+- **`app.obtener_codigo_entrega_para_correo_admin(p_admin_id, p_solicitud_id)`** → `(resultado text, codigo_entrega text, codigo_pedido text, paciente_correo text, paciente_nombre text)`, `ok`\|`no_encontrado`\|`no_autorizado`. Solo lee — el envío del correo lo hace la API vía `CorreoCodigoEntregaPort`/Resend, no esta función. `SECURITY DEFINER` porque `mediruta_app` no tiene SELECT directo sobre `usuarios.correo`/`nombre_completo` (igual que `app.obtener_perfil`).
 - **`app.obtener_datos_geocodificacion_farmacia`** / **`app.obtener_novedad_abierta_solicitud`** (`20260824070000_lecturas_asignacion_y_geocodificacion.sql`) → lecturas de apoyo para el caso de uso en TS (la primera, antes de geocodificar; la segunda, para que el Paciente vea si su propio pedido tiene una novedad sin ser Administrador).
 - **`app.obtener_perfil`** / **`app.upsert_perfil_paciente`** (`20260824080000_perfil_paciente_ciudad_departamento_funciones.sql`, ambas con `DROP` previo — la primera por cambio de `RETURNS TABLE`) → exponen/piden `departamento`/`ciudad`, obligatorios desde acá.
 - **`app.obtener_pedido_activo_domiciliario(p_domiciliario_id)`** / **`app.listar_historial_pedido_domiciliario`** / **`app.obtener_novedad_propia_abierta`** (`20260825020000_obtener_pedido_activo_domiciliario.sql`) → equivalentes de `obtener_solicitud`/`listar_historial_solicitud`/`obtener_novedad_abierta_solicitud` pero acotados por `domiciliario_id` en vez de `paciente_id` — sin esto el Domiciliario no tenía forma de recuperar "su" pedido tras cerrar y reabrir la app (`listar_pedidos_disponibles` deja de incluirlo apenas lo acepta). La primera, a propósito, no expone `codigo_entrega`.

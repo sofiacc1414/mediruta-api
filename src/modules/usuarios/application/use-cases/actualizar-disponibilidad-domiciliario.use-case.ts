@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
 import { RolNoAutorizadoError } from '../../domain/errors/rol-no-autorizado.error';
 import { PerfilRepositoryPort } from '../../domain/ports/perfil.repository.port';
 
@@ -35,6 +36,8 @@ export class ActualizarDisponibilidadDomiciliarioUseCase {
       case 'no_autorizado':
       case 'no_encontrado':
         throw new RolNoAutorizadoError();
+      case 'tiene_pedido_activo':
+        throw new NoPuedeDesconectarseConPedidoActivoError();
     }
   }
 }

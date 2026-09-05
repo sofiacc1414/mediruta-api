@@ -60,11 +60,11 @@ npm run lint       # eslint --fix
 | **HU-02** — Administración del perfil del usuario | ✅ Completa | Endpoints bajo `/perfil`. Ver detalle abajo. |
 | **HU-03** — Creación de solicitudes médicas digitales | ✅ Completa | Endpoints bajo `/solicitudes`. Ver detalle abajo. |
 | **HU-05** — Lectura y validación inicial de documentos médicos | ✅ Completa | Es la carga/reemplazo de documentos — ya cubierta por lo que HU-02 (cédula, licencia, SOAT, tecnomecánica del Domiciliario; foto de cédula del Paciente) y HU-03 (foto de receta) ya construyeron, no es una superficie aparte. |
-| **HU-06** — Revisión y aprobación de solicitudes | 🔜 Próxima | — |
-| **HU-07** — Consulta y actualización del estado del proceso | 🟡 API completa | Endpoints bajo `/pedidos` y `/admin/novedades`. Falta la App (Domiciliario/Paciente) y el Web (panel de novedades). Ver detalle abajo. |
+| **HU-06** — Gestión y resolución de novedades (tickets) reportadas por Paciente/Domiciliario | ✅ Completa | Endpoints bajo `/admin/novedades` y `/pedidos/:id/novedad`. Ver detalle en la sección de HU-09/HU-07. |
+| **HU-07** — Consulta y actualización del estado del proceso | ✅ Completa | Endpoints bajo `/pedidos` y `/admin/novedades`. App y Web ya implementadas — ajustes visuales en curso. Ver detalle abajo. |
 | **HU-08** — Supervisión y trazabilidad administrativa (validación de domiciliarios) | ✅ Completa | Endpoints bajo `/admin/domiciliarios`. Ver detalle abajo. |
-| **HU-09** — Asignación y gestión del domiciliario | 🟡 API completa | Endpoints bajo `/pedidos` y `/perfil/domiciliario/disponibilidad`. Falta la App (Domiciliario). Ver detalle abajo. |
-| **HU-10** — Control del proceso de entrega | 🔜 Próxima | — |
+| **HU-09** — Asignación y gestión del domiciliario | ✅ Completa | Endpoints bajo `/pedidos` y `/perfil/domiciliario/disponibilidad`. App ya implementada — ajustes visuales en curso. Ver detalle abajo. |
+| **HU-10** — Control del proceso de entrega | ✅ Completa | Cubierta por los mismos endpoints de `/pedidos` (aceptar, recogido, iniciar-entrega, en-sitio, entregar) documentados en HU-09/HU-07. App ya implementada — ajustes visuales en curso. |
 
 ### HU-01 — qué incluye
 

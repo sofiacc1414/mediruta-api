@@ -188,6 +188,21 @@ export type ResultadoActualizarConfiguracionAdmin =
  * podía; ahora el Paciente también (ver `reportarNovedadPaciente`). */
 export type OrigenNovedad = 'domiciliario' | 'paciente';
 
+/** HU-07 (ronda 3) — clasifica qué es la novedad: 'pregunta' es el
+ * mensaje directo de siempre; 'edicion' trae `datosActuales`/
+ * `datosPropuestos` para que el admin vea el diff antes de aprobar;
+ * 'codigo' es "no vi mi código de entrega", sin datos propuestos — el
+ * admin actúa directo sobre el pedido (regenerar/reenviar). */
+export type TipoNovedad = 'pregunta' | 'edicion' | 'codigo';
+
+/** Los únicos dos campos editables vía solicitud de edición — no
+ * medicamentos ni receta, ver comentario en el use case. `null` en un
+ * campo significa "el paciente no pidió cambiar ese campo". */
+export type DatosEdicionPedido = {
+  direccionEntrega: string | null;
+  direccionFarmacia: string | null;
+};
+
 export type NovedadAbierta = {
   id: string;
   solicitudId: string;
@@ -195,6 +210,12 @@ export type NovedadAbierta = {
   detalle: string;
   reportadaPorCorreo: string;
   origen: OrigenNovedad;
+  tipo: TipoNovedad;
+  datosActuales: DatosEdicionPedido | null;
+  datosPropuestos: DatosEdicionPedido | null;
+  /** Código de entrega vigente del pedido — el panel lo muestra cuando
+   * `tipo = 'codigo'`, junto a las acciones de regenerar/reenviar. */
+  codigoEntrega: string | null;
   creadoEn: string;
 };
 
@@ -204,10 +225,13 @@ export type NovedadDelPaciente = {
   creadoEn: string;
 };
 
-/** Igual que `NovedadDelPaciente` pero con `origen` — solo la usa el
- * detalle de pedido del panel admin (ver `obtenerNovedadAbiertaPedidoAdmin`). */
+/** Igual que `NovedadDelPaciente` pero con `origen`/`tipo` — solo la usa
+ * el detalle de pedido del panel admin (ver `obtenerNovedadAbiertaPedidoAdmin`). */
 export type NovedadAbiertaPedidoAdmin = NovedadDelPaciente & {
   origen: OrigenNovedad;
+  tipo: TipoNovedad;
+  datosActuales: DatosEdicionPedido | null;
+  datosPropuestos: DatosEdicionPedido | null;
 };
 
 export type EventoHistorial = {
@@ -245,6 +269,26 @@ export type ResultadoReportarNovedad =
   { resultado: 'reportada'; id: string } | { resultado: 'no_encontrado' };
 
 export type ResultadoResolverNovedad = 'resuelta' | 'no_encontrado';
+
+/** HU-07 (ronda 3) — aprobar/rechazar una novedad de tipo 'edicion'.
+ * `no_autorizado` es defensa en profundidad (el `RolesGuard` del
+ * controller ya exige ADMINISTRADOR/ROOT) — mismo criterio laxo que
+ * `ResolverNovedadUseCase` ya usaba, no se distingue en el use case. */
+export type ResultadoAccionEdicionPedido =
+  'aprobada' | 'rechazada' | 'no_encontrado' | 'no_autorizado';
+
+export type ResultadoRegenerarCodigoEntrega = {
+  resultado: 'regenerado' | 'no_encontrado' | 'no_autorizado';
+  codigoEntrega: string | null;
+};
+
+export type CodigoEntregaParaCorreo = {
+  resultado: 'ok' | 'no_encontrado' | 'no_autorizado';
+  codigoEntrega: string | null;
+  codigoPedido: string | null;
+  pacienteCorreo: string | null;
+  pacienteNombre: string | null;
+};
 
 /** G01-G06 de HU-03 — el Paciente crea y gestiona sus propias
  * solicitudes. Todas las operaciones están acotadas al dueño (nunca se
@@ -345,6 +389,28 @@ export abstract class SolicitudRepositoryPort {
     pacienteId: string,
     solicitudId: string,
     detalle: string,
+  ): Promise<ResultadoReportarNovedad>;
+
+  /** HU-07 (ronda 3) — el Paciente pide corregir dirección de entrega
+   * y/o de farmacia de un pedido ya enviado (no Borrador — eso se edita
+   * directo con `actualizar()`). Crea una novedad tipo 'edicion' con
+   * `datosActuales`/`datosPropuestos`, pendiente de que el admin
+   * apruebe o rechace — no cambia la solicitud todavía. */
+  abstract solicitarEdicionPedido(
+    pacienteId: string,
+    solicitudId: string,
+    direccionEntrega: string | null,
+    direccionFarmacia: string | null,
+    detalle: string | null,
+  ): Promise<ResultadoReportarNovedad>;
+
+  /** HU-07 (ronda 3) — el Paciente reporta que el código de entrega no
+   * se generó o no lo ve en su pantalla. Sin datos propuestos — el
+   * admin actúa directo sobre el pedido (regenerar/reenviar). */
+  abstract reportarCodigoNoGenerado(
+    pacienteId: string,
+    solicitudId: string,
+    detalle: string | null,
   ): Promise<ResultadoReportarNovedad>;
 
   // --- Domiciliario (HU-09/HU-07) ---
@@ -472,6 +538,36 @@ export abstract class SolicitudRepositoryPort {
     adminId: string,
     novedadId: string,
   ): Promise<ResultadoResolverNovedad>;
+
+  /** HU-07 (ronda 3) — aplica `datosPropuestos` (solo los campos no
+   * nulos) a la solicitud y cierra la novedad como aprobada. */
+  abstract aprobarEdicionPedidoAdmin(
+    adminId: string,
+    novedadId: string,
+  ): Promise<ResultadoAccionEdicionPedido>;
+
+  /** HU-07 (ronda 3) — cierra la novedad como rechazada, sin tocar el
+   * pedido. */
+  abstract rechazarEdicionPedidoAdmin(
+    adminId: string,
+    novedadId: string,
+  ): Promise<ResultadoAccionEdicionPedido>;
+
+  /** HU-07 (ronda 3) — genera un `codigoEntrega` nuevo para el pedido
+   * (mismo algoritmo que `enviar()`). No aplica sobre `entregado`/
+   * `cancelada` ni sobre pedidos sin `codigoPedido` (Borrador). */
+  abstract regenerarCodigoEntregaAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<ResultadoRegenerarCodigoEntrega>;
+
+  /** HU-07 (ronda 3) — datos para que la API reenvíe el código de
+   * entrega vigente por correo al paciente (el envío en sí lo hace un
+   * caso de uso aparte vía `CorreoCodigoEntregaPort`). */
+  abstract obtenerCodigoEntregaParaCorreoAdmin(
+    adminId: string,
+    solicitudId: string,
+  ): Promise<CodigoEntregaParaCorreo>;
 
   /** Panel admin — "pedido demorado sin domiciliario": candidatos
    * disponibles más cercanos a la farmacia de ese pedido, tope 20. */

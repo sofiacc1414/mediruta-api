@@ -1,3 +1,4 @@
+import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
 import { RolNoAutorizadoError } from '../../domain/errors/rol-no-autorizado.error';
 import { PerfilRepositoryPort } from '../../domain/ports/perfil.repository.port';
 import {
@@ -77,5 +78,20 @@ describe('ActualizarDisponibilidadDomiciliarioUseCase', () => {
         lng: -74.06,
       }),
     ).rejects.toBeInstanceOf(RolNoAutorizadoError);
+  });
+
+  it('lanza NoPuedeDesconectarseConPedidoActivoError si intenta desactivar con un pedido en curso', async () => {
+    (
+      perfiles.actualizarDisponibilidadDomiciliario as jest.Mock
+    ).mockResolvedValue('tiene_pedido_activo');
+
+    await expect(
+      useCase.execute({
+        usuarioId: 'domiciliario-uuid',
+        disponible: false,
+        lat: null,
+        lng: null,
+      }),
+    ).rejects.toBeInstanceOf(NoPuedeDesconectarseConPedidoActivoError);
   });
 });

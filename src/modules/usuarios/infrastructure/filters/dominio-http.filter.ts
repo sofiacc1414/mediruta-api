@@ -15,6 +15,7 @@ import { DocumentosPacienteNoDisponiblesError } from '../../../solicitudes/domai
 import { NovedadNoEncontradaError } from '../../../solicitudes/domain/errors/novedad-no-encontrada.error';
 import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { PerfilIncompletoError } from '../../../solicitudes/domain/errors/perfil-incompleto.error';
+import { SolicitudEdicionSinCambiosError } from '../../../solicitudes/domain/errors/solicitud-edicion-sin-cambios.error';
 import { SolicitudIncompletaError } from '../../../solicitudes/domain/errors/solicitud-incompleta.error';
 import { SolicitudNoEncontradaError } from '../../../solicitudes/domain/errors/solicitud-no-encontrada.error';
 import { AccionCuentaNoAutorizadaError } from '../../domain/errors/accion-cuenta-no-autorizada.error';
@@ -24,6 +25,7 @@ import { CuentaNoEncontradaError } from '../../domain/errors/cuenta-no-encontrad
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
+import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
 import { NuevaContrasenaIgualError } from '../../domain/errors/nueva-contrasena-igual.error';
 import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-invalida.error';
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
@@ -55,6 +57,8 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   CuentaNoEncontradaError,
   AccionCuentaNoAutorizadaError,
   DomiciliarioNoDisponibleParaAsignarError,
+  NoPuedeDesconectarseConPedidoActivoError,
+  SolicitudEdicionSinCambiosError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -64,7 +68,8 @@ export class DominioHttpFilter implements ExceptionFilter {
       exception instanceof CorreoYaRegistradoError ||
       exception instanceof PedidoYaAsignadoError ||
       exception instanceof DomiciliarioConPedidoActivoError ||
-      exception instanceof DomiciliarioNoDisponibleParaAsignarError
+      exception instanceof DomiciliarioNoDisponibleParaAsignarError ||
+      exception instanceof NoPuedeDesconectarseConPedidoActivoError
     ) {
       response.status(HttpStatus.CONFLICT).json({
         statusCode: HttpStatus.CONFLICT,
