@@ -14,6 +14,7 @@ import { IniciarEntregaUseCase } from './application/use-cases/iniciar-entrega.u
 import { ListarDomiciliariosCercanosAdminUseCase } from './application/use-cases/listar-domiciliarios-cercanos-admin.use-case';
 import { ListarHistorialPedidosUseCase } from './application/use-cases/listar-historial-pedidos.use-case';
 import { ListarNovedadesAbiertasUseCase } from './application/use-cases/listar-novedades-abiertas.use-case';
+import { ListarNovedadesSolicitudUseCase } from './application/use-cases/listar-novedades-solicitud.use-case';
 import { ListarPedidosAdminUseCase } from './application/use-cases/listar-pedidos-admin.use-case';
 import { ListarPedidosDisponiblesUseCase } from './application/use-cases/listar-pedidos-disponibles.use-case';
 import { ListarSolicitudesUseCase } from './application/use-cases/listar-solicitudes.use-case';
@@ -77,6 +78,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     ReportarNovedadPacienteUseCase,
     SolicitarEdicionPedidoUseCase,
     AdjuntarRecetaPropuestaEdicionUseCase,
+    ListarNovedadesSolicitudUseCase,
     ReportarCodigoNoGeneradoUseCase,
     ListarNovedadesAbiertasUseCase,
     ResolverNovedadUseCase,

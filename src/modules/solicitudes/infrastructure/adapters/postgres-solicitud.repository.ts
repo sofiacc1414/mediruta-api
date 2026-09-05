@@ -13,6 +13,7 @@ import {
   NovedadAbierta,
   NovedadAbiertaPedidoAdmin,
   NovedadDelPaciente,
+  NovedadDelPacienteConEstado,
   OrigenNovedad,
   PedidoActivoDomiciliario,
   PedidoAdmin,
@@ -172,6 +173,17 @@ type FilaNovedadDelPaciente = {
   id: string;
   detalle: string;
   creado_en: string;
+};
+
+type FilaNovedadDelPacienteConEstado = {
+  id: string;
+  tipo: TipoNovedad;
+  detalle: string;
+  origen: OrigenNovedad;
+  creado_en: string;
+  resuelta_en: string | null;
+  accion_edicion: 'aprobada' | 'rechazada' | null;
+  datos_propuestos: FilaDatosEdicionPedido | null;
 };
 
 type FilaNovedadAbiertaPedidoAdmin = FilaNovedadDelPaciente & {
@@ -467,6 +479,28 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       }
       const fila = result.rows[0];
       return { id: fila.id, detalle: fila.detalle, creadoEn: fila.creado_en };
+    });
+  }
+
+  listarNovedadesSolicitud(
+    pacienteId: string,
+    solicitudId: string,
+  ): Promise<NovedadDelPacienteConEstado[]> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<FilaNovedadDelPacienteConEstado>(
+        'select * from app.listar_novedades_solicitud($1, $2)',
+        [pacienteId, solicitudId],
+      );
+      return result.rows.map((fila) => ({
+        id: fila.id,
+        tipo: fila.tipo,
+        detalle: fila.detalle,
+        origen: fila.origen,
+        creadoEn: fila.creado_en,
+        resuelta: fila.resuelta_en !== null,
+        accionEdicion: fila.accion_edicion,
+        datosPropuestos: datosEdicionDesde(fila.datos_propuestos),
+      }));
     });
   }
 

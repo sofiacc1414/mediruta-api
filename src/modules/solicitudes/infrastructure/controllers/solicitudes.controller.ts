@@ -26,6 +26,7 @@ import { AdjuntarRecetaPropuestaEdicionUseCase } from '../../application/use-cas
 import { CancelarSolicitudUseCase } from '../../application/use-cases/cancelar-solicitud.use-case';
 import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicitud.use-case';
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
+import { ListarNovedadesSolicitudUseCase } from '../../application/use-cases/listar-novedades-solicitud.use-case';
 import { ListarSolicitudesUseCase } from '../../application/use-cases/listar-solicitudes.use-case';
 import { ObtenerSolicitudUseCase } from '../../application/use-cases/obtener-solicitud.use-case';
 import { ReportarCodigoNoGeneradoUseCase } from '../../application/use-cases/reportar-codigo-no-generado.use-case';
@@ -87,6 +88,7 @@ export class SolicitudesController {
     private readonly solicitarEdicionPedido: SolicitarEdicionPedidoUseCase,
     private readonly adjuntarRecetaPropuestaEdicion: AdjuntarRecetaPropuestaEdicionUseCase,
     private readonly reportarCodigoNoGenerado: ReportarCodigoNoGeneradoUseCase,
+    private readonly listarNovedadesSolicitud: ListarNovedadesSolicitudUseCase,
   ) {}
 
   @Post()
@@ -249,5 +251,18 @@ export class SolicitudesController {
       solicitudId,
       dto.detalle ?? null,
     );
+  }
+
+  /** HU-07 (ronda 5) — "mis reportes sobre este pedido": todas las
+   * novedades de la solicitud, resueltas o no. Complementa a
+   * `GET /solicitudes/:id` (`novedadAbierta`, solo la última sin
+   * resolver) — no la reemplaza. */
+  @Get(':id/novedades')
+  @HttpCode(HttpStatus.OK)
+  novedades(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+  ) {
+    return this.listarNovedadesSolicitud.execute(identidad.usuarioId, solicitudId);
   }
 }

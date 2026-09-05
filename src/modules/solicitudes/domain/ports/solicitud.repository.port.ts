@@ -241,6 +241,22 @@ export type NovedadDelPaciente = {
   creadoEn: string;
 };
 
+/** HU-07 (ronda 5) — a diferencia de `NovedadDelPaciente`/
+ * `obtenerNovedadAbierta` (solo la última, sin resolver), esto trae
+ * TODAS las novedades de una solicitud, resueltas o no — para que el
+ * paciente pueda ver el resultado de las que ya se atendieron y
+ * reportar varias a la vez no le "tape" las anteriores. */
+export type NovedadDelPacienteConEstado = {
+  id: string;
+  tipo: TipoNovedad;
+  detalle: string;
+  origen: OrigenNovedad;
+  creadoEn: string;
+  resuelta: boolean;
+  accionEdicion: 'aprobada' | 'rechazada' | null;
+  datosPropuestos: DatosEdicionPedido | null;
+};
+
 /** Igual que `NovedadDelPaciente` pero con `origen`/`tipo` — solo la usa
  * el detalle de pedido del panel admin (ver `obtenerNovedadAbiertaPedidoAdmin`). */
 export type NovedadAbiertaPedidoAdmin = NovedadDelPaciente & {
@@ -397,6 +413,14 @@ export abstract class SolicitudRepositoryPort {
     pacienteId: string,
     solicitudId: string,
   ): Promise<NovedadDelPaciente | null>;
+
+  /** HU-07 (ronda 5) — todas las novedades de la solicitud, resueltas
+   * o no, más nuevas primero. Complementa a `obtenerNovedadAbierta`,
+   * no la reemplaza. */
+  abstract listarNovedadesSolicitud(
+    pacienteId: string,
+    solicitudId: string,
+  ): Promise<NovedadDelPacienteConEstado[]>;
 
   /** El Paciente reporta una novedad sobre su propio pedido — mismo
    * criterio que `reportarNovedad` (Domiciliario), pero guardado contra
