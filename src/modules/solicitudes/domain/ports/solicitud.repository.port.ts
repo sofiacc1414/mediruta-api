@@ -233,7 +233,17 @@ export type NovedadAbierta = {
   recetaActualUrl?: string | null;
   recetaPropuestaUrl?: string | null;
   creadoEn: string;
+  /** HU-07 (ronda 6) — si ya fue atendida, y con qué resultado (solo
+   * relevante para `tipo === 'edicion'`; una novedad tipo pregunta/código
+   * resuelta trae `accionEdicion: null`). */
+  resuelta: boolean;
+  accionEdicion: 'aprobada' | 'rechazada' | null;
 };
+
+/** HU-07 (ronda 6) — estado por el que el panel admin puede filtrar el
+ * listado de novedades. `'abierta'` es el valor por defecto (comportamiento
+ * histórico: solo lo pendiente de atender). */
+export type EstadoNovedadAdmin = 'abierta' | 'aprobada' | 'rechazada' | 'resuelta' | 'todas';
 
 export type NovedadDelPaciente = {
   id: string;
@@ -590,7 +600,10 @@ export abstract class SolicitudRepositoryPort {
     solicitudId: string,
   ): Promise<NovedadAbiertaPedidoAdmin | null>;
 
-  abstract listarNovedadesAbiertas(adminId: string): Promise<NovedadAbierta[]>;
+  abstract listarNovedadesAbiertas(
+    adminId: string,
+    estado?: EstadoNovedadAdmin,
+  ): Promise<NovedadAbierta[]>;
 
   abstract resolverNovedad(
     adminId: string,

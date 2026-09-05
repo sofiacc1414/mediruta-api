@@ -6,6 +6,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseFilters,
   UseGuards,
 } from '@nestjs/common';
@@ -34,10 +35,15 @@ export class NovedadesAdminController {
     private readonly rechazarEdicionPedido: RechazarEdicionPedidoAdminUseCase,
   ) {}
 
+  /** HU-07 (ronda 6) — `?estado=abierta|aprobada|rechazada|resuelta|todas`,
+   * default 'abierta' (comportamiento histórico si no se manda nada). */
   @Get()
   @HttpCode(HttpStatus.OK)
-  abiertas(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
-    return this.listarNovedadesAbiertas.execute(identidad.usuarioId);
+  abiertas(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Query('estado') estado?: string,
+  ) {
+    return this.listarNovedadesAbiertas.execute(identidad.usuarioId, estado);
   }
 
   @Post(':id/resolver')

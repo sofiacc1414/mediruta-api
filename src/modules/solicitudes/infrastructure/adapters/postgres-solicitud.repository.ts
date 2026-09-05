@@ -10,6 +10,7 @@ import {
   EventoHistorial,
   FiltrosPedidosAdmin,
   Medicamento,
+  EstadoNovedadAdmin,
   NovedadAbierta,
   NovedadAbiertaPedidoAdmin,
   NovedadDelPaciente,
@@ -167,6 +168,8 @@ type FilaNovedadAbierta = {
   codigo_entrega: string | null;
   receta_path: string | null;
   creado_en: string;
+  resuelta_en: string | null;
+  accion_edicion: 'aprobada' | 'rechazada' | null;
 };
 
 type FilaNovedadDelPaciente = {
@@ -711,11 +714,14 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     });
   }
 
-  listarNovedadesAbiertas(adminId: string): Promise<NovedadAbierta[]> {
+  listarNovedadesAbiertas(
+    adminId: string,
+    estado: EstadoNovedadAdmin = 'abierta',
+  ): Promise<NovedadAbierta[]> {
     return this.db.withUserContext(adminId, async (client) => {
       const result = await client.query<FilaNovedadAbierta>(
-        'select * from app.listar_novedades_abiertas($1)',
-        [adminId],
+        'select * from app.listar_novedades_abiertas($1, $2)',
+        [adminId, estado],
       );
       return result.rows.map((fila) => ({
         id: fila.id,
@@ -730,6 +736,8 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         codigoEntrega: fila.codigo_entrega,
         recetaPathActual: fila.receta_path,
         creadoEn: fila.creado_en,
+        resuelta: fila.resuelta_en !== null,
+        accionEdicion: fila.accion_edicion,
       }));
     });
   }

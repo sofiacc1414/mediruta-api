@@ -80,9 +80,32 @@ describe('ListarNovedadesAbiertasUseCase', () => {
 
     expect(solicitudes.listarNovedadesAbiertas).toHaveBeenCalledWith(
       'admin-uuid',
+      'abierta',
     );
     expect(almacenamiento.obtenerUrlFirmada).not.toHaveBeenCalled();
     expect(resultado).toEqual(novedades);
+  });
+
+  it('ronda 6 — pasa el estado recibido al repositorio', async () => {
+    (solicitudes.listarNovedadesAbiertas as jest.Mock).mockResolvedValue([]);
+
+    await useCase.execute('admin-uuid', 'aprobada');
+
+    expect(solicitudes.listarNovedadesAbiertas).toHaveBeenCalledWith(
+      'admin-uuid',
+      'aprobada',
+    );
+  });
+
+  it('ronda 6 — un estado inválido cae a "abierta" en vez de fallar', async () => {
+    (solicitudes.listarNovedadesAbiertas as jest.Mock).mockResolvedValue([]);
+
+    await useCase.execute('admin-uuid', 'no-existe');
+
+    expect(solicitudes.listarNovedadesAbiertas).toHaveBeenCalledWith(
+      'admin-uuid',
+      'abierta',
+    );
   });
 
   it('firma la receta actual y la propuesta cuando la novedad es de tipo edición', async () => {
