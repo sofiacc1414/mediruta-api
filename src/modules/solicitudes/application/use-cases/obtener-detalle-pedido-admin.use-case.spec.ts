@@ -24,6 +24,7 @@ describe('ObtenerDetallePedidoAdminUseCase', () => {
     obtenerDatosGeocodificacionFarmacia: jest.fn(),
     obtenerNovedadAbierta: jest.fn(),
     listarNovedadesSolicitud: jest.fn(),
+    listarNovedadesSolicitudDomiciliario: jest.fn(),
     listarPedidosDisponibles: jest.fn(),
     aceptarPedido: jest.fn(),
     marcarMedicamentosRecogidos: jest.fn(),

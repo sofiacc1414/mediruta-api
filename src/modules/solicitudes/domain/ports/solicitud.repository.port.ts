@@ -432,6 +432,16 @@ export abstract class SolicitudRepositoryPort {
     solicitudId: string,
   ): Promise<NovedadDelPacienteConEstado[]>;
 
+  /** HU-07/HU-09 (ronda 7) — mismo propósito que `listarNovedadesSolicitud`
+   * pero para el Domiciliario: todas las novedades del pedido, resueltas
+   * o no. A diferencia de la del Paciente, el ownership es por
+   * `s.domiciliario_id` (no por quién reportó cada una) — el Domiciliario
+   * ve cualquier novedad sobre SU pedido activo. */
+  abstract listarNovedadesSolicitudDomiciliario(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<NovedadDelPacienteConEstado[]>;
+
   /** El Paciente reporta una novedad sobre su propio pedido — mismo
    * criterio que `reportarNovedad` (Domiciliario), pero guardado contra
    * `paciente_id` y con `origen = 'paciente'`. */

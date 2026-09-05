@@ -4,6 +4,7 @@ import { ListarNovedadesSolicitudUseCase } from './listar-novedades-solicitud.us
 describe('ListarNovedadesSolicitudUseCase', () => {
   const solicitudes = {
     listarNovedadesSolicitud: jest.fn(),
+    listarNovedadesSolicitudDomiciliario: jest.fn(),
   } as unknown as SolicitudRepositoryPort;
   const useCase = new ListarNovedadesSolicitudUseCase(solicitudes);
 
