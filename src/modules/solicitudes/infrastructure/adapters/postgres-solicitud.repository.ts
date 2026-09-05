@@ -507,6 +507,28 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     });
   }
 
+  listarNovedadesSolicitudDomiciliario(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<NovedadDelPacienteConEstado[]> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<FilaNovedadDelPacienteConEstado>(
+        'select * from app.listar_novedades_solicitud_domiciliario($1, $2)',
+        [domiciliarioId, solicitudId],
+      );
+      return result.rows.map((fila) => ({
+        id: fila.id,
+        tipo: fila.tipo,
+        detalle: fila.detalle,
+        origen: fila.origen,
+        creadoEn: fila.creado_en,
+        resuelta: fila.resuelta_en !== null,
+        accionEdicion: fila.accion_edicion,
+        datosPropuestos: datosEdicionDesde(fila.datos_propuestos),
+      }));
+    });
+  }
+
   listarPedidosDisponibles(
     domiciliarioId: string,
   ): Promise<PedidoDisponible[]> {

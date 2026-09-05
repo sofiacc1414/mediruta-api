@@ -20,6 +20,7 @@ import { AceptarPedidoUseCase } from '../../application/use-cases/aceptar-pedido
 import { EntregarPedidoUseCase } from '../../application/use-cases/entregar-pedido.use-case';
 import { IniciarEntregaUseCase } from '../../application/use-cases/iniciar-entrega.use-case';
 import { ListarHistorialPedidosUseCase } from '../../application/use-cases/listar-historial-pedidos.use-case';
+import { ListarNovedadesSolicitudDomiciliarioUseCase } from '../../application/use-cases/listar-novedades-solicitud-domiciliario.use-case';
 import { ObtenerDocumentosPacienteParaRecogerUseCase } from '../../application/use-cases/obtener-documentos-paciente-para-recoger.use-case';
 import { ListarPedidosDisponiblesUseCase } from '../../application/use-cases/listar-pedidos-disponibles.use-case';
 import { MarcarEnSitioUseCase } from '../../application/use-cases/marcar-en-sitio.use-case';
@@ -50,6 +51,7 @@ export class PedidosDomiciliarioController {
     private readonly obtenerPedidoActivo: ObtenerPedidoActivoUseCase,
     private readonly listarHistorialPedidos: ListarHistorialPedidosUseCase,
     private readonly obtenerDocumentosPacienteParaRecoger: ObtenerDocumentosPacienteParaRecogerUseCase,
+    private readonly listarNovedadesSolicitudDomiciliario: ListarNovedadesSolicitudDomiciliarioUseCase,
   ) {}
 
   @Get('disponibles')
@@ -140,6 +142,20 @@ export class PedidosDomiciliarioController {
       identidad.usuarioId,
       solicitudId,
       dto.codigo,
+    );
+  }
+
+  /** HU-07/HU-09 (ronda 7) — tab "Novedades" del pedido activo: todas
+   * las que hay sobre ese pedido, resueltas o no. */
+  @Get(':id/novedades')
+  @HttpCode(HttpStatus.OK)
+  novedades(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+  ) {
+    return this.listarNovedadesSolicitudDomiciliario.execute(
+      identidad.usuarioId,
+      solicitudId,
     );
   }
 
