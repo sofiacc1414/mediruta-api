@@ -7,6 +7,7 @@ import { AdjuntarRecetaPropuestaEdicionUseCase } from '../../application/use-cas
 import { CancelarSolicitudUseCase } from '../../application/use-cases/cancelar-solicitud.use-case';
 import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicitud.use-case';
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
+import { ListarNovedadesSolicitudUseCase } from '../../application/use-cases/listar-novedades-solicitud.use-case';
 import { ListarSolicitudesUseCase } from '../../application/use-cases/listar-solicitudes.use-case';
 import { ObtenerSolicitudUseCase } from '../../application/use-cases/obtener-solicitud.use-case';
 import { ReportarCodigoNoGeneradoUseCase } from '../../application/use-cases/reportar-codigo-no-generado.use-case';
@@ -46,6 +47,7 @@ function crearController(overrides?: {
   solicitarEdicionPedido?: { execute: jest.Mock };
   adjuntarRecetaPropuestaEdicion?: { execute: jest.Mock };
   reportarCodigoNoGenerado?: { execute: jest.Mock };
+  listarNovedadesSolicitud?: { execute: jest.Mock };
 }) {
   return new SolicitudesController(
     (overrides?.crearSolicitud ?? {
@@ -81,6 +83,9 @@ function crearController(overrides?: {
     (overrides?.reportarCodigoNoGenerado ?? {
       execute: jest.fn(),
     }) as unknown as ReportarCodigoNoGeneradoUseCase,
+    (overrides?.listarNovedadesSolicitud ?? {
+      execute: jest.fn(),
+    }) as unknown as ListarNovedadesSolicitudUseCase,
   );
 }
 
@@ -269,6 +274,20 @@ describe('SolicitudesController', () => {
     await controller.cancelar(identidad, 'solicitud-uuid');
 
     expect(cancelarSolicitud.execute).toHaveBeenCalledWith(
+      'paciente-desde-guard',
+      'solicitud-uuid',
+    );
+  });
+
+  it('GET /solicitudes/:id/novedades delega en ListarNovedadesSolicitudUseCase', async () => {
+    const listarNovedadesSolicitud = {
+      execute: jest.fn().mockResolvedValue([]),
+    };
+    const controller = crearController({ listarNovedadesSolicitud });
+
+    await controller.novedades(identidad, 'solicitud-uuid');
+
+    expect(listarNovedadesSolicitud.execute).toHaveBeenCalledWith(
       'paciente-desde-guard',
       'solicitud-uuid',
     );

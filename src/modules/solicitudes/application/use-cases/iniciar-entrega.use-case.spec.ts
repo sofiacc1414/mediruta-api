@@ -18,6 +18,7 @@ describe('IniciarEntregaUseCase', () => {
     cancelar: jest.fn(),
     obtenerDatosGeocodificacionFarmacia: jest.fn(),
     obtenerNovedadAbierta: jest.fn(),
+    listarNovedadesSolicitud: jest.fn(),
     listarPedidosDisponibles: jest.fn(),
     aceptarPedido: jest.fn(),
     marcarMedicamentosRecogidos: jest.fn(),
