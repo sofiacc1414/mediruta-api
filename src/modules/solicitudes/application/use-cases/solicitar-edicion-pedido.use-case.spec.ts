@@ -26,6 +26,8 @@ describe('SolicitarEdicionPedidoUseCase', () => {
       'Calle nueva 123',
       null,
       null,
+      null,
+      false,
     );
 
     expect(resultado).toEqual({
@@ -38,14 +40,40 @@ describe('SolicitarEdicionPedidoUseCase', () => {
       'Calle nueva 123',
       null,
       null,
+      null,
+      false,
     );
   });
 
   it('lanza SolicitudEdicionSinCambiosError si no hay ningún dato propuesto', async () => {
     await expect(
-      useCase.execute('paciente-uuid', 'solicitud-uuid', '  ', null, null),
+      useCase.execute('paciente-uuid', 'solicitud-uuid', '  ', null, null, null, false),
     ).rejects.toBeInstanceOf(SolicitudEdicionSinCambiosError);
     expect(solicitudes.solicitarEdicionPedido).not.toHaveBeenCalled();
+  });
+
+  it('no lanza SolicitudEdicionSinCambiosError si solo hay medicamentos propuestos', async () => {
+    (solicitudes.solicitarEdicionPedido as jest.Mock).mockResolvedValue({
+      resultado: 'reportada',
+      id: 'novedad-uuid',
+    });
+
+    await useCase.execute('paciente-uuid', 'solicitud-uuid', null, null, null, [
+      { nombre: 'Ibuprofeno', concentracion: null, formaFarmaceutica: null, cantidad: null, posologia: null },
+    ], false);
+
+    expect(solicitudes.solicitarEdicionPedido).toHaveBeenCalled();
+  });
+
+  it('no lanza SolicitudEdicionSinCambiosError si incluyeReceta es true', async () => {
+    (solicitudes.solicitarEdicionPedido as jest.Mock).mockResolvedValue({
+      resultado: 'reportada',
+      id: 'novedad-uuid',
+    });
+
+    await useCase.execute('paciente-uuid', 'solicitud-uuid', null, null, null, null, true);
+
+    expect(solicitudes.solicitarEdicionPedido).toHaveBeenCalled();
   });
 
   it('lanza SolicitudNoEncontradaError si el pedido no es del paciente o no admite edición', async () => {
@@ -54,7 +82,7 @@ describe('SolicitarEdicionPedidoUseCase', () => {
     });
 
     await expect(
-      useCase.execute('paciente-uuid', 'solicitud-uuid', 'Calle nueva', null, null),
+      useCase.execute('paciente-uuid', 'solicitud-uuid', 'Calle nueva', null, null, null, false),
     ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
   });
 });
