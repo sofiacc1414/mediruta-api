@@ -149,6 +149,8 @@ type FilaConfiguracionAdmin = {
 type FilaDatosEdicionPedido = {
   direccionEntrega: string | null;
   direccionFarmacia: string | null;
+  medicamentos?: Medicamento[];
+  recetaPath?: string;
 };
 
 type FilaNovedadAbierta = {
@@ -162,6 +164,7 @@ type FilaNovedadAbierta = {
   datos_actuales: FilaDatosEdicionPedido | null;
   datos_propuestos: FilaDatosEdicionPedido | null;
   codigo_entrega: string | null;
+  receta_path: string | null;
   creado_en: string;
 };
 
@@ -185,6 +188,8 @@ function datosEdicionDesde(
   return {
     direccionEntrega: fila.direccionEntrega,
     direccionFarmacia: fila.direccionFarmacia,
+    medicamentos: fila.medicamentos,
+    recetaPath: fila.recetaPath,
   };
 }
 
@@ -689,6 +694,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         datosActuales: datosEdicionDesde(fila.datos_actuales),
         datosPropuestos: datosEdicionDesde(fila.datos_propuestos),
         codigoEntrega: fila.codigo_entrega,
+        recetaPathActual: fila.receta_path,
         creadoEn: fila.creado_en,
       }));
     });
@@ -866,23 +872,46 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     direccionEntrega: string | null,
     direccionFarmacia: string | null,
     detalle: string | null,
+    medicamentos: Medicamento[] | null,
+    incluyeReceta: boolean,
   ): Promise<ResultadoReportarNovedad> {
     return this.db.withUserContext(pacienteId, async (client) => {
       const result = await client.query<{
         resultado: string;
         id: string | null;
-      }>('select * from app.solicitar_edicion_pedido($1, $2, $3, $4, $5)', [
-        pacienteId,
-        solicitudId,
-        direccionEntrega,
-        direccionFarmacia,
-        detalle,
-      ]);
+      }>(
+        'select * from app.solicitar_edicion_pedido($1, $2, $3, $4, $5, $6::jsonb, $7)',
+        [
+          pacienteId,
+          solicitudId,
+          direccionEntrega,
+          direccionFarmacia,
+          detalle,
+          medicamentos && medicamentos.length > 0
+            ? JSON.stringify(medicamentos)
+            : null,
+          incluyeReceta,
+        ],
+      );
       const fila = result.rows[0];
       if (fila.resultado === 'reportada' && fila.id) {
         return { resultado: 'reportada', id: fila.id };
       }
       return { resultado: 'no_encontrado' };
+    });
+  }
+
+  adjuntarRecetaPropuestaEdicion(
+    pacienteId: string,
+    novedadId: string,
+    recetaPath: string,
+  ): Promise<boolean> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<{ resultado: string }>(
+        'select * from app.adjuntar_receta_propuesta_edicion($1, $2, $3)',
+        [pacienteId, novedadId, recetaPath],
+      );
+      return result.rows[0].resultado === 'actualizado';
     });
   }
 

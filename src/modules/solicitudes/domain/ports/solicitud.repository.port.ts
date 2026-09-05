@@ -195,12 +195,17 @@ export type OrigenNovedad = 'domiciliario' | 'paciente';
  * admin actúa directo sobre el pedido (regenerar/reenviar). */
 export type TipoNovedad = 'pregunta' | 'edicion' | 'codigo';
 
-/** Los únicos dos campos editables vía solicitud de edición — no
- * medicamentos ni receta, ver comentario en el use case. `null` en un
- * campo significa "el paciente no pidió cambiar ese campo". */
+/** Campos editables vía solicitud de edición (ronda 4: direcciones,
+ * medicamentos y foto de receta — antes solo direcciones). `null`/
+ * `undefined` en un campo significa "el paciente no pidió cambiar ese
+ * campo". `recetaPath` es el path interno en Storage, nunca se expone
+ * tal cual al cliente — la capa de aplicación lo convierte en URL
+ * firmada (ver `ListarNovedadesAbiertasUseCase`). */
 export type DatosEdicionPedido = {
   direccionEntrega: string | null;
   direccionFarmacia: string | null;
+  medicamentos?: Medicamento[];
+  recetaPath?: string;
 };
 
 export type NovedadAbierta = {
@@ -216,6 +221,17 @@ export type NovedadAbierta = {
   /** Código de entrega vigente del pedido — el panel lo muestra cuando
    * `tipo = 'codigo'`, junto a las acciones de regenerar/reenviar. */
   codigoEntrega: string | null;
+  /** Path interno en Storage de la receta vigente del pedido (bucket
+   * privado, inútil sin firmar) — poblado por el repositorio, la capa
+   * de aplicación lo consume para generar `recetaActualUrl` y lo
+   * descarta antes de responder al cliente (ver
+   * `ListarNovedadesAbiertasUseCase`). */
+  recetaPathActual?: string | null;
+  /** URLs firmadas de la receta vigente del pedido y de la propuesta en
+   * `datosPropuestos.recetaPath`, si la hay — solo se completan cuando
+   * `tipo === 'edicion'` (ver `ListarNovedadesAbiertasUseCase`). */
+  recetaActualUrl?: string | null;
+  recetaPropuestaUrl?: string | null;
   creadoEn: string;
 };
 
@@ -391,18 +407,36 @@ export abstract class SolicitudRepositoryPort {
     detalle: string,
   ): Promise<ResultadoReportarNovedad>;
 
-  /** HU-07 (ronda 3) — el Paciente pide corregir dirección de entrega
-   * y/o de farmacia de un pedido ya enviado (no Borrador — eso se edita
-   * directo con `actualizar()`). Crea una novedad tipo 'edicion' con
-   * `datosActuales`/`datosPropuestos`, pendiente de que el admin
-   * apruebe o rechace — no cambia la solicitud todavía. */
+  /** HU-07 (ronda 3/4) — el Paciente pide corregir dirección de
+   * entrega, de farmacia y/o medicamentos de un pedido ya enviado (no
+   * Borrador — eso se edita directo con `actualizar()`). Crea una
+   * novedad tipo 'edicion' con `datosActuales`/`datosPropuestos`,
+   * pendiente de que el admin apruebe o rechace — no cambia la
+   * solicitud todavía. Si además propone una foto de receta nueva, esa
+   * va aparte vía `adjuntarRecetaPropuestaEdicion` (multipart, después
+   * de creada la novedad) — por eso `incluyeReceta` existe: sin él,
+   * pedir *solo* cambiar la foto fallaría la validación de "algún
+   * cambio propuesto". */
   abstract solicitarEdicionPedido(
     pacienteId: string,
     solicitudId: string,
     direccionEntrega: string | null,
     direccionFarmacia: string | null,
     detalle: string | null,
+    medicamentos: Medicamento[] | null,
+    incluyeReceta: boolean,
   ): Promise<ResultadoReportarNovedad>;
+
+  /** HU-07 (ronda 4) — adjunta una foto de receta "propuesta" a una
+   * novedad de edición ya creada. No toca la receta vigente del
+   * pedido — eso solo pasa si el admin aprueba. `false` si la novedad
+   * no existe, no es del paciente, no es tipo 'edicion' o ya se
+   * resolvió. */
+  abstract adjuntarRecetaPropuestaEdicion(
+    pacienteId: string,
+    novedadId: string,
+    recetaPath: string,
+  ): Promise<boolean>;
 
   /** HU-07 (ronda 3) — el Paciente reporta que el código de entrega no
    * se generó o no lo ve en su pantalla. Sin datos propuestos — el

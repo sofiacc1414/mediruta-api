@@ -22,6 +22,7 @@ import { DominioHttpFilter } from '../../../usuarios/infrastructure/filters/domi
 import { AccessAuthGuard } from '../../../usuarios/infrastructure/guards/access-auth.guard';
 import { RolesGuard } from '../../../usuarios/infrastructure/guards/roles.guard';
 import { ActualizarSolicitudUseCase } from '../../application/use-cases/actualizar-solicitud.use-case';
+import { AdjuntarRecetaPropuestaEdicionUseCase } from '../../application/use-cases/adjuntar-receta-propuesta-edicion.use-case';
 import { CancelarSolicitudUseCase } from '../../application/use-cases/cancelar-solicitud.use-case';
 import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicitud.use-case';
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
@@ -84,6 +85,7 @@ export class SolicitudesController {
     private readonly cancelarSolicitud: CancelarSolicitudUseCase,
     private readonly reportarNovedadPaciente: ReportarNovedadPacienteUseCase,
     private readonly solicitarEdicionPedido: SolicitarEdicionPedidoUseCase,
+    private readonly adjuntarRecetaPropuestaEdicion: AdjuntarRecetaPropuestaEdicionUseCase,
     private readonly reportarCodigoNoGenerado: ReportarCodigoNoGeneradoUseCase,
   ) {}
 
@@ -185,9 +187,13 @@ export class SolicitudesController {
     );
   }
 
-  /** HU-07 (ronda 3) — el Paciente pide corregir dirección de entrega
-   * y/o de farmacia de un pedido ya enviado. Queda pendiente de
-   * aprobación del admin, no se aplica al instante. */
+  /** HU-07 (ronda 3/4) — el Paciente pide corregir dirección de
+   * entrega, de farmacia y/o medicamentos de un pedido ya enviado.
+   * Queda pendiente de aprobación del admin, no se aplica al instante.
+   * Si además va a proponer una foto de receta nueva, `incluyeReceta`
+   * debe venir en `true` y la foto se sube aparte (ver
+   * `adjuntarRecetaPropuestaEdicion` abajo) usando el `id` que devuelve
+   * esta llamada. */
   @Post(':id/solicitar-edicion')
   @HttpCode(HttpStatus.OK)
   solicitarEdicion(
@@ -201,7 +207,32 @@ export class SolicitudesController {
       dto.direccionEntrega ?? null,
       dto.direccionFarmacia ?? null,
       dto.detalle ?? null,
+      dto.medicamentos ? medicamentosDesde(dto.medicamentos) : null,
+      dto.incluyeReceta ?? false,
     );
+  }
+
+  /** HU-07 (ronda 4) — adjunta la foto de receta propuesta a una
+   * novedad de edición ya creada (ver `solicitarEdicion` arriba). No
+   * toca la receta vigente del pedido — eso solo pasa si el admin
+   * aprueba la novedad. */
+  @Post(':id/solicitar-edicion/:novedadId/receta')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('archivo'))
+  adjuntarRecetaPropuestaEdicionAction(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+    @Param('novedadId', ParseUUIDPipe) novedadId: string,
+    @UploadedFile(VALIDADOR_ARCHIVO) archivo: Express.Multer.File,
+  ) {
+    return this.adjuntarRecetaPropuestaEdicion.execute({
+      pacienteId: identidad.usuarioId,
+      solicitudId,
+      novedadId,
+      contenido: archivo.buffer,
+      contentType: archivo.mimetype,
+      extension: extensionDesde(archivo.mimetype),
+    });
   }
 
   /** HU-07 (ronda 3) — el Paciente reporta que el código de entrega no

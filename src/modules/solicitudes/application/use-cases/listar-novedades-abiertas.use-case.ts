@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import {
+  BUCKET_PERFILES,
+  URL_FIRMADA_EXPIRA_SEGUNDOS,
+} from '../../../usuarios/application/use-cases/subir-foto-cedula-paciente.use-case';
+import { AlmacenamientoArchivosPort } from '../../../usuarios/domain/ports/almacenamiento-archivos.port';
+import {
   NovedadAbierta,
   SolicitudRepositoryPort,
 } from '../../domain/ports/solicitud.repository.port';
@@ -7,12 +12,54 @@ import {
 /** HU-07 — panel de novedades del Administrador. Vacío (no error) si
  * la cuenta no es Administrador/Root — el `RolesGuard` de la API ya es
  * la autorización real (@Roles('ADMINISTRADOR', 'ROOT') en el
- * controller), esto es defensa en profundidad. */
+ * controller), esto es defensa en profundidad.
+ *
+ * Ronda 4 — además firma las URLs de la receta vigente y de la
+ * propuesta (si la hay) para las novedades tipo 'edicion', mismo
+ * criterio que ya usa `ObtenerDetallePedidoAdminUseCase` para no
+ * exponer paths crudos de Storage al cliente. */
 @Injectable()
 export class ListarNovedadesAbiertasUseCase {
-  constructor(private readonly solicitudes: SolicitudRepositoryPort) {}
+  constructor(
+    private readonly solicitudes: SolicitudRepositoryPort,
+    private readonly almacenamiento: AlmacenamientoArchivosPort,
+  ) {}
 
-  execute(adminId: string): Promise<NovedadAbierta[]> {
-    return this.solicitudes.listarNovedadesAbiertas(adminId);
+  async execute(adminId: string): Promise<NovedadAbierta[]> {
+    const novedades = await this.solicitudes.listarNovedadesAbiertas(adminId);
+    return Promise.all(
+      novedades.map((novedad) => this.conUrlsFirmadas(novedad)),
+    );
+  }
+
+  private async conUrlsFirmadas(
+    novedad: NovedadAbierta,
+  ): Promise<NovedadAbierta> {
+    const { recetaPathActual, ...resto } = novedad;
+    if (novedad.tipo !== 'edicion') {
+      return resto;
+    }
+
+    const [recetaActualUrl, recetaPropuestaUrl] = await Promise.all([
+      this.urlFirmadaOpcional(recetaPathActual),
+      this.urlFirmadaOpcional(novedad.datosPropuestos?.recetaPath ?? null),
+    ]);
+
+    return { ...resto, recetaActualUrl, recetaPropuestaUrl };
+  }
+
+  private async urlFirmadaOpcional(
+    path: string | null | undefined,
+  ): Promise<string | null> {
+    if (!path) return null;
+    try {
+      return await this.almacenamiento.obtenerUrlFirmada(
+        BUCKET_PERFILES,
+        path,
+        URL_FIRMADA_EXPIRA_SEGUNDOS,
+      );
+    } catch {
+      return null;
+    }
   }
 }

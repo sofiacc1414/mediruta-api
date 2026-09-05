@@ -3,6 +3,7 @@ import { ROLES_METADATA_KEY } from '../../../usuarios/infrastructure/decorators/
 import { AccessAuthGuard } from '../../../usuarios/infrastructure/guards/access-auth.guard';
 import { RolesGuard } from '../../../usuarios/infrastructure/guards/roles.guard';
 import { ActualizarSolicitudUseCase } from '../../application/use-cases/actualizar-solicitud.use-case';
+import { AdjuntarRecetaPropuestaEdicionUseCase } from '../../application/use-cases/adjuntar-receta-propuesta-edicion.use-case';
 import { CancelarSolicitudUseCase } from '../../application/use-cases/cancelar-solicitud.use-case';
 import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicitud.use-case';
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
@@ -43,6 +44,7 @@ function crearController(overrides?: {
   cancelarSolicitud?: { execute: jest.Mock };
   reportarNovedadPaciente?: { execute: jest.Mock };
   solicitarEdicionPedido?: { execute: jest.Mock };
+  adjuntarRecetaPropuestaEdicion?: { execute: jest.Mock };
   reportarCodigoNoGenerado?: { execute: jest.Mock };
 }) {
   return new SolicitudesController(
@@ -73,6 +75,9 @@ function crearController(overrides?: {
     (overrides?.solicitarEdicionPedido ?? {
       execute: jest.fn(),
     }) as unknown as SolicitarEdicionPedidoUseCase,
+    (overrides?.adjuntarRecetaPropuestaEdicion ?? {
+      execute: jest.fn(),
+    }) as unknown as AdjuntarRecetaPropuestaEdicionUseCase,
     (overrides?.reportarCodigoNoGenerado ?? {
       execute: jest.fn(),
     }) as unknown as ReportarCodigoNoGeneradoUseCase,
@@ -198,6 +203,61 @@ describe('SolicitudesController', () => {
       'paciente-desde-guard',
       'solicitud-uuid',
     );
+  });
+
+  it('POST /solicitudes/:id/solicitar-edicion mapea medicamentos e incluyeReceta', async () => {
+    const solicitarEdicionPedido = {
+      execute: jest.fn().mockResolvedValue({ message: 'ok', id: 'novedad-uuid' }),
+    };
+    const controller = crearController({ solicitarEdicionPedido });
+
+    await controller.solicitarEdicion(identidad, 'solicitud-uuid', {
+      direccionEntrega: 'Calle nueva',
+      medicamentos: [{ nombre: 'Ibuprofeno' }],
+      incluyeReceta: true,
+    });
+
+    expect(solicitarEdicionPedido.execute).toHaveBeenCalledWith(
+      'paciente-desde-guard',
+      'solicitud-uuid',
+      'Calle nueva',
+      null,
+      null,
+      [
+        {
+          nombre: 'Ibuprofeno',
+          concentracion: null,
+          formaFarmaceutica: null,
+          cantidad: null,
+          posologia: null,
+        },
+      ],
+      true,
+    );
+  });
+
+  it('POST /solicitudes/:id/solicitar-edicion/:novedadId/receta deriva la extensión del mimetype', async () => {
+    const adjuntarRecetaPropuestaEdicion = {
+      execute: jest.fn().mockResolvedValue({ message: 'ok', url: 'https://x' }),
+    };
+    const controller = crearController({ adjuntarRecetaPropuestaEdicion });
+    const archivo = archivoFalso();
+
+    await controller.adjuntarRecetaPropuestaEdicionAction(
+      identidad,
+      'solicitud-uuid',
+      'novedad-uuid',
+      archivo,
+    );
+
+    expect(adjuntarRecetaPropuestaEdicion.execute).toHaveBeenCalledWith({
+      pacienteId: 'paciente-desde-guard',
+      solicitudId: 'solicitud-uuid',
+      novedadId: 'novedad-uuid',
+      contenido: archivo.buffer,
+      contentType: 'image/jpeg',
+      extension: 'jpg',
+    });
   });
 
   it('POST /solicitudes/:id/cancelar delega en CancelarSolicitudUseCase', async () => {

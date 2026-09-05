@@ -1,3 +1,4 @@
+import { AlmacenamientoArchivosPort } from '../../../usuarios/domain/ports/almacenamiento-archivos.port';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
 import { ListarNovedadesAbiertasUseCase } from './listar-novedades-abiertas.use-case';
 
@@ -35,6 +36,7 @@ describe('ListarNovedadesAbiertasUseCase', () => {
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
     reportarNovedadPaciente: jest.fn(),
     solicitarEdicionPedido: jest.fn(),
+    adjuntarRecetaPropuestaEdicion: jest.fn(),
     reportarCodigoNoGenerado: jest.fn(),
     aprobarEdicionPedidoAdmin: jest.fn(),
     rechazarEdicionPedidoAdmin: jest.fn(),
@@ -45,11 +47,15 @@ describe('ListarNovedadesAbiertasUseCase', () => {
     obtenerConfiguracionAdmin: jest.fn(),
     actualizarConfiguracionAdmin: jest.fn(),
   };
-  const useCase = new ListarNovedadesAbiertasUseCase(solicitudes);
+  const almacenamiento = {
+    subir: jest.fn(),
+    obtenerUrlFirmada: jest.fn(),
+  } as unknown as AlmacenamientoArchivosPort;
+  const useCase = new ListarNovedadesAbiertasUseCase(solicitudes, almacenamiento);
 
   beforeEach(() => jest.resetAllMocks());
 
-  it('G09 — delega en el repositorio y devuelve la lista tal cual', async () => {
+  it('G09 — delega en el repositorio; novedades que no son de edición se devuelven tal cual', async () => {
     const novedades = [
       {
         id: 'novedad-uuid',
@@ -57,6 +63,11 @@ describe('ListarNovedadesAbiertasUseCase', () => {
         codigoPedido: 'MR-000123',
         detalle: 'No había uno de los medicamentos',
         reportadaPorCorreo: 'domiciliario@mediruta.test',
+        origen: 'domiciliario' as const,
+        tipo: 'pregunta' as const,
+        datosActuales: null,
+        datosPropuestos: null,
+        codigoEntrega: null,
         creadoEn: '2026-08-24T10:00:00.000Z',
       },
     ];
@@ -69,6 +80,41 @@ describe('ListarNovedadesAbiertasUseCase', () => {
     expect(solicitudes.listarNovedadesAbiertas).toHaveBeenCalledWith(
       'admin-uuid',
     );
-    expect(resultado).toBe(novedades);
+    expect(almacenamiento.obtenerUrlFirmada).not.toHaveBeenCalled();
+    expect(resultado).toEqual(novedades);
+  });
+
+  it('firma la receta actual y la propuesta cuando la novedad es de tipo edición', async () => {
+    (solicitudes.listarNovedadesAbiertas as jest.Mock).mockResolvedValue([
+      {
+        id: 'novedad-uuid',
+        solicitudId: 'solicitud-uuid',
+        codigoPedido: 'MR-000123',
+        detalle: 'Pedido corrección de receta',
+        reportadaPorCorreo: 'paciente@mediruta.test',
+        origen: 'paciente' as const,
+        tipo: 'edicion' as const,
+        datosActuales: { direccionEntrega: null, direccionFarmacia: null },
+        datosPropuestos: {
+          direccionEntrega: null,
+          direccionFarmacia: null,
+          recetaPath: 'solicitud/solicitud-uuid/receta_propuesta.jpg',
+        },
+        codigoEntrega: null,
+        recetaPathActual: 'solicitud/solicitud-uuid/receta.jpg',
+        creadoEn: '2026-08-24T10:00:00.000Z',
+      },
+    ]);
+    (almacenamiento.obtenerUrlFirmada as jest.Mock)
+      .mockResolvedValueOnce('https://storage/receta-actual-firmada')
+      .mockResolvedValueOnce('https://storage/receta-propuesta-firmada');
+
+    const [resultado] = await useCase.execute('admin-uuid');
+
+    expect(resultado.recetaActualUrl).toBe('https://storage/receta-actual-firmada');
+    expect(resultado.recetaPropuestaUrl).toBe(
+      'https://storage/receta-propuesta-firmada',
+    );
+    expect(resultado).not.toHaveProperty('recetaPathActual');
   });
 });

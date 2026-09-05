@@ -3,6 +3,7 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
 import { AceptarPedidoUseCase } from './application/use-cases/aceptar-pedido.use-case';
 import { ActualizarConfiguracionAdminUseCase } from './application/use-cases/actualizar-configuracion-admin.use-case';
 import { ActualizarSolicitudUseCase } from './application/use-cases/actualizar-solicitud.use-case';
+import { AdjuntarRecetaPropuestaEdicionUseCase } from './application/use-cases/adjuntar-receta-propuesta-edicion.use-case';
 import { AprobarEdicionPedidoAdminUseCase } from './application/use-cases/aprobar-edicion-pedido-admin.use-case';
 import { AsignarDomiciliarioAdminUseCase } from './application/use-cases/asignar-domiciliario-admin.use-case';
 import { CancelarSolicitudUseCase } from './application/use-cases/cancelar-solicitud.use-case';
@@ -75,6 +76,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     ReportarNovedadUseCase,
     ReportarNovedadPacienteUseCase,
     SolicitarEdicionPedidoUseCase,
+    AdjuntarRecetaPropuestaEdicionUseCase,
     ReportarCodigoNoGeneradoUseCase,
     ListarNovedadesAbiertasUseCase,
     ResolverNovedadUseCase,
