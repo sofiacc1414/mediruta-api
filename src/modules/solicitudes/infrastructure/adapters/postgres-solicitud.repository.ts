@@ -1004,15 +1004,44 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
   aprobarEdicionPedidoAdmin(
     adminId: string,
     novedadId: string,
+    farmaciaLat: number | null = null,
+    farmaciaLng: number | null = null,
   ): Promise<ResultadoAccionEdicionPedido> {
     return this.db.withUserContext(adminId, async (client) => {
       const result = await client.query<{
         resultado: ResultadoAccionEdicionPedido;
-      }>('select * from app.aprobar_edicion_pedido_admin($1, $2)', [
+      }>('select * from app.aprobar_edicion_pedido_admin($1, $2, $3, $4)', [
         adminId,
         novedadId,
+        farmaciaLat,
+        farmaciaLng,
       ]);
       return result.rows[0].resultado;
+    });
+  }
+
+  obtenerDatosGeocodificacionNovedadAdmin(
+    adminId: string,
+    novedadId: string,
+  ): Promise<{
+    direccionFarmacia: string | null;
+    ciudad: string | null;
+    departamento: string | null;
+  } | null> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<FilaDatosGeocodificacionFarmacia>(
+        'select * from app.obtener_datos_geocodificacion_novedad_admin($1, $2)',
+        [adminId, novedadId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return {
+        direccionFarmacia: fila.direccion_farmacia,
+        ciudad: fila.ciudad,
+        departamento: fila.departamento,
+      };
     });
   }
 
