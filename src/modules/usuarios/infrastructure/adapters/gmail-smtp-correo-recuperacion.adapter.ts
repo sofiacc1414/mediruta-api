@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Resend } from 'resend';
+import type { Transporter } from 'nodemailer';
+import { crearTransporteGmail } from '../../../../shared/infrastructure/email/gmail-smtp-transporter';
 import { CorreoRecuperacionPort } from '../../domain/ports/correo-recuperacion.port';
 
 export const ASUNTO_RECUPERACION_CONTRASENA =
@@ -11,30 +12,22 @@ export const ERROR_ENVIO_CORREO_RECUPERACION =
 
 const OTP_PATTERN = /^\d{6}$/;
 
+/** Reemplaza a `ResendCorreoRecuperacionAdapter` — Resend en modo
+ * sandbox (sin dominio propio verificado) solo entregaba al dueño de
+ * la cuenta, así que la recuperación de contraseña nunca le llegaba a
+ * un usuario real. Gmail SMTP no tiene esa restricción. */
 @Injectable()
-export class ResendCorreoRecuperacionAdapter extends CorreoRecuperacionPort {
-  private readonly logger = new Logger(ResendCorreoRecuperacionAdapter.name);
-  private readonly resend: Resend;
+export class GmailSmtpCorreoRecuperacionAdapter extends CorreoRecuperacionPort {
+  private readonly logger = new Logger(
+    GmailSmtpCorreoRecuperacionAdapter.name,
+  );
+  private readonly transporter: Transporter;
   private readonly fromEmail: string;
 
   constructor(config: ConfigService) {
     super();
-    const apiKey = config.get<string>('RESEND_API_KEY');
-    if (!apiKey) {
-      throw new Error('Falta la variable de entorno RESEND_API_KEY.');
-    }
-
-    const fromEmail = config.get<string>('RESEND_FROM_EMAIL');
-    if (!fromEmail) {
-      throw new Error('Falta la variable de entorno RESEND_FROM_EMAIL.');
-    }
-
-    // onboarding@resend.dev es SOLO para pruebas. Con el dominio resend.dev
-    // solo se puede enviar al correo asociado a la cuenta de Resend.
-    // En producción se necesita un dominio verificado y RESEND_FROM_EMAIL
-    // apuntando a ese remitente (sin cambiar este código).
-    this.fromEmail = fromEmail;
-    this.resend = new Resend(apiKey);
+    this.transporter = crearTransporteGmail(config);
+    this.fromEmail = `MediRuta <${config.get<string>('GMAIL_SMTP_USER')}>`;
   }
 
   async enviarCodigoRecuperacion(
@@ -44,26 +37,14 @@ export class ResendCorreoRecuperacionAdapter extends CorreoRecuperacionPort {
     const otp = otpSeguro(codigo);
 
     try {
-      const { error } = await this.resend.emails.send({
+      await this.transporter.sendMail({
         from: this.fromEmail,
         to: correo,
         subject: ASUNTO_RECUPERACION_CONTRASENA,
         html: plantillaHtml(otp),
         text: plantillaTexto(otp),
       });
-
-      if (error) {
-        this.registrarFallo();
-        throw new Error(ERROR_ENVIO_CORREO_RECUPERACION);
-      }
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message === ERROR_ENVIO_CORREO_RECUPERACION
-      ) {
-        throw error;
-      }
-
+    } catch {
       this.registrarFallo();
       throw new Error(ERROR_ENVIO_CORREO_RECUPERACION);
     }
