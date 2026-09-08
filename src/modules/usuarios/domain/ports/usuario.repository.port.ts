@@ -122,6 +122,13 @@ export abstract class UsuarioRepositoryPort {
   abstract obtenerCredencialesLogin(
     correo: string,
   ): Promise<CredencialesLogin | null>;
+
+  /** Ronda 9 — autoservicio: la propia cuenta desactivada (HU-05) vuelve
+   * a 'activa'. Solo tiene efecto si sigue en 'desactivada' (`false` si
+   * ya no lo estaba) — quien llama ya verificó la contraseña antes de
+   * invocar esto, ver `ReactivarCuentaPropiaUseCase`. */
+  abstract reactivarCuentaPropia(usuarioId: string): Promise<boolean>;
+
   abstract obtenerCuentaActual(usuarioId: string): Promise<CuentaActual | null>;
   abstract obtenerRoles(usuarioId: string): Promise<UsuarioRol[]>;
 

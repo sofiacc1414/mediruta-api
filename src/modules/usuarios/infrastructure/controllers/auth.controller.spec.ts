@@ -19,11 +19,13 @@ import { AuthController } from './auth.controller';
 import { AccessAuthGuard } from '../guards/access-auth.guard';
 import { REFRESH_COOKIE_NAME } from '../auth/refresh-cookie';
 import { IniciarSesionUseCase } from '../../application/use-cases/iniciar-sesion.use-case';
+import { ReactivarCuentaPropiaUseCase } from '../../application/use-cases/reactivar-cuenta-propia.use-case';
 import { RefrescarSesionUseCase } from '../../application/use-cases/refrescar-sesion.use-case';
 import { RegistrarUsuarioUseCase } from '../../application/use-cases/registrar-usuario.use-case';
 
 function crearController(overrides?: {
   iniciarSesion?: { execute: jest.Mock };
+  reactivarCuentaPropia?: { execute: jest.Mock };
   refrescarSesion?: { execute: jest.Mock };
   obtenerSesionActual?: { execute: jest.Mock };
   cerrarSesion?: { execute: jest.Mock };
@@ -36,6 +38,9 @@ function crearController(overrides?: {
     (overrides?.iniciarSesion ?? {
       execute: jest.fn(),
     }) as unknown as IniciarSesionUseCase,
+    (overrides?.reactivarCuentaPropia ?? {
+      execute: jest.fn(),
+    }) as unknown as ReactivarCuentaPropiaUseCase,
     (overrides?.refrescarSesion ?? {
       execute: jest.fn(),
     }) as unknown as RefrescarSesionUseCase,

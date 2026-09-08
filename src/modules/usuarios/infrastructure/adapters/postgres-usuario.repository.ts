@@ -70,6 +70,21 @@ export class PostgresUsuarioRepository extends UsuarioRepositoryPort {
     });
   }
 
+  reactivarCuentaPropia(usuarioId: string): Promise<boolean> {
+    // Mismo criterio que `obtenerCredencialesLogin`: todavía no hay
+    // sesión (se llama desde el flujo de login), así que no hay
+    // `usuarioId` de contexto para RLS — `withAppRole`, no
+    // `withUserContext`.
+    return this.db.withAppRole(async (client) => {
+      const result = await client.query<{
+        reactivar_cuenta_propia: boolean;
+      }>('select app.reactivar_cuenta_propia($1) as reactivar_cuenta_propia', [
+        usuarioId,
+      ]);
+      return result.rows[0].reactivar_cuenta_propia;
+    });
+  }
+
   obtenerCuentaActual(usuarioId: string): Promise<CuentaActual | null> {
     return this.db.withUserContext(usuarioId, async (client) => {
       const result = await client.query<{

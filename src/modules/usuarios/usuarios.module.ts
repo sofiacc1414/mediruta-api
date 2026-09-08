@@ -13,6 +13,7 @@ import { DesactivarCuentaUseCase } from './application/use-cases/desactivar-cuen
 import { DesbloquearCuentaUseCase } from './application/use-cases/desbloquear-cuenta.use-case';
 import { EnviarSolicitudDomiciliarioUseCase } from './application/use-cases/enviar-solicitud-domiciliario.use-case';
 import { IniciarSesionUseCase } from './application/use-cases/iniciar-sesion.use-case';
+import { ReactivarCuentaPropiaUseCase } from './application/use-cases/reactivar-cuenta-propia.use-case';
 import { ListarAdministradoresUseCase } from './application/use-cases/listar-administradores.use-case';
 import { ListarCuentasAdminUseCase } from './application/use-cases/listar-cuentas-admin.use-case';
 import { ObtenerAdministradorUseCase } from './application/use-cases/obtener-administrador.use-case';
@@ -97,6 +98,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
     BloquearCuentaUseCase,
     DesbloquearCuentaUseCase,
     IniciarSesionUseCase,
+    ReactivarCuentaPropiaUseCase,
     RefrescarSesionUseCase,
     ObtenerSesionActualUseCase,
     CerrarSesionUseCase,
