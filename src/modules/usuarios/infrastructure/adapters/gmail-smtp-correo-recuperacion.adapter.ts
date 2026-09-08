@@ -12,6 +12,12 @@ export const ERROR_ENVIO_CORREO_RECUPERACION =
 
 const OTP_PATTERN = /^\d{6}$/;
 
+// Servido desde el build público de mediruta-web (Vercel) — un correo
+// HTML necesita una URL pública para la imagen, no puede referenciar un
+// archivo del repo. Si el logo cambia, hay que resubirlo ahí con este
+// mismo nombre (o actualizar esta constante).
+const LOGO_URL = 'https://mediruta-web.vercel.app/logo-mediruta.png';
+
 /** Reemplaza a `ResendCorreoRecuperacionAdapter` — Resend en modo
  * sandbox (sin dominio propio verificado) solo entregaba al dueño de
  * la cuenta, así que la recuperación de contraseña nunca le llegaba a
@@ -69,7 +75,9 @@ function plantillaHtml(otp: string): string {
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;margin:0 auto;background:#FFFFFF;border-radius:8px;">
       <tr>
         <td style="padding:32px 28px;">
-          <p style="margin:0 0 8px;font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:#567C8D;">MediRuta</p>
+          <div style="text-align:center;margin:0 0 20px;">
+            <img src="${LOGO_URL}" alt="MediRuta" width="120" style="display:inline-block;border:0;" />
+          </div>
           <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;">Recuperar contraseña</h1>
           <p style="margin:0 0 16px;font-size:16px;line-height:1.5;">
             Recibimos una solicitud para restablecer la contraseña de tu cuenta.
