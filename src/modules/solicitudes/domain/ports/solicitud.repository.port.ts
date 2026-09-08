@@ -97,6 +97,7 @@ export type PedidoActivoDomiciliario = {
 export type DocumentosPacienteParaRecoger = {
   cedulaFrentePath: string | null;
   cedulaReversoPath: string | null;
+  recetaPath: string | null;
 };
 
 /** Panel admin — fila de "ver y filtrar pedidos". Solo pedidos reales

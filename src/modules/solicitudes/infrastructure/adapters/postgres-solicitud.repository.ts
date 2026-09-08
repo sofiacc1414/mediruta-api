@@ -97,6 +97,7 @@ type FilaPedidoActivoDomiciliario = {
 type FilaDocumentosPacienteParaRecoger = {
   cedula_frente_path: string | null;
   cedula_reverso_path: string | null;
+  receta_path: string | null;
 };
 
 type FilaPedidoAdmin = {
@@ -732,6 +733,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       return {
         cedulaFrentePath: fila.cedula_frente_path,
         cedulaReversoPath: fila.cedula_reverso_path,
+        recetaPath: fila.receta_path,
       };
     });
   }

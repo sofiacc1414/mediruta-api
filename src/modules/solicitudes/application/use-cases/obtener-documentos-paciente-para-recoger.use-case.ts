@@ -10,17 +10,21 @@ import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository
 export type ObtenerDocumentosPacienteParaRecogerResultado = {
   cedulaFrenteUrl: string | null;
   cedulaReversoUrl: string | null;
+  /** Ronda 10 — antes faltaba: el Domiciliario necesita ver la fórmula
+   * médica del pedido acá mismo, no solo la cédula, para retirar el
+   * medicamento correcto. */
+  recetaUrl: string | null;
 };
 
 /**
- * HU-07/HU-09 — la cédula del Paciente (ambos lados), para que el
- * Domiciliario la muestre en la farmacia al retirar el medicamento a
- * su nombre. Por seguridad/privacidad, el repositorio solo devuelve
- * algo mientras el pedido está en `asignado_en_camino_farmacia` — antes
- * o después de esa ventana, `null`, y acá se traduce a un error de
- * dominio en vez de "documentos vacíos" (para que la App distinga
- * "todavía no llegó ese momento" de "esta persona no tiene cédula
- * cargada").
+ * HU-07/HU-09 — la cédula del Paciente (ambos lados) y la fórmula
+ * médica del pedido, para que el Domiciliario las muestre en la
+ * farmacia al retirar el medicamento a su nombre. Por seguridad/
+ * privacidad, el repositorio solo devuelve algo mientras el pedido
+ * está en `asignado_en_camino_farmacia` — antes o después de esa
+ * ventana, `null`, y acá se traduce a un error de dominio en vez de
+ * "documentos vacíos" (para que la App distinga "todavía no llegó ese
+ * momento" de "esta persona no tiene cédula cargada").
  */
 @Injectable()
 export class ObtenerDocumentosPacienteParaRecogerUseCase {
@@ -47,12 +51,13 @@ export class ObtenerDocumentosPacienteParaRecogerUseCase {
       throw new DocumentosPacienteNoDisponiblesError();
     }
 
-    const [cedulaFrenteUrl, cedulaReversoUrl] = await Promise.all([
+    const [cedulaFrenteUrl, cedulaReversoUrl, recetaUrl] = await Promise.all([
       this.urlFirmadaOpcional(documentos.cedulaFrentePath),
       this.urlFirmadaOpcional(documentos.cedulaReversoPath),
+      this.urlFirmadaOpcional(documentos.recetaPath),
     ]);
 
-    return { cedulaFrenteUrl, cedulaReversoUrl };
+    return { cedulaFrenteUrl, cedulaReversoUrl, recetaUrl };
   }
 
   private async urlFirmadaOpcional(
