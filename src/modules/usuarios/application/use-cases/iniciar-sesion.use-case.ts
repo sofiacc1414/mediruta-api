@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
+import { CuentaDesactivadaError } from '../../domain/errors/cuenta-desactivada.error';
 import { AccessTokenPort } from '../../domain/ports/access-token.port';
 import { PasswordHasherPort } from '../../domain/ports/password-hasher.port';
 import { RefreshTokenPort } from '../../domain/ports/refresh-token.port';
@@ -59,7 +60,19 @@ export class IniciarSesionUseCase {
       command.password,
       credenciales.passwordHash,
     );
-    if (!passwordCorrecta || credenciales.estadoCuenta !== 'activa') {
+    if (!passwordCorrecta) {
+      throw new CredencialesInvalidasError();
+    }
+
+    // A partir de acá la contraseña ya coincidió — recién ahí se puede
+    // distinguir "desactivada" sin filtrarle nada a quien no la tenía.
+    // 'bloqueada' se queda en el error genérico a propósito: esa sí es
+    // una decisión del admin, no algo que el propio dueño pueda revertir
+    // solo con loguearse.
+    if (credenciales.estadoCuenta === 'desactivada') {
+      throw new CuentaDesactivadaError();
+    }
+    if (credenciales.estadoCuenta !== 'activa') {
       throw new CredencialesInvalidasError();
     }
 

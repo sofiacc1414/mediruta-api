@@ -9,6 +9,7 @@ describe('SolicitarRolPacienteUseCase', () => {
   const usuarios: UsuarioRepositoryPort = {
     registrar: jest.fn(),
     obtenerCredencialesLogin: jest.fn(),
+    reactivarCuentaPropia: jest.fn(),
     obtenerCuentaActual: jest.fn(),
     obtenerRoles: jest.fn(),
     solicitarRolPaciente: jest.fn(),

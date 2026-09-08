@@ -24,6 +24,7 @@ import { CambioContrasenaInvalidoError } from '../../domain/errors/cambio-contra
 import { CuentaNoEncontradaError } from '../../domain/errors/cuenta-no-encontrada.error';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
+import { CuentaDesactivadaError } from '../../domain/errors/cuenta-desactivada.error';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
 import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
 import { NuevaContrasenaIgualError } from '../../domain/errors/nueva-contrasena-igual.error';
@@ -59,6 +60,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   DomiciliarioNoDisponibleParaAsignarError,
   NoPuedeDesconectarseConPedidoActivoError,
   SolicitudEdicionSinCambiosError,
+  CuentaDesactivadaError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -86,6 +88,17 @@ export class DominioHttpFilter implements ExceptionFilter {
       response.status(HttpStatus.UNAUTHORIZED).json({
         statusCode: HttpStatus.UNAUTHORIZED,
         message: exception.message,
+      });
+      return;
+    }
+
+    if (exception instanceof CuentaDesactivadaError) {
+      // `cuentaDesactivada: true` — un campo aparte, no solo el
+      // `message`, para que la App lo detecte sin comparar texto.
+      response.status(HttpStatus.FORBIDDEN).json({
+        statusCode: HttpStatus.FORBIDDEN,
+        message: exception.message,
+        cuentaDesactivada: true,
       });
       return;
     }

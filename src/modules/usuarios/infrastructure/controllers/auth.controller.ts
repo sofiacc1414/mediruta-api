@@ -16,6 +16,7 @@ import { CambiarContrasenaUseCase } from '../../application/use-cases/cambiar-co
 import { CerrarSesionUseCase } from '../../application/use-cases/cerrar-sesion.use-case';
 import { IniciarSesionUseCase } from '../../application/use-cases/iniciar-sesion.use-case';
 import { ObtenerSesionActualUseCase } from '../../application/use-cases/obtener-sesion-actual.use-case';
+import { ReactivarCuentaPropiaUseCase } from '../../application/use-cases/reactivar-cuenta-propia.use-case';
 import { RefrescarSesionUseCase } from '../../application/use-cases/refrescar-sesion.use-case';
 import { RegistrarUsuarioUseCase } from '../../application/use-cases/registrar-usuario.use-case';
 import { RestablecerContrasenaUseCase } from '../../application/use-cases/restablecer-contrasena.use-case';
@@ -42,6 +43,7 @@ export class AuthController {
   constructor(
     private readonly registrarUsuario: RegistrarUsuarioUseCase,
     private readonly iniciarSesion: IniciarSesionUseCase,
+    private readonly reactivarCuentaPropia: ReactivarCuentaPropiaUseCase,
     private readonly refrescarSesion: RefrescarSesionUseCase,
     private readonly obtenerSesionActual: ObtenerSesionActualUseCase,
     private readonly cerrarSesion: CerrarSesionUseCase,
@@ -87,6 +89,37 @@ export class AuthController {
 
     // Flujo App (Flutter): el refresh token va en el body para que se
     // guarde en flutter_secure_storage.
+    return resultado;
+  }
+
+  /** HU-05 (ronda 9) — la App muestra un pop-up ofreciendo reactivar
+   * cuando `login` responde `cuentaDesactivada: true`; este endpoint
+   * vuelve a pedir correo/contraseña (no hay sesión válida a esa
+   * altura) y, si reactiva, deja igual de logueado que `login`. */
+  @Post('reactivar')
+  @HttpCode(HttpStatus.OK)
+  async reactivar(
+    @Body() dto: IniciarSesionDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Headers('x-client-type') clientType?: string,
+  ) {
+    const resultado = await this.reactivarCuentaPropia.execute({
+      correo: dto.correo,
+      password: dto.password,
+      userAgent: headerTexto(req.headers['user-agent']),
+      ip: req.ip ?? null,
+    });
+
+    if (esClienteWeb(clientType)) {
+      res.cookie(
+        REFRESH_COOKIE_NAME,
+        resultado.refreshToken,
+        opcionesCookieRefresh(),
+      );
+      return { accessToken: resultado.accessToken, usuario: resultado.usuario };
+    }
+
     return resultado;
   }
 

@@ -1,4 +1,5 @@
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
+import { CuentaDesactivadaError } from '../../domain/errors/cuenta-desactivada.error';
 import { AccessTokenPort } from '../../domain/ports/access-token.port';
 import { PasswordHasherPort } from '../../domain/ports/password-hasher.port';
 import { RefreshTokenPort } from '../../domain/ports/refresh-token.port';
@@ -27,6 +28,7 @@ describe('IniciarSesionUseCase', () => {
   const usuarios: UsuarioRepositoryPort = {
     registrar: jest.fn(),
     obtenerCredencialesLogin: jest.fn(),
+    reactivarCuentaPropia: jest.fn(),
     obtenerCuentaActual: jest.fn(),
     obtenerRoles: jest.fn(),
     solicitarRolPaciente: jest.fn(),
@@ -179,7 +181,7 @@ describe('IniciarSesionUseCase', () => {
     expect(sesiones.crear).not.toHaveBeenCalled();
   });
 
-  it('si la cuenta está desactivada no crea sesión aunque el password coincida', async () => {
+  it('ronda 9 — si la cuenta está desactivada y el password coincide, lanza CuentaDesactivadaError (no el genérico) para que la App pueda ofrecer reactivarla', async () => {
     (usuarios.obtenerCredencialesLogin as jest.Mock).mockResolvedValue({
       ...credencialesActivas,
       estadoCuenta: 'desactivada',
@@ -189,6 +191,23 @@ describe('IniciarSesionUseCase', () => {
       useCase.execute({
         correo: 'persona@mail.com',
         password: 'ClaveSegura1!',
+      }),
+    ).rejects.toBeInstanceOf(CuentaDesactivadaError);
+
+    expect(sesiones.crear).not.toHaveBeenCalled();
+  });
+
+  it('ronda 9 — si la cuenta está desactivada pero el password NO coincide, sigue siendo el error genérico (no filtra el estado sin verificar la contraseña)', async () => {
+    (usuarios.obtenerCredencialesLogin as jest.Mock).mockResolvedValue({
+      ...credencialesActivas,
+      estadoCuenta: 'desactivada',
+    });
+    (passwordHasher.compare as jest.Mock).mockResolvedValue(false);
+
+    await expect(
+      useCase.execute({
+        correo: 'persona@mail.com',
+        password: 'clave-incorrecta',
       }),
     ).rejects.toBeInstanceOf(CredencialesInvalidasError);
 
