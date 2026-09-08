@@ -5,6 +5,7 @@ import {
   DesbloquearCuentaUseCase,
   MENSAJE_CUENTA_DESBLOQUEADA,
   MENSAJE_CUENTA_NO_ESTABA_BLOQUEADA,
+  MENSAJE_CUENTA_REACTIVADA,
 } from './desbloquear-cuenta.use-case';
 
 describe('DesbloquearCuentaUseCase', () => {
@@ -36,7 +37,15 @@ describe('DesbloquearCuentaUseCase', () => {
     expect(resultado).toEqual({ message: MENSAJE_CUENTA_DESBLOQUEADA });
   });
 
-  it('devuelve mensaje idempotente si no estaba bloqueada', async () => {
+  it('reactiva una cuenta autodesactivada y devuelve el mensaje de éxito', async () => {
+    (usuarios.desbloquearCuenta as jest.Mock).mockResolvedValue('reactivada');
+
+    const resultado = await useCase.execute('admin-uuid', 'usuario-uuid');
+
+    expect(resultado).toEqual({ message: MENSAJE_CUENTA_REACTIVADA });
+  });
+
+  it('devuelve mensaje idempotente si no estaba bloqueada ni desactivada', async () => {
     (usuarios.desbloquearCuenta as jest.Mock).mockResolvedValue(
       'ya_en_ese_estado',
     );

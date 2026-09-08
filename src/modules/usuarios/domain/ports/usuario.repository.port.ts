@@ -82,6 +82,10 @@ export type FiltrosCuentasAdmin = {
 export type ResultadoAccionCuenta =
   | 'bloqueada'
   | 'desbloqueada'
+  /** Ronda 9 — `desbloquearCuenta` también revierte una cuenta
+   * autodesactivada ('desactivada' -> 'activa'); este resultado
+   * distingue ese caso de 'desbloqueada' (que venía de 'bloqueada'). */
+  | 'reactivada'
   | 'ya_en_ese_estado'
   | 'no_encontrado'
   | 'no_autorizado';
