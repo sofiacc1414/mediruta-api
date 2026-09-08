@@ -4,6 +4,7 @@ import { ListarDomiciliariosPendientesUseCase } from './listar-domiciliarios-pen
 describe('ListarDomiciliariosPendientesUseCase', () => {
   const validaciones: ValidacionDomiciliarioRepositoryPort = {
     listarPendientes: jest.fn(),
+    listarAdmin: jest.fn(),
     obtenerDetalle: jest.fn(),
     listarHistorial: jest.fn(),
     aprobar: jest.fn(),

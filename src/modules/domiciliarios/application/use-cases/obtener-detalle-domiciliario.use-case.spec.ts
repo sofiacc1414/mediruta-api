@@ -13,6 +13,7 @@ import { ObtenerDetalleDomiciliarioUseCase } from './obtener-detalle-domiciliari
 describe('ObtenerDetalleDomiciliarioUseCase', () => {
   const validaciones: ValidacionDomiciliarioRepositoryPort = {
     listarPendientes: jest.fn(),
+    listarAdmin: jest.fn(),
     obtenerDetalle: jest.fn(),
     listarHistorial: jest.fn(),
     aprobar: jest.fn(),
