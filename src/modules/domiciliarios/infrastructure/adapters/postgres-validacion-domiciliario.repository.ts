@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import {
+  DomiciliarioAdmin,
   DomiciliarioPendiente,
+  EstadoDomiciliarioAdmin,
   PerfilDomiciliarioValidacion,
   ResultadoAprobar,
   ResultadoRechazar,
@@ -14,6 +16,16 @@ type FilaPendiente = {
   nombre_completo: string | null;
   telefono: string | null;
   solicitado_en: string;
+};
+
+type FilaDomiciliarioAdmin = {
+  usuario_id: string;
+  nombre_completo: string | null;
+  correo: string;
+  telefono: string | null;
+  estado: DomiciliarioAdmin['estado'];
+  solicitado_en: string;
+  actualizado_en: string;
 };
 
 type FilaDetalle = {
@@ -64,6 +76,27 @@ export class PostgresValidacionDomiciliarioRepository extends ValidacionDomicili
         nombreCompleto: fila.nombre_completo,
         telefono: fila.telefono,
         solicitadoEn: fila.solicitado_en,
+      }));
+    });
+  }
+
+  listarAdmin(
+    adminId: string,
+    estado: EstadoDomiciliarioAdmin = 'pendiente_validacion',
+  ): Promise<DomiciliarioAdmin[]> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<FilaDomiciliarioAdmin>(
+        'select * from app.listar_domiciliarios_admin($1, $2)',
+        [adminId, estado],
+      );
+      return result.rows.map((fila) => ({
+        usuarioId: fila.usuario_id,
+        nombreCompleto: fila.nombre_completo,
+        correo: fila.correo,
+        telefono: fila.telefono,
+        estado: fila.estado,
+        solicitadoEn: fila.solicitado_en,
+        actualizadoEn: fila.actualizado_en,
       }));
     });
   }

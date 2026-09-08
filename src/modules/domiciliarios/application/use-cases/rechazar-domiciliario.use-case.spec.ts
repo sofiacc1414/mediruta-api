@@ -9,6 +9,7 @@ import {
 describe('RechazarDomiciliarioUseCase', () => {
   const validaciones: ValidacionDomiciliarioRepositoryPort = {
     listarPendientes: jest.fn(),
+    listarAdmin: jest.fn(),
     obtenerDetalle: jest.fn(),
     listarHistorial: jest.fn(),
     aprobar: jest.fn(),

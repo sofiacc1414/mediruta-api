@@ -1,5 +1,6 @@
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { AprobarDomiciliarioUseCase } from '../../application/use-cases/aprobar-domiciliario.use-case';
+import { ListarDomiciliariosAdminUseCase } from '../../application/use-cases/listar-domiciliarios-admin.use-case';
 import { ListarDomiciliariosPendientesUseCase } from '../../application/use-cases/listar-domiciliarios-pendientes.use-case';
 import { ObtenerDetalleDomiciliarioUseCase } from '../../application/use-cases/obtener-detalle-domiciliario.use-case';
 import { RechazarDomiciliarioUseCase } from '../../application/use-cases/rechazar-domiciliario.use-case';
@@ -12,6 +13,7 @@ const identidad = { usuarioId: 'admin-desde-guard', sid: 'sid-desde-guard' };
 
 function crearController(overrides?: {
   listarPendientes?: { execute: jest.Mock };
+  listarAdmin?: { execute: jest.Mock };
   obtenerDetalle?: { execute: jest.Mock };
   aprobarDomiciliario?: { execute: jest.Mock };
   rechazarDomiciliario?: { execute: jest.Mock };
@@ -20,6 +22,9 @@ function crearController(overrides?: {
     (overrides?.listarPendientes ?? {
       execute: jest.fn(),
     }) as unknown as ListarDomiciliariosPendientesUseCase,
+    (overrides?.listarAdmin ?? {
+      execute: jest.fn(),
+    }) as unknown as ListarDomiciliariosAdminUseCase,
     (overrides?.obtenerDetalle ?? {
       execute: jest.fn(),
     }) as unknown as ObtenerDetalleDomiciliarioUseCase,

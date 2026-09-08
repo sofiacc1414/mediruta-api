@@ -5,6 +5,28 @@ export type DomiciliarioPendiente = {
   solicitadoEn: string;
 };
 
+/** Ronda 9 — estado por el que se puede filtrar el listado de
+ * domiciliarios del admin. 'todos' incluye pendientes/habilitados/
+ * rechazados (nunca 'borrador' — el domiciliario ni siquiera envió su
+ * solicitud, no es un caso que el admin deba ver). */
+export type EstadoDomiciliarioAdmin =
+  | 'pendiente_validacion'
+  | 'habilitado'
+  | 'rechazado'
+  | 'todos';
+
+/** Ronda 9 — una fila del listado general (a diferencia de
+ * `DomiciliarioPendiente`, cualquier estado, no solo pendiente). */
+export type DomiciliarioAdmin = {
+  usuarioId: string;
+  nombreCompleto: string | null;
+  correo: string;
+  telefono: string | null;
+  estado: 'pendiente_validacion' | 'habilitado' | 'rechazado';
+  solicitadoEn: string;
+  actualizadoEn: string;
+};
+
 export type PerfilDomiciliarioValidacion = {
   nombreCompleto: string | null;
   telefono: string | null;
@@ -40,6 +62,13 @@ export type ResultadoRechazar = 'rechazado' | 'no_encontrado' | 'no_autorizado';
  * (HU-02); este puerto no los duplica, solo agrega la decisión. */
 export abstract class ValidacionDomiciliarioRepositoryPort {
   abstract listarPendientes(adminId: string): Promise<DomiciliarioPendiente[]>;
+
+  /** Ronda 9 — listado general con filtro de estado (default:
+   * pendientes, mismo comportamiento histórico si no se manda nada). */
+  abstract listarAdmin(
+    adminId: string,
+    estado?: EstadoDomiciliarioAdmin,
+  ): Promise<DomiciliarioAdmin[]>;
 
   abstract obtenerDetalle(
     adminId: string,

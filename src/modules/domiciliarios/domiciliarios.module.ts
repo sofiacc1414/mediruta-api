@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { AprobarDomiciliarioUseCase } from './application/use-cases/aprobar-domiciliario.use-case';
+import { ListarDomiciliariosAdminUseCase } from './application/use-cases/listar-domiciliarios-admin.use-case';
 import { ListarDomiciliariosPendientesUseCase } from './application/use-cases/listar-domiciliarios-pendientes.use-case';
 import { ObtenerDetalleDomiciliarioUseCase } from './application/use-cases/obtener-detalle-domiciliario.use-case';
 import { RechazarDomiciliarioUseCase } from './application/use-cases/rechazar-domiciliario.use-case';
@@ -18,6 +19,7 @@ import { DomiciliariosAdminController } from './infrastructure/controllers/domic
   controllers: [DomiciliariosAdminController],
   providers: [
     ListarDomiciliariosPendientesUseCase,
+    ListarDomiciliariosAdminUseCase,
     ObtenerDetalleDomiciliarioUseCase,
     AprobarDomiciliarioUseCase,
     RechazarDomiciliarioUseCase,

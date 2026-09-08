@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseFilters,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ import { DominioHttpFilter } from '../../../usuarios/infrastructure/filters/domi
 import { AccessAuthGuard } from '../../../usuarios/infrastructure/guards/access-auth.guard';
 import { RolesGuard } from '../../../usuarios/infrastructure/guards/roles.guard';
 import { AprobarDomiciliarioUseCase } from '../../application/use-cases/aprobar-domiciliario.use-case';
+import { ListarDomiciliariosAdminUseCase } from '../../application/use-cases/listar-domiciliarios-admin.use-case';
 import { ListarDomiciliariosPendientesUseCase } from '../../application/use-cases/listar-domiciliarios-pendientes.use-case';
 import { ObtenerDetalleDomiciliarioUseCase } from '../../application/use-cases/obtener-detalle-domiciliario.use-case';
 import { RechazarDomiciliarioUseCase } from '../../application/use-cases/rechazar-domiciliario.use-case';
@@ -31,6 +33,7 @@ import { RechazarDomiciliarioDto } from '../dtos/rechazar-domiciliario.dto';
 export class DomiciliariosAdminController {
   constructor(
     private readonly listarPendientes: ListarDomiciliariosPendientesUseCase,
+    private readonly listarAdmin: ListarDomiciliariosAdminUseCase,
     private readonly obtenerDetalle: ObtenerDetalleDomiciliarioUseCase,
     private readonly aprobarDomiciliario: AprobarDomiciliarioUseCase,
     private readonly rechazarDomiciliario: RechazarDomiciliarioUseCase,
@@ -40,6 +43,17 @@ export class DomiciliariosAdminController {
   @HttpCode(HttpStatus.OK)
   pendientes(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
     return this.listarPendientes.execute(identidad.usuarioId);
+  }
+
+  /** HU-08 (ronda 9) — `?estado=pendiente_validacion|habilitado|
+   * rechazado|todos`, default 'pendiente_validacion'. */
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  listar(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Query('estado') estado?: string,
+  ) {
+    return this.listarAdmin.execute(identidad.usuarioId, estado);
   }
 
   @Get(':id')
