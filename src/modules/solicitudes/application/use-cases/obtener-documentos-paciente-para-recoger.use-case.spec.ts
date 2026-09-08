@@ -71,12 +71,13 @@ describe('ObtenerDocumentosPacienteParaRecogerUseCase', () => {
     );
   });
 
-  it('resuelve URLs firmadas para ambos lados de la cédula', async () => {
+  it('resuelve URLs firmadas para ambos lados de la cédula y la fórmula médica', async () => {
     (
       solicitudes.obtenerDocumentosPacienteParaRecoger as jest.Mock
     ).mockResolvedValue({
       cedulaFrentePath: 'paciente/usuario-uuid/cedula_frente.jpg',
       cedulaReversoPath: 'paciente/usuario-uuid/cedula_reverso.jpg',
+      recetaPath: 'solicitud/solicitud-uuid/receta.jpg',
     });
 
     const resultado = await useCase.execute(
@@ -89,6 +90,9 @@ describe('ObtenerDocumentosPacienteParaRecogerUseCase', () => {
     );
     expect(resultado.cedulaReversoUrl).toBe(
       'https://firmada.test/paciente/usuario-uuid/cedula_reverso.jpg',
+    );
+    expect(resultado.recetaUrl).toBe(
+      'https://firmada.test/solicitud/solicitud-uuid/receta.jpg',
     );
     expect(
       solicitudes.obtenerDocumentosPacienteParaRecoger,
@@ -116,6 +120,7 @@ describe('ObtenerDocumentosPacienteParaRecogerUseCase', () => {
     ).mockResolvedValue({
       cedulaFrentePath: 'fake/cedula_frente.jpg',
       cedulaReversoPath: 'fake/cedula_reverso.jpg',
+      recetaPath: 'fake/receta.jpg',
     });
     (almacenamiento.obtenerUrlFirmada as jest.Mock).mockRejectedValue(
       new Error('Object not found'),
@@ -128,5 +133,6 @@ describe('ObtenerDocumentosPacienteParaRecogerUseCase', () => {
 
     expect(resultado.cedulaFrenteUrl).toBeNull();
     expect(resultado.cedulaReversoUrl).toBeNull();
+    expect(resultado.recetaUrl).toBeNull();
   });
 });
