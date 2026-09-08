@@ -56,6 +56,7 @@ describe('ActualizarSolicitudUseCase', () => {
     solicitarEdicionPedido: jest.fn(),
     reportarCodigoNoGenerado: jest.fn(),
     aprobarEdicionPedidoAdmin: jest.fn(),
+    obtenerDatosGeocodificacionNovedadAdmin: jest.fn(),
     rechazarEdicionPedidoAdmin: jest.fn(),
     regenerarCodigoEntregaAdmin: jest.fn(),
     obtenerCodigoEntregaParaCorreoAdmin: jest.fn(),

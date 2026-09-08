@@ -621,11 +621,33 @@ export abstract class SolicitudRepositoryPort {
   ): Promise<ResultadoResolverNovedad>;
 
   /** HU-07 (ronda 3) — aplica `datosPropuestos` (solo los campos no
-   * nulos) a la solicitud y cierra la novedad como aprobada. */
+   * nulos) a la solicitud y cierra la novedad como aprobada.
+   *
+   * Ronda 8 — `farmaciaLat`/`farmaciaLng` ya vienen geocodificados (el
+   * caso de uso llama a `GeocodificacionPort` antes, mismo patrón que
+   * `EnviarSolicitudUseCase`) — si la edición cambia la dirección de la
+   * farmacia, actualiza también `farmacia_ubicacion` (si no, el
+   * domiciliario seguía viendo la distancia a la dirección vieja). */
   abstract aprobarEdicionPedidoAdmin(
     adminId: string,
     novedadId: string,
+    farmaciaLat?: number | null,
+    farmaciaLng?: number | null,
   ): Promise<ResultadoAccionEdicionPedido>;
+
+  /** Ronda 8 — datos para geocodificar la farmacia al aprobar una
+   * edición: la dirección PROPUESTA si la novedad la cambia (si no, la
+   * actual), más ciudad/departamento del paciente como contexto para
+   * Nominatim (mismo patrón que `obtenerDatosGeocodificacionFarmacia`,
+   * pero admin-scoped). */
+  abstract obtenerDatosGeocodificacionNovedadAdmin(
+    adminId: string,
+    novedadId: string,
+  ): Promise<{
+    direccionFarmacia: string | null;
+    ciudad: string | null;
+    departamento: string | null;
+  } | null>;
 
   /** HU-07 (ronda 3) — cierra la novedad como rechazada, sin tocar el
    * pedido. */
