@@ -31,5 +31,14 @@ export function crearTransporteGmail(
   return nodemailer.createTransport({
     service: 'gmail',
     auth: { user: usuario, pass: appPassword },
+    // Sin esto, un bloqueo de salida SMTP en el hosting (algunos
+    // planes de Render/Heroku/etc. bloquean el puerto saliente sin
+    // devolver ni un RST) deja la conexión colgada varios minutos —
+    // el request HTTP entero (y el spinner del cliente) se queda
+    // esperando indefinidamente en vez de fallar rápido con un error
+    // claro. 8-10s alcanza de sobra para un handshake SMTP normal.
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 10000,
   });
 }

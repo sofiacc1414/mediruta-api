@@ -44,10 +44,12 @@ describe('GmailSmtpCorreoRecuperacionAdapter', () => {
 
     await adapter.enviarCodigoRecuperacion('persona@mail.com', '000042');
 
-    expect(nodemailer.createTransport).toHaveBeenCalledWith({
-      service: 'gmail',
-      auth: { user: 'sofiacc1414@gmail.com', pass: 'app-password-test' },
-    });
+    expect(nodemailer.createTransport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        service: 'gmail',
+        auth: { user: 'sofiacc1414@gmail.com', pass: 'app-password-test' },
+      }),
+    );
     expect(sendMailMock).toHaveBeenCalledWith(
       expect.objectContaining({
         from: 'MediRuta <sofiacc1414@gmail.com>',
