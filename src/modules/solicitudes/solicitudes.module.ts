@@ -41,7 +41,7 @@ import { GeocodificacionPort } from './domain/ports/geocodificacion.port';
 import { SolicitudRepositoryPort } from './domain/ports/solicitud.repository.port';
 import { NominatimGeocodificacionAdapter } from './infrastructure/adapters/nominatim-geocodificacion.adapter';
 import { PostgresSolicitudRepository } from './infrastructure/adapters/postgres-solicitud.repository';
-import { GmailSmtpCorreoCodigoEntregaAdapter } from './infrastructure/adapters/gmail-smtp-correo-codigo-entrega.adapter';
+import { CorreoRelayCodigoEntregaAdapter } from './infrastructure/adapters/correo-relay-codigo-entrega.adapter';
 import { ConfiguracionAdminController } from './infrastructure/controllers/configuracion-admin.controller';
 import { NovedadesAdminController } from './infrastructure/controllers/novedades-admin.controller';
 import { PedidosAdminController } from './infrastructure/controllers/pedidos-admin.controller';
@@ -109,7 +109,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     },
     {
       provide: CorreoCodigoEntregaPort,
-      useClass: GmailSmtpCorreoCodigoEntregaAdapter,
+      useClass: CorreoRelayCodigoEntregaAdapter,
     },
   ],
 })
