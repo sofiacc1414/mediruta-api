@@ -20,10 +20,16 @@ describe('ListarNovedadesSolicitudUseCase', () => {
         creadoEn: '2026-09-05T10:00:00.000Z',
         resuelta: true,
         accionEdicion: 'rechazada' as const,
-        datosPropuestos: { direccionEntrega: null, direccionFarmacia: null, medicamentos: [] },
+        datosPropuestos: {
+          direccionEntrega: null,
+          direccionFarmacia: null,
+          medicamentos: [],
+        },
       },
     ];
-    (solicitudes.listarNovedadesSolicitud as jest.Mock).mockResolvedValue(novedades);
+    (solicitudes.listarNovedadesSolicitud as jest.Mock).mockResolvedValue(
+      novedades,
+    );
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 

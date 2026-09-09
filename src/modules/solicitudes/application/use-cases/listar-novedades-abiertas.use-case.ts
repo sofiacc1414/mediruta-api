@@ -39,10 +39,7 @@ export class ListarNovedadesAbiertasUseCase {
     private readonly almacenamiento: AlmacenamientoArchivosPort,
   ) {}
 
-  async execute(
-    adminId: string,
-    estado?: string,
-  ): Promise<NovedadAbierta[]> {
+  async execute(adminId: string, estado?: string): Promise<NovedadAbierta[]> {
     const estadoValido = ESTADOS_VALIDOS.includes(estado as EstadoNovedadAdmin)
       ? (estado as EstadoNovedadAdmin)
       : 'abierta';

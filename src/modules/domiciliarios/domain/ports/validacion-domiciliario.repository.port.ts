@@ -10,10 +10,7 @@ export type DomiciliarioPendiente = {
  * rechazados (nunca 'borrador' — el domiciliario ni siquiera envió su
  * solicitud, no es un caso que el admin deba ver). */
 export type EstadoDomiciliarioAdmin =
-  | 'pendiente_validacion'
-  | 'habilitado'
-  | 'rechazado'
-  | 'todos';
+  'pendiente_validacion' | 'habilitado' | 'rechazado' | 'todos';
 
 /** Ronda 9 — una fila del listado general (a diferencia de
  * `DomiciliarioPendiente`, cualquier estado, no solo pendiente). */
