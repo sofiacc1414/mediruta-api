@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { Transporter } from 'nodemailer';
-import { crearTransporteGmail } from '../../../../shared/infrastructure/email/gmail-smtp-transporter';
+import { enviarCorreoViaRelay } from '../../../../shared/infrastructure/email/correo-relay-client';
 import { CorreoCodigoEntregaPort } from '../../domain/ports/correo-codigo-entrega.port';
 
 export const ASUNTO_CODIGO_ENTREGA = 'Tu código de entrega | MediRuta';
@@ -9,24 +8,18 @@ export const ASUNTO_CODIGO_ENTREGA = 'Tu código de entrega | MediRuta';
 export const ERROR_ENVIO_CORREO_CODIGO_ENTREGA =
   'No fue posible enviar el correo con el código de entrega mediante el proveedor configurado.';
 
-// Ver comentario de LOGO_URL en gmail-smtp-correo-recuperacion.adapter.ts.
+// Ver comentario de LOGO_URL en correo-relay-recuperacion.adapter.ts.
 const LOGO_URL = 'https://mediruta-web.vercel.app/logo-mediruta.png';
 
-/** Reemplaza a `ResendCorreoCodigoEntregaAdapter` — mismo motivo que
- * `GmailSmtpCorreoRecuperacionAdapter` (Resend en modo sandbox solo
- * entregaba al dueño de la cuenta). */
+/** Manda por el relay de correo (`correo-relay-client.ts`) — mismo
+ * motivo que `CorreoRelayRecuperacionAdapter` (Render bloquea el
+ * puerto SMTP saliente en su plan gratis). */
 @Injectable()
-export class GmailSmtpCorreoCodigoEntregaAdapter extends CorreoCodigoEntregaPort {
-  private readonly logger = new Logger(
-    GmailSmtpCorreoCodigoEntregaAdapter.name,
-  );
-  private readonly transporter: Transporter;
-  private readonly fromEmail: string;
+export class CorreoRelayCodigoEntregaAdapter extends CorreoCodigoEntregaPort {
+  private readonly logger = new Logger(CorreoRelayCodigoEntregaAdapter.name);
 
-  constructor(config: ConfigService) {
+  constructor(private readonly config: ConfigService) {
     super();
-    this.transporter = crearTransporteGmail(config);
-    this.fromEmail = `MediRuta <${config.get<string>('GMAIL_SMTP_USER')}>`;
   }
 
   async enviarCodigoEntrega(
@@ -36,8 +29,7 @@ export class GmailSmtpCorreoCodigoEntregaAdapter extends CorreoCodigoEntregaPort
     codigoEntrega: string,
   ): Promise<void> {
     try {
-      await this.transporter.sendMail({
-        from: this.fromEmail,
+      await enviarCorreoViaRelay(this.config, {
         to: correo,
         subject: ASUNTO_CODIGO_ENTREGA,
         html: plantillaHtml(nombrePaciente, codigoPedido, codigoEntrega),
@@ -49,8 +41,6 @@ export class GmailSmtpCorreoCodigoEntregaAdapter extends CorreoCodigoEntregaPort
     }
   }
 
-  // Ver comentario de registrarFallo en
-  // gmail-smtp-correo-recuperacion.adapter.ts.
   private registrarFallo(error: unknown): void {
     const causa =
       error instanceof Error

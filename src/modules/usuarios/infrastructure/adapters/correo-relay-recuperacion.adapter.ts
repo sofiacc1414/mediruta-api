@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { Transporter } from 'nodemailer';
-import { crearTransporteGmail } from '../../../../shared/infrastructure/email/gmail-smtp-transporter';
+import { enviarCorreoViaRelay } from '../../../../shared/infrastructure/email/correo-relay-client';
 import { CorreoRecuperacionPort } from '../../domain/ports/correo-recuperacion.port';
 
 export const ASUNTO_RECUPERACION_CONTRASENA =
@@ -18,22 +17,18 @@ const OTP_PATTERN = /^\d{6}$/;
 // mismo nombre (o actualizar esta constante).
 const LOGO_URL = 'https://mediruta-web.vercel.app/logo-mediruta.png';
 
-/** Reemplaza a `ResendCorreoRecuperacionAdapter` — Resend en modo
- * sandbox (sin dominio propio verificado) solo entregaba al dueño de
- * la cuenta, así que la recuperación de contraseña nunca le llegaba a
- * un usuario real. Gmail SMTP no tiene esa restricción. */
+/** Manda por el relay de correo (`correo-relay-client.ts`) — ver
+ * comentario ahí sobre por qué no se manda SMTP directo desde esta API
+ * (Render bloquea el puerto saliente). Reemplaza a
+ * `GmailSmtpCorreoRecuperacionAdapter`, que a su vez había reemplazado
+ * a `ResendCorreoRecuperacionAdapter` (Resend en modo sandbox solo
+ * entregaba al dueño de la cuenta). */
 @Injectable()
-export class GmailSmtpCorreoRecuperacionAdapter extends CorreoRecuperacionPort {
-  private readonly logger = new Logger(
-    GmailSmtpCorreoRecuperacionAdapter.name,
-  );
-  private readonly transporter: Transporter;
-  private readonly fromEmail: string;
+export class CorreoRelayRecuperacionAdapter extends CorreoRecuperacionPort {
+  private readonly logger = new Logger(CorreoRelayRecuperacionAdapter.name);
 
-  constructor(config: ConfigService) {
+  constructor(private readonly config: ConfigService) {
     super();
-    this.transporter = crearTransporteGmail(config);
-    this.fromEmail = `MediRuta <${config.get<string>('GMAIL_SMTP_USER')}>`;
   }
 
   async enviarCodigoRecuperacion(
@@ -43,8 +38,7 @@ export class GmailSmtpCorreoRecuperacionAdapter extends CorreoRecuperacionPort {
     const otp = otpSeguro(codigo);
 
     try {
-      await this.transporter.sendMail({
-        from: this.fromEmail,
+      await enviarCorreoViaRelay(this.config, {
         to: correo,
         subject: ASUNTO_RECUPERACION_CONTRASENA,
         html: plantillaHtml(otp),
@@ -56,11 +50,9 @@ export class GmailSmtpCorreoRecuperacionAdapter extends CorreoRecuperacionPort {
     }
   }
 
-  // El código de error de nodemailer (ETIMEDOUT, EAUTH, etc.) es
-  // seguro de loguear — nunca incluye el OTP ni la contraseña de
-  // aplicación. Antes se perdía por completo (solo quedaba el mensaje
-  // genérico), lo que hacía imposible distinguir desde los logs un
-  // bloqueo de red de una credencial inválida.
+  // El error del relay (causa real de nodemailer del lado de Vercel,
+  // o de la propia llamada HTTP) es seguro de loguear — nunca incluye
+  // el OTP ni la contraseña de aplicación.
   private registrarFallo(error: unknown): void {
     const causa =
       error instanceof Error
