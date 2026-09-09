@@ -4,7 +4,10 @@ import {
   CredencialesLogin,
   UsuarioRepositoryPort,
 } from '../../domain/ports/usuario.repository.port';
-import { DUMMY_PASSWORD_HASH, IniciarSesionUseCase } from './iniciar-sesion.use-case';
+import {
+  DUMMY_PASSWORD_HASH,
+  IniciarSesionUseCase,
+} from './iniciar-sesion.use-case';
 import { ReactivarCuentaPropiaUseCase } from './reactivar-cuenta-propia.use-case';
 
 const credencialesDesactivada: CredencialesLogin = {
@@ -46,7 +49,12 @@ describe('ReactivarCuentaPropiaUseCase', () => {
     (iniciarSesion.execute as jest.Mock).mockResolvedValue({
       accessToken: 'access-jwt',
       refreshToken: 'refresh-opaco',
-      usuario: { id: 'usuario-uuid', correo: 'persona@mail.com', estadoCuenta: 'activa', roles: [] },
+      usuario: {
+        id: 'usuario-uuid',
+        correo: 'persona@mail.com',
+        estadoCuenta: 'activa',
+        roles: [],
+      },
     });
   });
 
@@ -102,7 +110,10 @@ describe('ReactivarCuentaPropiaUseCase', () => {
     });
 
     await expect(
-      useCase.execute({ correo: 'persona@mail.com', password: 'ClaveSegura1!' }),
+      useCase.execute({
+        correo: 'persona@mail.com',
+        password: 'ClaveSegura1!',
+      }),
     ).rejects.toBeInstanceOf(CredencialesInvalidasError);
 
     expect(usuarios.reactivarCuentaPropia).not.toHaveBeenCalled();

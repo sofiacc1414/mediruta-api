@@ -244,7 +244,8 @@ export type NovedadAbierta = {
 /** HU-07 (ronda 6) — estado por el que el panel admin puede filtrar el
  * listado de novedades. `'abierta'` es el valor por defecto (comportamiento
  * histórico: solo lo pendiente de atender). */
-export type EstadoNovedadAdmin = 'abierta' | 'aprobada' | 'rechazada' | 'resuelta' | 'todas';
+export type EstadoNovedadAdmin =
+  'abierta' | 'aprobada' | 'rechazada' | 'resuelta' | 'todas';
 
 export type NovedadDelPaciente = {
   id: string;
@@ -551,6 +552,16 @@ export abstract class SolicitudRepositoryPort {
    * de incluirlo apenas lo acepta). */
   abstract obtenerPedidoActivo(
     domiciliarioId: string,
+  ): Promise<PedidoActivoDomiciliario | null>;
+
+  /** Ronda 11 — "Mis pedidos" del Domiciliario era de solo lectura sin
+   * detalle: el Historial (entregados/cancelados) no tenía a dónde ir.
+   * Mismo shape que `obtenerPedidoActivo`, pero por id y sin filtro de
+   * estado — cualquier pedido que ese Domiciliario haya atendido alguna
+   * vez, en cualquier paso. `null` si el id no existe o no es suyo. */
+  abstract obtenerPedidoPorId(
+    domiciliarioId: string,
+    solicitudId: string,
   ): Promise<PedidoActivoDomiciliario | null>;
 
   /** Historial del pedido activo del Domiciliario — mismo criterio de

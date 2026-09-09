@@ -3,8 +3,7 @@ import { NovedadNoEncontradaError } from '../../domain/errors/novedad-no-encontr
 import { GeocodificacionPort } from '../../domain/ports/geocodificacion.port';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
 
-export const MENSAJE_EDICION_APROBADA =
-  'Corrección aplicada al pedido.';
+export const MENSAJE_EDICION_APROBADA = 'Corrección aplicada al pedido.';
 
 /** HU-07 (ronda 3) — el Administrador aprueba una novedad de tipo
  * 'edicion': aplica los datos propuestos al pedido y cierra la
@@ -27,10 +26,11 @@ export class AprobarEdicionPedidoAdminUseCase {
     adminId: string,
     novedadId: string,
   ): Promise<{ message: string }> {
-    const datos = await this.solicitudes.obtenerDatosGeocodificacionNovedadAdmin(
-      adminId,
-      novedadId,
-    );
+    const datos =
+      await this.solicitudes.obtenerDatosGeocodificacionNovedadAdmin(
+        adminId,
+        novedadId,
+      );
 
     let farmaciaLat: number | null = null;
     let farmaciaLng: number | null = null;

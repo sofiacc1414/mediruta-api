@@ -27,6 +27,7 @@ describe('ListarNovedadesAbiertasUseCase', () => {
     listarNovedadesAbiertas: jest.fn(),
     resolverNovedad: jest.fn(),
     obtenerPedidoActivo: jest.fn(),
+    obtenerPedidoPorId: jest.fn(),
     listarHistorialPedidos: jest.fn(),
     listarHistorialPedidoActivo: jest.fn(),
     obtenerNovedadPropiaAbierta: jest.fn(),
@@ -54,7 +55,10 @@ describe('ListarNovedadesAbiertasUseCase', () => {
     subir: jest.fn(),
     obtenerUrlFirmada: jest.fn(),
   } as unknown as AlmacenamientoArchivosPort;
-  const useCase = new ListarNovedadesAbiertasUseCase(solicitudes, almacenamiento);
+  const useCase = new ListarNovedadesAbiertasUseCase(
+    solicitudes,
+    almacenamiento,
+  );
 
   beforeEach(() => jest.resetAllMocks());
 
@@ -137,7 +141,9 @@ describe('ListarNovedadesAbiertasUseCase', () => {
 
     const [resultado] = await useCase.execute('admin-uuid');
 
-    expect(resultado.recetaActualUrl).toBe('https://storage/receta-actual-firmada');
+    expect(resultado.recetaActualUrl).toBe(
+      'https://storage/receta-actual-firmada',
+    );
     expect(resultado.recetaPropuestaUrl).toBe(
       'https://storage/receta-propuesta-firmada',
     );

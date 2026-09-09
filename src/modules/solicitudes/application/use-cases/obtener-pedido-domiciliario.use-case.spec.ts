@@ -1,10 +1,11 @@
+import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import {
   PedidoActivoDomiciliario,
   SolicitudRepositoryPort,
 } from '../../domain/ports/solicitud.repository.port';
-import { ObtenerPedidoActivoUseCase } from './obtener-pedido-activo.use-case';
+import { ObtenerPedidoDomiciliarioUseCase } from './obtener-pedido-domiciliario.use-case';
 
-describe('ObtenerPedidoActivoUseCase', () => {
+describe('ObtenerPedidoDomiciliarioUseCase', () => {
   const solicitudes: SolicitudRepositoryPort = {
     crear: jest.fn(),
     listar: jest.fn(),
@@ -52,27 +53,27 @@ describe('ObtenerPedidoActivoUseCase', () => {
     obtenerConfiguracionAdmin: jest.fn(),
     actualizarConfiguracionAdmin: jest.fn(),
   };
-  const useCase = new ObtenerPedidoActivoUseCase(solicitudes);
+  const useCase = new ObtenerPedidoDomiciliarioUseCase(solicitudes);
 
   beforeEach(() => {
     jest.resetAllMocks();
   });
 
-  it('devuelve null si el Domiciliario no tiene ningún pedido activo', async () => {
-    (solicitudes.obtenerPedidoActivo as jest.Mock).mockResolvedValue(null);
+  it('lanza SolicitudNoEncontradaError si el id no existe o no es del Domiciliario', async () => {
+    (solicitudes.obtenerPedidoPorId as jest.Mock).mockResolvedValue(null);
 
-    const resultado = await useCase.execute('domiciliario-uuid');
-
-    expect(resultado).toBeNull();
+    await expect(
+      useCase.execute('domiciliario-uuid', 'solicitud-uuid'),
+    ).rejects.toThrow(SolicitudNoEncontradaError);
     expect(solicitudes.listarHistorialPedidoActivo).not.toHaveBeenCalled();
     expect(solicitudes.obtenerNovedadPropiaAbierta).not.toHaveBeenCalled();
   });
 
-  it('combina el pedido activo con su historial y la novedad propia abierta', async () => {
+  it('combina el pedido (en cualquier estado) con su historial y la novedad propia abierta', async () => {
     const pedido: PedidoActivoDomiciliario = {
       id: 'solicitud-uuid',
       codigoPedido: 'MR-000123',
-      estado: 'en_camino_entrega',
+      estado: 'entregado',
       direccionEntrega: 'Calle 1 #2-3',
       direccionFarmacia: 'Carrera 5 #6-7',
       creadoEn: '2026-08-20T10:00:00.000Z',
@@ -82,32 +83,30 @@ describe('ObtenerPedidoActivoUseCase', () => {
         estado: 'asignado_en_camino_farmacia' as const,
         creadoEn: '2026-08-20T10:05:00.000Z',
       },
-      {
-        estado: 'en_camino_entrega' as const,
-        creadoEn: '2026-08-20T10:30:00.000Z',
-      },
+      { estado: 'entregado' as const, creadoEn: '2026-08-20T11:00:00.000Z' },
     ];
-    (solicitudes.obtenerPedidoActivo as jest.Mock).mockResolvedValue(pedido);
+    (solicitudes.obtenerPedidoPorId as jest.Mock).mockResolvedValue(pedido);
     (solicitudes.listarHistorialPedidoActivo as jest.Mock).mockResolvedValue(
       historial,
     );
-    (solicitudes.obtenerNovedadPropiaAbierta as jest.Mock).mockResolvedValue({
-      id: 'novedad-uuid',
-      detalle: 'El paciente no contesta',
-      creadoEn: '2026-08-20T10:35:00.000Z',
-    });
+    (solicitudes.obtenerNovedadPropiaAbierta as jest.Mock).mockResolvedValue(
+      null,
+    );
 
-    const resultado = await useCase.execute('domiciliario-uuid');
+    const resultado = await useCase.execute(
+      'domiciliario-uuid',
+      'solicitud-uuid',
+    );
 
     expect(resultado).toEqual({
       ...pedido,
       historial,
-      novedadPropiaAbierta: {
-        id: 'novedad-uuid',
-        detalle: 'El paciente no contesta',
-        creadoEn: '2026-08-20T10:35:00.000Z',
-      },
+      novedadPropiaAbierta: null,
     });
+    expect(solicitudes.obtenerPedidoPorId).toHaveBeenCalledWith(
+      'domiciliario-uuid',
+      'solicitud-uuid',
+    );
     expect(solicitudes.listarHistorialPedidoActivo).toHaveBeenCalledWith(
       'domiciliario-uuid',
       'solicitud-uuid',
@@ -118,11 +117,11 @@ describe('ObtenerPedidoActivoUseCase', () => {
     );
   });
 
-  it('novedadPropiaAbierta queda null si no hay ninguna', async () => {
-    (solicitudes.obtenerPedidoActivo as jest.Mock).mockResolvedValue({
+  it('también sirve para un pedido cancelado', async () => {
+    (solicitudes.obtenerPedidoPorId as jest.Mock).mockResolvedValue({
       id: 'solicitud-uuid',
-      codigoPedido: 'MR-000123',
-      estado: 'medicamentos_recogidos',
+      codigoPedido: 'MR-000456',
+      estado: 'cancelada',
       direccionEntrega: null,
       direccionFarmacia: null,
       creadoEn: '2026-08-20T10:00:00.000Z',
@@ -134,8 +133,11 @@ describe('ObtenerPedidoActivoUseCase', () => {
       null,
     );
 
-    const resultado = await useCase.execute('domiciliario-uuid');
+    const resultado = await useCase.execute(
+      'domiciliario-uuid',
+      'solicitud-uuid',
+    );
 
-    expect(resultado?.novedadPropiaAbierta).toBeNull();
+    expect(resultado.estado).toBe('cancelada');
   });
 });

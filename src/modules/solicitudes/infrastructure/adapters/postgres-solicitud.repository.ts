@@ -684,6 +684,30 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     });
   }
 
+  obtenerPedidoPorId(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<PedidoActivoDomiciliario | null> {
+    return this.db.withUserContext(domiciliarioId, async (client) => {
+      const result = await client.query<FilaPedidoActivoDomiciliario>(
+        'select * from app.obtener_pedido_por_id_domiciliario($1, $2)',
+        [domiciliarioId, solicitudId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return {
+        id: fila.id,
+        codigoPedido: fila.codigo_pedido,
+        estado: fila.estado,
+        direccionEntrega: fila.direccion_entrega,
+        direccionFarmacia: fila.direccion_farmacia,
+        creadoEn: fila.creado_en,
+      };
+    });
+  }
+
   listarHistorialPedidoActivo(
     domiciliarioId: string,
     solicitudId: string,
@@ -1090,10 +1114,10 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         codigo_pedido: string | null;
         paciente_correo: string | null;
         paciente_nombre: string | null;
-      }>(
-        'select * from app.obtener_codigo_entrega_para_correo_admin($1, $2)',
-        [adminId, solicitudId],
-      );
+      }>('select * from app.obtener_codigo_entrega_para_correo_admin($1, $2)', [
+        adminId,
+        solicitudId,
+      ]);
       const fila = result.rows[0];
       return {
         resultado: fila.resultado,

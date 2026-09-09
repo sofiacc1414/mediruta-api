@@ -22,16 +22,18 @@ describe('ListarNovedadesSolicitudDomiciliarioUseCase', () => {
         datosPropuestos: null,
       },
     ];
-    (solicitudes.listarNovedadesSolicitudDomiciliario as jest.Mock).mockResolvedValue(
-      novedades,
-    );
+    (
+      solicitudes.listarNovedadesSolicitudDomiciliario as jest.Mock
+    ).mockResolvedValue(novedades);
 
-    const resultado = await useCase.execute('domiciliario-uuid', 'solicitud-uuid');
-
-    expect(solicitudes.listarNovedadesSolicitudDomiciliario).toHaveBeenCalledWith(
+    const resultado = await useCase.execute(
       'domiciliario-uuid',
       'solicitud-uuid',
     );
+
+    expect(
+      solicitudes.listarNovedadesSolicitudDomiciliario,
+    ).toHaveBeenCalledWith('domiciliario-uuid', 'solicitud-uuid');
     expect(resultado).toBe(novedades);
   });
 });

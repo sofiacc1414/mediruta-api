@@ -24,7 +24,11 @@ describe('AprobarEdicionPedidoAdminUseCase', () => {
   it('la edición no toca la dirección de la farmacia — no geocodifica, aprueba igual', async () => {
     (
       solicitudes.obtenerDatosGeocodificacionNovedadAdmin as jest.Mock
-    ).mockResolvedValue({ direccionFarmacia: null, ciudad: 'Medellín', departamento: 'Antioquia' });
+    ).mockResolvedValue({
+      direccionFarmacia: null,
+      ciudad: 'Medellín',
+      departamento: 'Antioquia',
+    });
     (solicitudes.aprobarEdicionPedidoAdmin as jest.Mock).mockResolvedValue(
       'aprobada',
     );
