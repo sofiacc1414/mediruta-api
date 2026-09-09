@@ -43,14 +43,20 @@ export class GmailSmtpCorreoCodigoEntregaAdapter extends CorreoCodigoEntregaPort
         html: plantillaHtml(nombrePaciente, codigoPedido, codigoEntrega),
         text: plantillaTexto(nombrePaciente, codigoPedido, codigoEntrega),
       });
-    } catch {
-      this.registrarFallo();
+    } catch (error) {
+      this.registrarFallo(error);
       throw new Error(ERROR_ENVIO_CORREO_CODIGO_ENTREGA);
     }
   }
 
-  private registrarFallo(): void {
-    this.logger.error(ERROR_ENVIO_CORREO_CODIGO_ENTREGA);
+  // Ver comentario de registrarFallo en
+  // gmail-smtp-correo-recuperacion.adapter.ts.
+  private registrarFallo(error: unknown): void {
+    const causa =
+      error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : String(error);
+    this.logger.error(`${ERROR_ENVIO_CORREO_CODIGO_ENTREGA} Causa: ${causa}`);
   }
 }
 

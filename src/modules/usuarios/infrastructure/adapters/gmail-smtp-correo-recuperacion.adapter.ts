@@ -50,14 +50,23 @@ export class GmailSmtpCorreoRecuperacionAdapter extends CorreoRecuperacionPort {
         html: plantillaHtml(otp),
         text: plantillaTexto(otp),
       });
-    } catch {
-      this.registrarFallo();
+    } catch (error) {
+      this.registrarFallo(error);
       throw new Error(ERROR_ENVIO_CORREO_RECUPERACION);
     }
   }
 
-  private registrarFallo(): void {
-    this.logger.error(ERROR_ENVIO_CORREO_RECUPERACION);
+  // El código de error de nodemailer (ETIMEDOUT, EAUTH, etc.) es
+  // seguro de loguear — nunca incluye el OTP ni la contraseña de
+  // aplicación. Antes se perdía por completo (solo quedaba el mensaje
+  // genérico), lo que hacía imposible distinguir desde los logs un
+  // bloqueo de red de una credencial inválida.
+  private registrarFallo(error: unknown): void {
+    const causa =
+      error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : String(error);
+    this.logger.error(`${ERROR_ENVIO_CORREO_RECUPERACION} Causa: ${causa}`);
   }
 }
 

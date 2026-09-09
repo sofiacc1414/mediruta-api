@@ -91,7 +91,7 @@ describe('GmailSmtpCorreoRecuperacionAdapter', () => {
     ).rejects.toThrow(ERROR_ENVIO_CORREO_RECUPERACION);
 
     expect(Logger.prototype.error).toHaveBeenCalledWith(
-      ERROR_ENVIO_CORREO_RECUPERACION,
+      expect.stringContaining(ERROR_ENVIO_CORREO_RECUPERACION),
     );
   });
 

@@ -99,7 +99,7 @@ describe('GmailSmtpCorreoCodigoEntregaAdapter', () => {
     ).rejects.toThrow(ERROR_ENVIO_CORREO_CODIGO_ENTREGA);
 
     expect(Logger.prototype.error).toHaveBeenCalledWith(
-      ERROR_ENVIO_CORREO_CODIGO_ENTREGA,
+      expect.stringContaining(ERROR_ENVIO_CORREO_CODIGO_ENTREGA),
     );
   });
 
