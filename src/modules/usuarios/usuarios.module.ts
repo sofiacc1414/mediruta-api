@@ -45,7 +45,7 @@ import { PostgresCambioContrasenaRepository } from './infrastructure/adapters/po
 import { CryptoCodigoRecuperacionAdapter } from './infrastructure/adapters/crypto-codigo-recuperacion.adapter';
 import { CryptoRefreshTokenAdapter } from './infrastructure/adapters/crypto-refresh-token.adapter';
 import { JwtAccessTokenAdapter } from './infrastructure/adapters/jwt-access-token.adapter';
-import { ResendCorreoRecuperacionAdapter } from './infrastructure/adapters/resend-correo-recuperacion.adapter';
+import { GmailSmtpCorreoRecuperacionAdapter } from './infrastructure/adapters/gmail-smtp-correo-recuperacion.adapter';
 import { PostgresPerfilRepository } from './infrastructure/adapters/postgres-perfil.repository';
 import { PostgresRecuperacionContrasenaRepository } from './infrastructure/adapters/postgres-recuperacion-contrasena.repository';
 import { PostgresSesionRepository } from './infrastructure/adapters/postgres-sesion.repository';
@@ -149,7 +149,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
     },
     {
       provide: CorreoRecuperacionPort,
-      useClass: ResendCorreoRecuperacionAdapter,
+      useClass: GmailSmtpCorreoRecuperacionAdapter,
     },
     {
       provide: CambioContrasenaRepositoryPort,
