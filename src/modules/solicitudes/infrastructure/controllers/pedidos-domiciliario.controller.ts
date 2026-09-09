@@ -26,6 +26,7 @@ import { ListarPedidosDisponiblesUseCase } from '../../application/use-cases/lis
 import { MarcarEnSitioUseCase } from '../../application/use-cases/marcar-en-sitio.use-case';
 import { MarcarMedicamentosRecogidosUseCase } from '../../application/use-cases/marcar-medicamentos-recogidos.use-case';
 import { ObtenerPedidoActivoUseCase } from '../../application/use-cases/obtener-pedido-activo.use-case';
+import { ObtenerPedidoDomiciliarioUseCase } from '../../application/use-cases/obtener-pedido-domiciliario.use-case';
 import { ReportarNovedadUseCase } from '../../application/use-cases/reportar-novedad.use-case';
 import { EntregarPedidoDto } from '../dtos/entregar-pedido.dto';
 import { ReportarNovedadDto } from '../dtos/reportar-novedad.dto';
@@ -49,6 +50,7 @@ export class PedidosDomiciliarioController {
     private readonly entregarPedido: EntregarPedidoUseCase,
     private readonly reportarNovedad: ReportarNovedadUseCase,
     private readonly obtenerPedidoActivo: ObtenerPedidoActivoUseCase,
+    private readonly obtenerPedidoDomiciliario: ObtenerPedidoDomiciliarioUseCase,
     private readonly listarHistorialPedidos: ListarHistorialPedidosUseCase,
     private readonly obtenerDocumentosPacienteParaRecoger: ObtenerDocumentosPacienteParaRecogerUseCase,
     private readonly listarNovedadesSolicitudDomiciliario: ListarNovedadesSolicitudDomiciliarioUseCase,
@@ -74,6 +76,21 @@ export class PedidosDomiciliarioController {
   @HttpCode(HttpStatus.OK)
   miActivo(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
     return this.obtenerPedidoActivo.execute(identidad.usuarioId);
+  }
+
+  /** Detalle de solo lectura de un pedido puntual del Historial (tab
+   * "Mis pedidos" — entregado o cancelado). Mismo shape que
+   * "mi-activo", sin restricción de estado. */
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  pedidoPorId(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+  ) {
+    return this.obtenerPedidoDomiciliario.execute(
+      identidad.usuarioId,
+      solicitudId,
+    );
   }
 
   /** HU-07/HU-09 — cédula del Paciente (ambos lados), para mostrar en

@@ -99,7 +99,10 @@ export class PedidosAdminController {
     @UsuarioAutenticado() identidad: IdentidadAutenticada,
     @Param('id', ParseUUIDPipe) solicitudId: string,
   ) {
-    return this.regenerarCodigoEntrega.execute(identidad.usuarioId, solicitudId);
+    return this.regenerarCodigoEntrega.execute(
+      identidad.usuarioId,
+      solicitudId,
+    );
   }
 
   /** HU-07 (ronda 3) — reenvía por correo el código de entrega vigente

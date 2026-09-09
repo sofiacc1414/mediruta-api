@@ -212,7 +212,9 @@ describe('SolicitudesController', () => {
 
   it('POST /solicitudes/:id/solicitar-edicion mapea medicamentos e incluyeReceta', async () => {
     const solicitarEdicionPedido = {
-      execute: jest.fn().mockResolvedValue({ message: 'ok', id: 'novedad-uuid' }),
+      execute: jest
+        .fn()
+        .mockResolvedValue({ message: 'ok', id: 'novedad-uuid' }),
     };
     const controller = crearController({ solicitarEdicionPedido });
 

@@ -47,7 +47,15 @@ describe('SolicitarEdicionPedidoUseCase', () => {
 
   it('lanza SolicitudEdicionSinCambiosError si no hay ningún dato propuesto', async () => {
     await expect(
-      useCase.execute('paciente-uuid', 'solicitud-uuid', '  ', null, null, null, false),
+      useCase.execute(
+        'paciente-uuid',
+        'solicitud-uuid',
+        '  ',
+        null,
+        null,
+        null,
+        false,
+      ),
     ).rejects.toBeInstanceOf(SolicitudEdicionSinCambiosError);
     expect(solicitudes.solicitarEdicionPedido).not.toHaveBeenCalled();
   });
@@ -58,9 +66,23 @@ describe('SolicitarEdicionPedidoUseCase', () => {
       id: 'novedad-uuid',
     });
 
-    await useCase.execute('paciente-uuid', 'solicitud-uuid', null, null, null, [
-      { nombre: 'Ibuprofeno', concentracion: null, formaFarmaceutica: null, cantidad: null, posologia: null },
-    ], false);
+    await useCase.execute(
+      'paciente-uuid',
+      'solicitud-uuid',
+      null,
+      null,
+      null,
+      [
+        {
+          nombre: 'Ibuprofeno',
+          concentracion: null,
+          formaFarmaceutica: null,
+          cantidad: null,
+          posologia: null,
+        },
+      ],
+      false,
+    );
 
     expect(solicitudes.solicitarEdicionPedido).toHaveBeenCalled();
   });
@@ -71,7 +93,15 @@ describe('SolicitarEdicionPedidoUseCase', () => {
       id: 'novedad-uuid',
     });
 
-    await useCase.execute('paciente-uuid', 'solicitud-uuid', null, null, null, null, true);
+    await useCase.execute(
+      'paciente-uuid',
+      'solicitud-uuid',
+      null,
+      null,
+      null,
+      null,
+      true,
+    );
 
     expect(solicitudes.solicitarEdicionPedido).toHaveBeenCalled();
   });
@@ -82,7 +112,15 @@ describe('SolicitarEdicionPedidoUseCase', () => {
     });
 
     await expect(
-      useCase.execute('paciente-uuid', 'solicitud-uuid', 'Calle nueva', null, null, null, false),
+      useCase.execute(
+        'paciente-uuid',
+        'solicitud-uuid',
+        'Calle nueva',
+        null,
+        null,
+        null,
+        false,
+      ),
     ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
   });
 });

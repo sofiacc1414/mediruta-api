@@ -20,10 +20,7 @@ export type PerfilPaciente = {
  * ver `SolicitudRepositoryPort.obtenerPedidoActivo`) y debe entregarlo
  * o que se reporte una novedad antes de desconectarse. */
 export type ResultadoActualizarDisponibilidad =
-  | 'actualizado'
-  | 'no_autorizado'
-  | 'no_encontrado'
-  | 'tiene_pedido_activo';
+  'actualizado' | 'no_autorizado' | 'no_encontrado' | 'tiene_pedido_activo';
 
 export type PerfilDomiciliario = {
   direccion: string | null;

@@ -263,6 +263,9 @@ export class SolicitudesController {
     @UsuarioAutenticado() identidad: IdentidadAutenticada,
     @Param('id', ParseUUIDPipe) solicitudId: string,
   ) {
-    return this.listarNovedadesSolicitud.execute(identidad.usuarioId, solicitudId);
+    return this.listarNovedadesSolicitud.execute(
+      identidad.usuarioId,
+      solicitudId,
+    );
   }
 }

@@ -43,6 +43,7 @@ describe('ActualizarSolicitudUseCase', () => {
     listarNovedadesAbiertas: jest.fn(),
     resolverNovedad: jest.fn(),
     obtenerPedidoActivo: jest.fn(),
+    obtenerPedidoPorId: jest.fn(),
     listarHistorialPedidos: jest.fn(),
     listarHistorialPedidoActivo: jest.fn(),
     obtenerNovedadPropiaAbierta: jest.fn(),
