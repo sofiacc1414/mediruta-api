@@ -45,8 +45,15 @@ export class EventosGateway
   }
 
   async handleConnection(socket: Socket): Promise<void> {
+    // Temporal — para diagnosticar por qué algunos clientes móviles no
+    // logran conectar. Ver DiagnosticoConexionCard del lado App.
+    this.logger.log(
+      `Conexión entrante ${socket.id} (transporte inicial: ${socket.conn.transport.name})`,
+    );
+
     const token = extraerToken(socket);
     if (!token) {
+      this.logger.warn(`${socket.id}: sin token en el handshake, se desconecta.`);
       socket.disconnect(true);
       return;
     }
@@ -58,16 +65,19 @@ export class EventosGateway
         sid: payload.sid,
       });
       if (!sesionValida) {
+        this.logger.warn(`${socket.id}: sesión inválida (usuario ${payload.sub}), se desconecta.`);
         socket.disconnect(true);
         return;
       }
-    } catch {
+      this.logger.log(`${socket.id}: autenticado (usuario ${payload.sub}).`);
+    } catch (error) {
+      this.logger.warn(`${socket.id}: token inválido (${(error as Error).message}), se desconecta.`);
       socket.disconnect(true);
     }
   }
 
-  handleDisconnect(): void {
-    // Nada que limpiar — no se guarda ningún estado por socket.
+  handleDisconnect(socket: Socket): void {
+    this.logger.log(`${socket.id}: desconectado.`);
   }
 
   emitirPedidoActualizado(): void {
