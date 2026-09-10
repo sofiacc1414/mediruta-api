@@ -25,6 +25,8 @@ import { CuentaNoEncontradaError } from '../../domain/errors/cuenta-no-encontrad
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
 import { CuentaDesactivadaError } from '../../domain/errors/cuenta-desactivada.error';
+import { NivelCopagoEnUsoError } from '../../domain/errors/nivel-copago-en-uso.error';
+import { NivelCopagoNoEncontradoError } from '../../domain/errors/nivel-copago-no-encontrado.error';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
 import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
 import { NuevaContrasenaIgualError } from '../../domain/errors/nueva-contrasena-igual.error';
@@ -61,6 +63,8 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   NoPuedeDesconectarseConPedidoActivoError,
   SolicitudEdicionSinCambiosError,
   CuentaDesactivadaError,
+  NivelCopagoNoEncontradoError,
+  NivelCopagoEnUsoError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -71,7 +75,8 @@ export class DominioHttpFilter implements ExceptionFilter {
       exception instanceof PedidoYaAsignadoError ||
       exception instanceof DomiciliarioConPedidoActivoError ||
       exception instanceof DomiciliarioNoDisponibleParaAsignarError ||
-      exception instanceof NoPuedeDesconectarseConPedidoActivoError
+      exception instanceof NoPuedeDesconectarseConPedidoActivoError ||
+      exception instanceof NivelCopagoEnUsoError
     ) {
       response.status(HttpStatus.CONFLICT).json({
         statusCode: HttpStatus.CONFLICT,
@@ -122,7 +127,8 @@ export class DominioHttpFilter implements ExceptionFilter {
       exception instanceof NovedadNoEncontradaError ||
       exception instanceof DocumentosPacienteNoDisponiblesError ||
       exception instanceof AdministradorNoEncontradoError ||
-      exception instanceof CuentaNoEncontradaError
+      exception instanceof CuentaNoEncontradaError ||
+      exception instanceof NivelCopagoNoEncontradoError
     ) {
       response.status(HttpStatus.NOT_FOUND).json({
         statusCode: HttpStatus.NOT_FOUND,

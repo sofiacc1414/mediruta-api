@@ -54,6 +54,10 @@ describe('EnviarSolicitudUseCase', () => {
     asignarDomiciliarioAdmin: jest.fn(),
     obtenerConfiguracionAdmin: jest.fn(),
     actualizarConfiguracionAdmin: jest.fn(),
+    obtenerDatosPrecioPedido: jest.fn(),
+    listarNivelesCopagoAdmin: jest.fn(),
+    guardarNivelCopagoAdmin: jest.fn(),
+    eliminarNivelCopagoAdmin: jest.fn(),
   };
   const geocodificacion: GeocodificacionPort = {
     geocodificar: jest.fn(),
@@ -66,6 +70,7 @@ describe('EnviarSolicitudUseCase', () => {
       solicitudes.obtenerDatosGeocodificacionFarmacia as jest.Mock
     ).mockResolvedValue({
       direccionFarmacia: 'Farmacia La Rebaja Cl 80',
+      direccionEntrega: 'Calle 1 #2-3',
       ciudad: 'Bogotá',
       departamento: 'Cundinamarca',
     });
@@ -92,9 +97,16 @@ describe('EnviarSolicitudUseCase', () => {
       'Bogotá',
       'Cundinamarca',
     );
+    expect(geocodificacion.geocodificar).toHaveBeenCalledWith(
+      'Calle 1 #2-3',
+      'Bogotá',
+      'Cundinamarca',
+    );
     expect(solicitudes.enviar).toHaveBeenCalledWith(
       'paciente-uuid',
       'solicitud-uuid',
+      4.6486,
+      -74.0628,
       4.6486,
       -74.0628,
     );
@@ -114,14 +126,17 @@ describe('EnviarSolicitudUseCase', () => {
       'solicitud-uuid',
       null,
       null,
+      null,
+      null,
     );
   });
 
-  it('sin dirección de farmacia todavía, no llama a geocodificar', async () => {
+  it('sin dirección de farmacia ni entrega todavía, no llama a geocodificar', async () => {
     (
       solicitudes.obtenerDatosGeocodificacionFarmacia as jest.Mock
     ).mockResolvedValue({
       direccionFarmacia: null,
+      direccionEntrega: null,
       ciudad: null,
       departamento: null,
     });
@@ -138,6 +153,8 @@ describe('EnviarSolicitudUseCase', () => {
     expect(solicitudes.enviar).toHaveBeenCalledWith(
       'paciente-uuid',
       'solicitud-uuid',
+      null,
+      null,
       null,
       null,
     );

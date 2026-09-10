@@ -2,10 +2,12 @@ import { HttpStatus } from '@nestjs/common';
 import { GUARDS_METADATA, HTTP_CODE_METADATA } from '@nestjs/common/constants';
 import { ActualizarDatosComunesUseCase } from '../../application/use-cases/actualizar-datos-comunes.use-case';
 import { ActualizarDisponibilidadDomiciliarioUseCase } from '../../application/use-cases/actualizar-disponibilidad-domiciliario.use-case';
+import { ActualizarNivelCopagoPacienteUseCase } from '../../application/use-cases/actualizar-nivel-copago-paciente.use-case';
 import { ActualizarPerfilDomiciliarioUseCase } from '../../application/use-cases/actualizar-perfil-domiciliario.use-case';
 import { ActualizarPerfilPacienteUseCase } from '../../application/use-cases/actualizar-perfil-paciente.use-case';
 import { DesactivarCuentaUseCase } from '../../application/use-cases/desactivar-cuenta.use-case';
 import { EnviarSolicitudDomiciliarioUseCase } from '../../application/use-cases/enviar-solicitud-domiciliario.use-case';
+import { ListarNivelesCopagoUseCase } from '../../application/use-cases/listar-niveles-copago.use-case';
 import { ObtenerPerfilUseCase } from '../../application/use-cases/obtener-perfil.use-case';
 import { SolicitarRolDomiciliarioUseCase } from '../../application/use-cases/solicitar-rol-domiciliario.use-case';
 import { SolicitarRolPacienteUseCase } from '../../application/use-cases/solicitar-rol-paciente.use-case';
@@ -41,6 +43,8 @@ function crearController(overrides?: {
   solicitarRolDomiciliario?: { execute: jest.Mock };
   enviarSolicitudDomiciliario?: { execute: jest.Mock };
   actualizarDisponibilidadDomiciliario?: { execute: jest.Mock };
+  listarNivelesCopago?: { execute: jest.Mock };
+  actualizarNivelCopagoPaciente?: { execute: jest.Mock };
 }) {
   return new PerfilController(
     (overrides?.obtenerPerfil ?? {
@@ -79,6 +83,12 @@ function crearController(overrides?: {
     (overrides?.actualizarDisponibilidadDomiciliario ?? {
       execute: jest.fn(),
     }) as unknown as ActualizarDisponibilidadDomiciliarioUseCase,
+    (overrides?.listarNivelesCopago ?? {
+      execute: jest.fn(),
+    }) as unknown as ListarNivelesCopagoUseCase,
+    (overrides?.actualizarNivelCopagoPaciente ?? {
+      execute: jest.fn(),
+    }) as unknown as ActualizarNivelCopagoPacienteUseCase,
   );
 }
 

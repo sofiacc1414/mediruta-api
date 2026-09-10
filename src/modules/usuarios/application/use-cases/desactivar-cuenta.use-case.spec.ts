@@ -13,6 +13,8 @@ describe('DesactivarCuentaUseCase', () => {
     actualizarDocumentoDomiciliario: jest.fn(),
     desactivarCuenta: jest.fn(),
     actualizarDisponibilidadDomiciliario: jest.fn(),
+    listarNivelesCopago: jest.fn(),
+    actualizarNivelCopagoPaciente: jest.fn(),
   };
 
   const useCase = new DesactivarCuentaUseCase(perfiles);

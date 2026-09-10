@@ -4,7 +4,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { ActualizarDatosComunesUseCase } from './application/use-cases/actualizar-datos-comunes.use-case';
 import { ActualizarDisponibilidadDomiciliarioUseCase } from './application/use-cases/actualizar-disponibilidad-domiciliario.use-case';
 import { ActualizarPerfilDomiciliarioUseCase } from './application/use-cases/actualizar-perfil-domiciliario.use-case';
+import { ActualizarNivelCopagoPacienteUseCase } from './application/use-cases/actualizar-nivel-copago-paciente.use-case';
 import { ActualizarPerfilPacienteUseCase } from './application/use-cases/actualizar-perfil-paciente.use-case';
+import { ListarNivelesCopagoUseCase } from './application/use-cases/listar-niveles-copago.use-case';
 import { BloquearCuentaUseCase } from './application/use-cases/bloquear-cuenta.use-case';
 import { CambiarContrasenaUseCase } from './application/use-cases/cambiar-contrasena.use-case';
 import { CerrarSesionUseCase } from './application/use-cases/cerrar-sesion.use-case';
@@ -108,6 +110,8 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
     ObtenerPerfilUseCase,
     ActualizarDatosComunesUseCase,
     ActualizarPerfilPacienteUseCase,
+    ListarNivelesCopagoUseCase,
+    ActualizarNivelCopagoPacienteUseCase,
     ActualizarDisponibilidadDomiciliarioUseCase,
     SubirFotoCedulaPacienteUseCase,
     SubirFotoPerfilUseCase,

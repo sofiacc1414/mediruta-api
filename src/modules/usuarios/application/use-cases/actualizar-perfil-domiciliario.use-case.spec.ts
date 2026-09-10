@@ -16,6 +16,8 @@ describe('ActualizarPerfilDomiciliarioUseCase', () => {
     actualizarDocumentoDomiciliario: jest.fn(),
     desactivarCuenta: jest.fn(),
     actualizarDisponibilidadDomiciliario: jest.fn(),
+    listarNivelesCopago: jest.fn(),
+    actualizarNivelCopagoPaciente: jest.fn(),
   };
 
   const useCase = new ActualizarPerfilDomiciliarioUseCase(perfiles);

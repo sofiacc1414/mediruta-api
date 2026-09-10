@@ -21,6 +21,8 @@ describe('ObtenerPerfilUseCase', () => {
     actualizarDocumentoDomiciliario: jest.fn(),
     desactivarCuenta: jest.fn(),
     actualizarDisponibilidadDomiciliario: jest.fn(),
+    listarNivelesCopago: jest.fn(),
+    actualizarNivelCopagoPaciente: jest.fn(),
   };
   const almacenamiento: AlmacenamientoArchivosPort = {
     subir: jest.fn(),
@@ -71,6 +73,7 @@ describe('ObtenerPerfilUseCase', () => {
         fotoCedulaReversoPath: 'paciente/usuario-uuid/cedula_reverso.jpg',
         departamento: 'Cundinamarca',
         ciudad: 'Bogotá',
+        nivelCopagoId: 'nivel-uuid',
       },
       domiciliario: {
         direccion: 'Avenida 45',

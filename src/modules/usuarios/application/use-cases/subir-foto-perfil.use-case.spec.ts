@@ -18,6 +18,8 @@ describe('SubirFotoPerfilUseCase', () => {
     actualizarDocumentoDomiciliario: jest.fn(),
     desactivarCuenta: jest.fn(),
     actualizarDisponibilidadDomiciliario: jest.fn(),
+    listarNivelesCopago: jest.fn(),
+    actualizarNivelCopagoPaciente: jest.fn(),
   };
   const almacenamiento: AlmacenamientoArchivosPort = {
     subir: jest.fn(),

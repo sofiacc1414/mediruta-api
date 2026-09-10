@@ -9,6 +9,7 @@ import {
   SolicitudDetalle,
   SolicitudRepositoryPort,
 } from '../../domain/ports/solicitud.repository.port';
+import { CalcularPrecioPedidoUseCase } from './calcular-precio-pedido.use-case';
 import { ObtenerSolicitudUseCase } from './obtener-solicitud.use-case';
 
 describe('ObtenerSolicitudUseCase', () => {
@@ -58,12 +59,23 @@ describe('ObtenerSolicitudUseCase', () => {
     asignarDomiciliarioAdmin: jest.fn(),
     obtenerConfiguracionAdmin: jest.fn(),
     actualizarConfiguracionAdmin: jest.fn(),
+    obtenerDatosPrecioPedido: jest.fn(),
+    listarNivelesCopagoAdmin: jest.fn(),
+    guardarNivelCopagoAdmin: jest.fn(),
+    eliminarNivelCopagoAdmin: jest.fn(),
   };
   const almacenamiento: AlmacenamientoArchivosPort = {
     subir: jest.fn(),
     obtenerUrlFirmada: jest.fn(),
   };
-  const useCase = new ObtenerSolicitudUseCase(solicitudes, almacenamiento);
+  const calcularPrecio = {
+    execute: jest.fn(),
+  } as unknown as CalcularPrecioPedidoUseCase;
+  const useCase = new ObtenerSolicitudUseCase(
+    solicitudes,
+    almacenamiento,
+    calcularPrecio,
+  );
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -74,6 +86,10 @@ describe('ObtenerSolicitudUseCase', () => {
     (solicitudes.listarMedicamentos as jest.Mock).mockResolvedValue([]);
     (solicitudes.listarHistorial as jest.Mock).mockResolvedValue([]);
     (solicitudes.obtenerNovedadAbierta as jest.Mock).mockResolvedValue(null);
+    (calcularPrecio.execute as jest.Mock).mockResolvedValue({
+      disponible: false,
+      motivo: 'sin_nivel_copago',
+    });
   });
 
   it('G03 — resuelve receta y cédula a URLs firmadas, e incluye medicamentos e historial', async () => {
@@ -130,6 +146,45 @@ describe('ObtenerSolicitudUseCase', () => {
       BUCKET_PERFILES,
       'solicitud/solicitud-uuid/receta.jpg',
       URL_FIRMADA_EXPIRA_SEGUNDOS,
+    );
+  });
+
+  it('incluye el precio calculado por CalcularPrecioPedidoUseCase', async () => {
+    (solicitudes.obtener as jest.Mock).mockResolvedValue({
+      id: 'solicitud-uuid',
+      codigoPedido: 'MR-000123',
+      estado: 'en_asignacion',
+      recetaPath: null,
+      recetaFechaVencimiento: null,
+      direccionEntrega: null,
+      direccionFarmacia: null,
+      creadoEn: '2026-08-20T10:00:00.000Z',
+      enviadoEn: null,
+      canceladoEn: null,
+      cedulaFrentePath: null,
+      cedulaReversoPath: null,
+      codigoEntrega: null,
+    });
+    (calcularPrecio.execute as jest.Mock).mockResolvedValue({
+      disponible: true,
+      copago: 15000,
+      domicilio: 12250,
+      total: 27250,
+      distanciaKm: 3,
+    });
+
+    const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
+
+    expect(resultado.precio).toEqual({
+      disponible: true,
+      copago: 15000,
+      domicilio: 12250,
+      total: 27250,
+      distanciaKm: 3,
+    });
+    expect(calcularPrecio.execute).toHaveBeenCalledWith(
+      'paciente-uuid',
+      'solicitud-uuid',
     );
   });
 

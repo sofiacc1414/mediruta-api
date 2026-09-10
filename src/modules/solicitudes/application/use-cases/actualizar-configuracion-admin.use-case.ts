@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { RolNoAutorizadoError } from '../../../usuarios/domain/errors/rol-no-autorizado.error';
-import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
+import {
+  ParametrosPrecioDomicilio,
+  SolicitudRepositoryPort,
+} from '../../domain/ports/solicitud.repository.port';
 
 export const MENSAJE_CONFIGURACION_ACTUALIZADA =
   'Se actualizó el umbral de demora.';
@@ -17,10 +20,12 @@ export class ActualizarConfiguracionAdminUseCase {
   async execute(
     adminId: string,
     umbralMinutos: number,
+    parametrosPrecio: ParametrosPrecioDomicilio,
   ): Promise<ActualizarConfiguracionAdminResultado> {
     const resultado = await this.solicitudes.actualizarConfiguracionAdmin(
       adminId,
       umbralMinutos,
+      parametrosPrecio,
     );
 
     switch (resultado) {

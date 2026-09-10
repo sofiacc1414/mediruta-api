@@ -52,6 +52,10 @@ describe('ObtenerPedidoDomiciliarioUseCase', () => {
     asignarDomiciliarioAdmin: jest.fn(),
     obtenerConfiguracionAdmin: jest.fn(),
     actualizarConfiguracionAdmin: jest.fn(),
+    obtenerDatosPrecioPedido: jest.fn(),
+    listarNivelesCopagoAdmin: jest.fn(),
+    guardarNivelCopagoAdmin: jest.fn(),
+    eliminarNivelCopagoAdmin: jest.fn(),
   };
   const useCase = new ObtenerPedidoDomiciliarioUseCase(solicitudes);
 
