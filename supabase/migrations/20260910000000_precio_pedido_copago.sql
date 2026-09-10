@@ -414,9 +414,10 @@ begin
     returning niveles_copago.id into v_id;
   else
     update public.niveles_copago
-    set nombre = btrim(p_nombre), copago = p_copago, orden = coalesce(p_orden, orden),
+    set nombre = btrim(p_nombre), copago = p_copago,
+      orden = coalesce(p_orden, niveles_copago.orden),
       actualizado_en = now()
-    where id = p_id
+    where niveles_copago.id = p_id
     returning niveles_copago.id into v_id;
 
     if v_id is null then
@@ -464,7 +465,7 @@ begin
     return;
   end if;
 
-  delete from public.niveles_copago where id = p_id;
+  delete from public.niveles_copago where niveles_copago.id = p_id;
 
   if not found then
     return query select 'no_encontrado'::text;
