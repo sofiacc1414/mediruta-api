@@ -1,11 +1,16 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { exceptionFactoryEnEspanol } from './shared/infrastructure/pipes/mensajes-validacion';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // EventosGateway (ver ese archivo) — WebSockets en el mismo puerto
+  // HTTP, servidos por socket.io.
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   // Habilita req.cookies — necesario para leer el refresh token del flujo
   // Web, que viaja en una cookie HttpOnly (ver refresh-cookie.ts).

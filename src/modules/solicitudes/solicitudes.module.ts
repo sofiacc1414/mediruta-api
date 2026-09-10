@@ -41,11 +41,13 @@ import { ResolverNovedadUseCase } from './application/use-cases/resolver-novedad
 import { SolicitarEdicionPedidoUseCase } from './application/use-cases/solicitar-edicion-pedido.use-case';
 import { SubirRecetaUseCase } from './application/use-cases/subir-receta.use-case';
 import { CorreoCodigoEntregaPort } from './domain/ports/correo-codigo-entrega.port';
+import { EventosTiempoRealPort } from './domain/ports/eventos-tiempo-real.port';
 import { GeocodificacionPort } from './domain/ports/geocodificacion.port';
 import { SolicitudRepositoryPort } from './domain/ports/solicitud.repository.port';
 import { NominatimGeocodificacionAdapter } from './infrastructure/adapters/nominatim-geocodificacion.adapter';
 import { PostgresSolicitudRepository } from './infrastructure/adapters/postgres-solicitud.repository';
 import { CorreoRelayCodigoEntregaAdapter } from './infrastructure/adapters/correo-relay-codigo-entrega.adapter';
+import { EventosGateway } from './infrastructure/websockets/eventos.gateway';
 import { ConfiguracionAdminController } from './infrastructure/controllers/configuracion-admin.controller';
 import { NovedadesAdminController } from './infrastructure/controllers/novedades-admin.controller';
 import { PedidosAdminController } from './infrastructure/controllers/pedidos-admin.controller';
@@ -107,6 +109,11 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     ListarNivelesCopagoAdminUseCase,
     GuardarNivelCopagoAdminUseCase,
     EliminarNivelCopagoAdminUseCase,
+    EventosGateway,
+    {
+      provide: EventosTiempoRealPort,
+      useExisting: EventosGateway,
+    },
     {
       provide: SolicitudRepositoryPort,
       useClass: PostgresSolicitudRepository,
