@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
+import { EventosTiempoRealPort } from '../../domain/ports/eventos-tiempo-real.port';
 import {
   CodigoEntregaParaCorreo,
   ConfiguracionAdmin,
@@ -271,7 +272,10 @@ type FilaEnviar = {
  * castea con `::jsonb` y los descompone con `jsonb_to_recordset`. */
 @Injectable()
 export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
-  constructor(private readonly db: DatabaseService) {
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly eventos: EventosTiempoRealPort,
+  ) {
     super();
   }
 
@@ -471,48 +475,52 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     entregaLat: number | null,
     entregaLng: number | null,
   ): Promise<ResultadoEnviar> {
-    return this.db.withUserContext(pacienteId, async (client) => {
-      const result = await client.query<FilaEnviar>(
-        'select * from app.enviar_solicitud($1, $2, $3, $4, $5, $6)',
-        [
-          pacienteId,
-          solicitudId,
-          farmaciaLat,
-          farmaciaLng,
-          entregaLat,
-          entregaLng,
-        ],
-      );
-      const fila = result.rows[0];
+    return this.db
+      .withUserContext<ResultadoEnviar>(pacienteId, async (client) => {
+        const result = await client.query<FilaEnviar>(
+          'select * from app.enviar_solicitud($1, $2, $3, $4, $5, $6)',
+          [
+            pacienteId,
+            solicitudId,
+            farmaciaLat,
+            farmaciaLng,
+            entregaLat,
+            entregaLng,
+          ],
+        );
+        const fila = result.rows[0];
 
-      if (fila.resultado === 'incompleta') {
-        return { resultado: 'incompleta', faltantes: fila.faltantes ?? [] };
-      }
-      if (fila.resultado === 'no_encontrada') {
-        return { resultado: 'no_encontrada' };
-      }
-      if (fila.resultado === 'enviada' && fila.codigo_pedido) {
-        return { resultado: 'enviada', codigoPedido: fila.codigo_pedido };
-      }
-      throw new Error(
-        `Resultado inesperado de app.enviar_solicitud: ${fila.resultado}`,
-      );
-    });
+        if (fila.resultado === 'incompleta') {
+          return { resultado: 'incompleta', faltantes: fila.faltantes ?? [] };
+        }
+        if (fila.resultado === 'no_encontrada') {
+          return { resultado: 'no_encontrada' };
+        }
+        if (fila.resultado === 'enviada' && fila.codigo_pedido) {
+          return { resultado: 'enviada', codigoPedido: fila.codigo_pedido };
+        }
+        throw new Error(
+          `Resultado inesperado de app.enviar_solicitud: ${fila.resultado}`,
+        );
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   cancelar(
     pacienteId: string,
     solicitudId: string,
   ): Promise<ResultadoCancelar> {
-    return this.db.withUserContext(pacienteId, async (client) => {
-      const result = await client.query<{
-        cancelar_solicitud: ResultadoCancelar;
-      }>('select app.cancelar_solicitud($1, $2) as cancelar_solicitud', [
-        pacienteId,
-        solicitudId,
-      ]);
-      return result.rows[0].cancelar_solicitud;
-    });
+    return this.db
+      .withUserContext(pacienteId, async (client) => {
+        const result = await client.query<{
+          cancelar_solicitud: ResultadoCancelar;
+        }>('select app.cancelar_solicitud($1, $2) as cancelar_solicitud', [
+          pacienteId,
+          solicitudId,
+        ]);
+        return result.rows[0].cancelar_solicitud;
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   obtenerNovedadAbierta(
@@ -617,58 +625,68 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     domiciliarioId: string,
     solicitudId: string,
   ): Promise<ResultadoAceptarPedido> {
-    return this.db.withUserContext(domiciliarioId, async (client) => {
-      const result = await client.query<{ resultado: ResultadoAceptarPedido }>(
-        'select * from app.aceptar_pedido($1, $2)',
-        [domiciliarioId, solicitudId],
-      );
-      return result.rows[0].resultado;
-    });
+    return this.db
+      .withUserContext(domiciliarioId, async (client) => {
+        const result = await client.query<{
+          resultado: ResultadoAceptarPedido;
+        }>('select * from app.aceptar_pedido($1, $2)', [
+          domiciliarioId,
+          solicitudId,
+        ]);
+        return result.rows[0].resultado;
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   marcarMedicamentosRecogidos(
     domiciliarioId: string,
     solicitudId: string,
   ): Promise<ResultadoTransicionPedido> {
-    return this.db.withUserContext(domiciliarioId, async (client) => {
-      const result = await client.query<{
-        resultado: ResultadoTransicionPedido;
-      }>('select * from app.marcar_medicamentos_recogidos($1, $2)', [
-        domiciliarioId,
-        solicitudId,
-      ]);
-      return result.rows[0].resultado;
-    });
+    return this.db
+      .withUserContext(domiciliarioId, async (client) => {
+        const result = await client.query<{
+          resultado: ResultadoTransicionPedido;
+        }>('select * from app.marcar_medicamentos_recogidos($1, $2)', [
+          domiciliarioId,
+          solicitudId,
+        ]);
+        return result.rows[0].resultado;
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   iniciarEntrega(
     domiciliarioId: string,
     solicitudId: string,
   ): Promise<ResultadoTransicionPedido> {
-    return this.db.withUserContext(domiciliarioId, async (client) => {
-      const result = await client.query<{
-        resultado: ResultadoTransicionPedido;
-      }>('select * from app.iniciar_entrega($1, $2)', [
-        domiciliarioId,
-        solicitudId,
-      ]);
-      return result.rows[0].resultado;
-    });
+    return this.db
+      .withUserContext(domiciliarioId, async (client) => {
+        const result = await client.query<{
+          resultado: ResultadoTransicionPedido;
+        }>('select * from app.iniciar_entrega($1, $2)', [
+          domiciliarioId,
+          solicitudId,
+        ]);
+        return result.rows[0].resultado;
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   marcarEnSitio(
     domiciliarioId: string,
     solicitudId: string,
   ): Promise<ResultadoTransicionPedido> {
-    return this.db.withUserContext(domiciliarioId, async (client) => {
-      const result = await client.query<{
-        resultado: ResultadoTransicionPedido;
-      }>('select * from app.marcar_en_sitio($1, $2)', [
-        domiciliarioId,
-        solicitudId,
-      ]);
-      return result.rows[0].resultado;
-    });
+    return this.db
+      .withUserContext(domiciliarioId, async (client) => {
+        const result = await client.query<{
+          resultado: ResultadoTransicionPedido;
+        }>('select * from app.marcar_en_sitio($1, $2)', [
+          domiciliarioId,
+          solicitudId,
+        ]);
+        return result.rows[0].resultado;
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   entregarPedido(
@@ -676,13 +694,18 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     solicitudId: string,
     codigo: string,
   ): Promise<ResultadoEntregarPedido> {
-    return this.db.withUserContext(domiciliarioId, async (client) => {
-      const result = await client.query<{ resultado: ResultadoEntregarPedido }>(
-        'select * from app.entregar_pedido($1, $2, $3)',
-        [domiciliarioId, solicitudId, codigo],
-      );
-      return result.rows[0].resultado;
-    });
+    return this.db
+      .withUserContext(domiciliarioId, async (client) => {
+        const result = await client.query<{
+          resultado: ResultadoEntregarPedido;
+        }>('select * from app.entregar_pedido($1, $2, $3)', [
+          domiciliarioId,
+          solicitudId,
+          codigo,
+        ]);
+        return result.rows[0].resultado;
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   reportarNovedad(
@@ -690,21 +713,26 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     solicitudId: string,
     detalle: string,
   ): Promise<ResultadoReportarNovedad> {
-    return this.db.withUserContext(domiciliarioId, async (client) => {
-      const result = await client.query<{
-        resultado: string;
-        id: string | null;
-      }>('select * from app.reportar_novedad($1, $2, $3)', [
+    return this.db
+      .withUserContext<ResultadoReportarNovedad>(
         domiciliarioId,
-        solicitudId,
-        detalle,
-      ]);
-      const fila = result.rows[0];
-      if (fila.resultado === 'reportada' && fila.id) {
-        return { resultado: 'reportada', id: fila.id };
-      }
-      return { resultado: 'no_encontrado' };
-    });
+        async (client) => {
+          const result = await client.query<{
+            resultado: string;
+            id: string | null;
+          }>('select * from app.reportar_novedad($1, $2, $3)', [
+            domiciliarioId,
+            solicitudId,
+            detalle,
+          ]);
+          const fila = result.rows[0];
+          if (fila.resultado === 'reportada' && fila.id) {
+            return { resultado: 'reportada', id: fila.id };
+          }
+          return { resultado: 'no_encontrado' };
+        },
+      )
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   obtenerPedidoActivo(
@@ -840,12 +868,14 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     adminId: string,
     novedadId: string,
   ): Promise<ResultadoResolverNovedad> {
-    return this.db.withUserContext(adminId, async (client) => {
-      const result = await client.query<{
-        resultado: ResultadoResolverNovedad;
-      }>('select * from app.resolver_novedad($1, $2)', [adminId, novedadId]);
-      return result.rows[0].resultado;
-    });
+    return this.db
+      .withUserContext(adminId, async (client) => {
+        const result = await client.query<{
+          resultado: ResultadoResolverNovedad;
+        }>('select * from app.resolver_novedad($1, $2)', [adminId, novedadId]);
+        return result.rows[0].resultado;
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   listarPedidosAdmin(
@@ -985,21 +1015,23 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     solicitudId: string,
     detalle: string,
   ): Promise<ResultadoReportarNovedad> {
-    return this.db.withUserContext(pacienteId, async (client) => {
-      const result = await client.query<{
-        resultado: string;
-        id: string | null;
-      }>('select * from app.reportar_novedad_paciente($1, $2, $3)', [
-        pacienteId,
-        solicitudId,
-        detalle,
-      ]);
-      const fila = result.rows[0];
-      if (fila.resultado === 'reportada' && fila.id) {
-        return { resultado: 'reportada', id: fila.id };
-      }
-      return { resultado: 'no_encontrado' };
-    });
+    return this.db
+      .withUserContext<ResultadoReportarNovedad>(pacienteId, async (client) => {
+        const result = await client.query<{
+          resultado: string;
+          id: string | null;
+        }>('select * from app.reportar_novedad_paciente($1, $2, $3)', [
+          pacienteId,
+          solicitudId,
+          detalle,
+        ]);
+        const fila = result.rows[0];
+        if (fila.resultado === 'reportada' && fila.id) {
+          return { resultado: 'reportada', id: fila.id };
+        }
+        return { resultado: 'no_encontrado' };
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   solicitarEdicionPedido(
@@ -1079,17 +1111,19 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     farmaciaLat: number | null = null,
     farmaciaLng: number | null = null,
   ): Promise<ResultadoAccionEdicionPedido> {
-    return this.db.withUserContext(adminId, async (client) => {
-      const result = await client.query<{
-        resultado: ResultadoAccionEdicionPedido;
-      }>('select * from app.aprobar_edicion_pedido_admin($1, $2, $3, $4)', [
-        adminId,
-        novedadId,
-        farmaciaLat,
-        farmaciaLng,
-      ]);
-      return result.rows[0].resultado;
-    });
+    return this.db
+      .withUserContext(adminId, async (client) => {
+        const result = await client.query<{
+          resultado: ResultadoAccionEdicionPedido;
+        }>('select * from app.aprobar_edicion_pedido_admin($1, $2, $3, $4)', [
+          adminId,
+          novedadId,
+          farmaciaLat,
+          farmaciaLng,
+        ]);
+        return result.rows[0].resultado;
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   obtenerDatosGeocodificacionNovedadAdmin(
@@ -1121,15 +1155,17 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     adminId: string,
     novedadId: string,
   ): Promise<ResultadoAccionEdicionPedido> {
-    return this.db.withUserContext(adminId, async (client) => {
-      const result = await client.query<{
-        resultado: ResultadoAccionEdicionPedido;
-      }>('select * from app.rechazar_edicion_pedido_admin($1, $2)', [
-        adminId,
-        novedadId,
-      ]);
-      return result.rows[0].resultado;
-    });
+    return this.db
+      .withUserContext(adminId, async (client) => {
+        const result = await client.query<{
+          resultado: ResultadoAccionEdicionPedido;
+        }>('select * from app.rechazar_edicion_pedido_admin($1, $2)', [
+          adminId,
+          novedadId,
+        ]);
+        return result.rows[0].resultado;
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   regenerarCodigoEntregaAdmin(
@@ -1198,16 +1234,18 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     solicitudId: string,
     domiciliarioId: string,
   ): Promise<ResultadoAsignarDomiciliarioAdmin> {
-    return this.db.withUserContext(adminId, async (client) => {
-      const result = await client.query<{
-        resultado: ResultadoAsignarDomiciliarioAdmin;
-      }>('select * from app.asignar_domiciliario_admin($1, $2, $3)', [
-        adminId,
-        solicitudId,
-        domiciliarioId,
-      ]);
-      return result.rows[0].resultado;
-    });
+    return this.db
+      .withUserContext(adminId, async (client) => {
+        const result = await client.query<{
+          resultado: ResultadoAsignarDomiciliarioAdmin;
+        }>('select * from app.asignar_domiciliario_admin($1, $2, $3)', [
+          adminId,
+          solicitudId,
+          domiciliarioId,
+        ]);
+        return result.rows[0].resultado;
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado());
   }
 
   obtenerConfiguracionAdmin(
@@ -1299,16 +1337,23 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     orden: number,
   ): Promise<ResultadoGuardarNivelCopagoAdmin> {
     return this.db.withUserContext(adminId, async (client) => {
-      const result = await client.query<{ resultado: string; id: string | null }>(
-        'select * from app.guardar_nivel_copago_admin($1, $2, $3, $4, $5)',
-        [adminId, id, nombre, copago, orden],
-      );
+      const result = await client.query<{
+        resultado: string;
+        id: string | null;
+      }>('select * from app.guardar_nivel_copago_admin($1, $2, $3, $4, $5)', [
+        adminId,
+        id,
+        nombre,
+        copago,
+        orden,
+      ]);
       const fila = result.rows[0];
       if (fila.resultado === 'guardado' && fila.id) {
         return { resultado: 'guardado', id: fila.id };
       }
       return {
-        resultado: fila.resultado as 'no_autorizado' | 'invalido' | 'no_encontrado',
+        resultado: fila.resultado as
+          'no_autorizado' | 'invalido' | 'no_encontrado',
       };
     });
   }
