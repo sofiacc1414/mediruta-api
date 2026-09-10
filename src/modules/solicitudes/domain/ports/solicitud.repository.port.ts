@@ -212,6 +212,18 @@ export type NivelCopagoAdmin = {
   orden: number;
 };
 
+/** Mismos ingredientes que `DatosPrecioPedido`, pero sin depender de
+ * que exista una solicitud — la distancia no viene acá (no hay
+ * farmacia_ubicacion/entrega_ubicacion todavía) sino que la calcula
+ * `EstimarPrecioPedidoUseCase` geocodificando en vivo lo que el
+ * Paciente va escribiendo. `ciudad`/`departamento` viajan para darle
+ * contexto a esa geocodificación, igual que al enviar el pedido. */
+export type ParametrosEstimacionPrecio = ParametrosPrecioDomicilio & {
+  copago: number | null;
+  ciudad: string | null;
+  departamento: string | null;
+};
+
 export type ResultadoGuardarNivelCopagoAdmin =
   | { resultado: 'guardado'; id: string }
   | { resultado: 'no_autorizado' | 'invalido' | 'no_encontrado' };
@@ -761,6 +773,12 @@ export abstract class SolicitudRepositoryPort {
     pacienteId: string,
     solicitudId: string,
   ): Promise<DatosPrecioPedido | null>;
+
+  /** Ingredientes para el estimado en vivo, ver
+   * `ParametrosEstimacionPrecio`. */
+  abstract obtenerParametrosEstimacionPrecio(
+    pacienteId: string,
+  ): Promise<ParametrosEstimacionPrecio | null>;
 
   /** Panel admin — CRUD del catálogo de niveles de copago propio de
    * MediRuta (no el copago real de EPS). */

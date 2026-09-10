@@ -26,6 +26,7 @@ import { AdjuntarRecetaPropuestaEdicionUseCase } from '../../application/use-cas
 import { CancelarSolicitudUseCase } from '../../application/use-cases/cancelar-solicitud.use-case';
 import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicitud.use-case';
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
+import { EstimarPrecioPedidoUseCase } from '../../application/use-cases/estimar-precio-pedido.use-case';
 import { ListarNovedadesSolicitudUseCase } from '../../application/use-cases/listar-novedades-solicitud.use-case';
 import { ListarSolicitudesUseCase } from '../../application/use-cases/listar-solicitudes.use-case';
 import { ObtenerSolicitudUseCase } from '../../application/use-cases/obtener-solicitud.use-case';
@@ -35,6 +36,7 @@ import { SolicitarEdicionPedidoUseCase } from '../../application/use-cases/solic
 import { SubirRecetaUseCase } from '../../application/use-cases/subir-receta.use-case';
 import { Medicamento } from '../../domain/ports/solicitud.repository.port';
 import { DatosSolicitudDto } from '../dtos/datos-solicitud.dto';
+import { EstimarPrecioPedidoDto } from '../dtos/estimar-precio-pedido.dto';
 import { MedicamentoDto } from '../dtos/medicamento.dto';
 import { ReportarCodigoNoGeneradoDto } from '../dtos/reportar-codigo-no-generado.dto';
 import { ReportarNovedadDto } from '../dtos/reportar-novedad.dto';
@@ -89,6 +91,7 @@ export class SolicitudesController {
     private readonly adjuntarRecetaPropuestaEdicion: AdjuntarRecetaPropuestaEdicionUseCase,
     private readonly reportarCodigoNoGenerado: ReportarCodigoNoGeneradoUseCase,
     private readonly listarNovedadesSolicitud: ListarNovedadesSolicitudUseCase,
+    private readonly estimarPrecioPedido: EstimarPrecioPedidoUseCase,
   ) {}
 
   @Post()
@@ -110,6 +113,22 @@ export class SolicitudesController {
   @HttpCode(HttpStatus.OK)
   listar(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
     return this.listarSolicitudes.execute(identidad.usuarioId);
+  }
+
+  /** Estimado en vivo mientras se arma el borrador — antes de enviar,
+   * antes incluso de que exista una solicitud guardada (ver doc de
+   * `EstimarPrecioPedidoUseCase`). */
+  @Post('estimar-precio')
+  @HttpCode(HttpStatus.OK)
+  estimarPrecio(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Body() dto: EstimarPrecioPedidoDto,
+  ) {
+    return this.estimarPrecioPedido.execute(
+      identidad.usuarioId,
+      dto.direccionFarmacia,
+      dto.direccionEntrega,
+    );
   }
 
   @Get(':id')
