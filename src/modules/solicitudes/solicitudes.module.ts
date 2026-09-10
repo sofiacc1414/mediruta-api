@@ -30,6 +30,7 @@ import { ObtenerDocumentosPacienteParaRecogerUseCase } from './application/use-c
 import { ObtenerPedidoActivoUseCase } from './application/use-cases/obtener-pedido-activo.use-case';
 import { ObtenerPedidoDomiciliarioUseCase } from './application/use-cases/obtener-pedido-domiciliario.use-case';
 import { CalcularPrecioPedidoUseCase } from './application/use-cases/calcular-precio-pedido.use-case';
+import { EstimarPrecioPedidoUseCase } from './application/use-cases/estimar-precio-pedido.use-case';
 import { ObtenerSolicitudUseCase } from './application/use-cases/obtener-solicitud.use-case';
 import { RechazarEdicionPedidoAdminUseCase } from './application/use-cases/rechazar-edicion-pedido-admin.use-case';
 import { ReenviarCodigoEntregaCorreoAdminUseCase } from './application/use-cases/reenviar-codigo-entrega-correo-admin.use-case';
@@ -72,6 +73,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     CrearSolicitudUseCase,
     ListarSolicitudesUseCase,
     CalcularPrecioPedidoUseCase,
+    EstimarPrecioPedidoUseCase,
     ObtenerSolicitudUseCase,
     ActualizarSolicitudUseCase,
     SubirRecetaUseCase,

@@ -19,6 +19,7 @@ import {
   NovedadDelPaciente,
   NovedadDelPacienteConEstado,
   OrigenNovedad,
+  ParametrosEstimacionPrecio,
   ParametrosPrecioDomicilio,
   PedidoActivoDomiciliario,
   PedidoAdmin,
@@ -169,6 +170,19 @@ type FilaConfiguracionAdmin = {
 type FilaDatosPrecioPedido = {
   copago: string | null;
   distancia_metros: number | null;
+  tarifa_base_domicilio: string;
+  tarifa_por_km: string;
+  tarifa_por_minuto: string;
+  tiempo_base_farmacia_min: number;
+  velocidad_promedio_kmh: string;
+  distancia_incluida_km: string;
+  tarifa_por_km_excedente: string;
+};
+
+type FilaParametrosEstimacionPrecio = {
+  copago: string | null;
+  ciudad: string | null;
+  departamento: string | null;
   tarifa_base_domicilio: string;
   tarifa_por_km: string;
   tarifa_por_minuto: string;
@@ -1309,6 +1323,27 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       return {
         copago: fila.copago !== null ? Number(fila.copago) : null,
         distanciaMetros: fila.distancia_metros,
+        ...mapearParametrosPrecio(fila),
+      };
+    });
+  }
+
+  obtenerParametrosEstimacionPrecio(
+    pacienteId: string,
+  ): Promise<ParametrosEstimacionPrecio | null> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<FilaParametrosEstimacionPrecio>(
+        'select * from app.obtener_parametros_estimacion_precio($1)',
+        [pacienteId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return {
+        copago: fila.copago !== null ? Number(fila.copago) : null,
+        ciudad: fila.ciudad,
+        departamento: fila.departamento,
         ...mapearParametrosPrecio(fila),
       };
     });
