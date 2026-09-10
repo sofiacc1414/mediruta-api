@@ -15,7 +15,13 @@ export const MENSAJE_SOLICITUD_ENVIADA = 'Tu solicitud fue enviada a revisión.'
  * Si Nominatim no la resuelve, el envío sigue igual — GeocodificacionPort
  * devuelve `null` en vez de lanzar, y `enviar()` acepta lat/lng nulos sin
  * bloquear (el pedido queda sin ordenar por distancia hasta que se
- * resuelva manual, ver plan). */
+ * resuelva manual, ver plan).
+ *
+ * Ronda de precio del pedido — también geocodifica la dirección de
+ * entrega (antes no se hacía) para poder calcular la distancia real
+ * farmacia→entrega y así el costo de domicilio. Mismo criterio que la
+ * farmacia: si falla, no bloquea el envío — el precio simplemente
+ * queda sin poder calcularse hasta que se resuelva. */
 @Injectable()
 export class EnviarSolicitudUseCase {
   constructor(
@@ -32,23 +38,26 @@ export class EnviarSolicitudUseCase {
       solicitudId,
     );
 
-    let farmaciaLat: number | null = null;
-    let farmaciaLng: number | null = null;
-    if (datos?.direccionFarmacia) {
-      const coordenadas = await this.geocodificacion.geocodificar(
-        datos.direccionFarmacia,
-        datos.ciudad,
-        datos.departamento,
-      );
-      farmaciaLat = coordenadas?.lat ?? null;
-      farmaciaLng = coordenadas?.lng ?? null;
-    }
+    const [farmacia, entrega] = await Promise.all([
+      this.geocodificarSiHay(
+        datos?.direccionFarmacia ?? null,
+        datos?.ciudad ?? null,
+        datos?.departamento ?? null,
+      ),
+      this.geocodificarSiHay(
+        datos?.direccionEntrega ?? null,
+        datos?.ciudad ?? null,
+        datos?.departamento ?? null,
+      ),
+    ]);
 
     const resultado = await this.solicitudes.enviar(
       pacienteId,
       solicitudId,
-      farmaciaLat,
-      farmaciaLng,
+      farmacia.lat,
+      farmacia.lng,
+      entrega.lat,
+      entrega.lng,
     );
 
     switch (resultado.resultado) {
@@ -62,5 +71,21 @@ export class EnviarSolicitudUseCase {
       case 'no_encontrada':
         throw new SolicitudNoEncontradaError();
     }
+  }
+
+  private async geocodificarSiHay(
+    direccion: string | null,
+    ciudad: string | null,
+    departamento: string | null,
+  ): Promise<{ lat: number | null; lng: number | null }> {
+    if (!direccion) {
+      return { lat: null, lng: null };
+    }
+    const coordenadas = await this.geocodificacion.geocodificar(
+      direccion,
+      ciudad,
+      departamento,
+    );
+    return { lat: coordenadas?.lat ?? null, lng: coordenadas?.lng ?? null };
   }
 }

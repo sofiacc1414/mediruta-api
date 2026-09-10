@@ -174,12 +174,50 @@ export type ResultadoAsignarDomiciliarioAdmin =
   | 'no_autorizado'
   | 'domiciliario_no_disponible';
 
-export type ConfiguracionAdmin = {
+/** Parámetros del costo de domicilio (recorrido + tiempo) — configurables
+ * por el admin, no fijos en código. Ver `CalcularPrecioPedidoUseCase`
+ * para la fórmula que los usa. */
+export type ParametrosPrecioDomicilio = {
+  tarifaBaseDomicilio: number;
+  tarifaPorKm: number;
+  tarifaPorMinuto: number;
+  tiempoBaseFarmaciaMin: number;
+  velocidadPromedioKmh: number;
+  distanciaIncluidaKm: number;
+  tarifaPorKmExcedente: number;
+};
+
+export type ConfiguracionAdmin = ParametrosPrecioDomicilio & {
   umbralDemoraAsignacionMinutos: number;
 };
 
 export type ResultadoActualizarConfiguracionAdmin =
   'actualizado' | 'invalido' | 'no_autorizado';
+
+/** Ingredientes crudos para calcular el precio de un pedido — el
+ * cálculo aritmético en sí vive en `CalcularPrecioPedidoUseCase`, no
+ * en el repositorio. `copago`/`distanciaMetros` son `null` si el
+ * Paciente todavía no eligió nivel de copago / si falta geocodificar
+ * alguna de las dos direcciones — en ese caso no hay precio para
+ * mostrar todavía. */
+export type DatosPrecioPedido = ParametrosPrecioDomicilio & {
+  copago: number | null;
+  distanciaMetros: number | null;
+};
+
+export type NivelCopagoAdmin = {
+  id: string;
+  nombre: string;
+  copago: number;
+  orden: number;
+};
+
+export type ResultadoGuardarNivelCopagoAdmin =
+  | { resultado: 'guardado'; id: string }
+  | { resultado: 'no_autorizado' | 'invalido' | 'no_encontrado' };
+
+export type ResultadoEliminarNivelCopagoAdmin =
+  'eliminado' | 'no_autorizado' | 'en_uso' | 'no_encontrado';
 
 /** HU-07 — un incidente reportado por el Domiciliario sobre un pedido
  * en curso, visible para el Administrador hasta que lo resuelva. No
@@ -397,19 +435,27 @@ export abstract class SolicitudRepositoryPort {
     solicitudId: string,
   ): Promise<{
     direccionFarmacia: string | null;
+    /** Ronda de precio del pedido — antes solo se geocodificaba la
+     * farmacia; hace falta también la de entrega para calcular la
+     * distancia real del domicilio. */
+    direccionEntrega: string | null;
     ciudad: string | null;
     departamento: string | null;
   } | null>;
 
-  /** G05. `farmaciaLat`/`farmaciaLng` ya vienen geocodificados (el caso
-   * de uso llama a GeocodificacionPort antes) — si la geocodificación
-   * falló, se mandan `null` y el pedido se envía igual, sin ubicación
-   * de farmacia (HU-09, no bloquea el envío). */
+  /** G05. `farmaciaLat`/`farmaciaLng`/`entregaLat`/`entregaLng` ya
+   * vienen geocodificados (el caso de uso llama a GeocodificacionPort
+   * antes) — si la geocodificación falló, se mandan `null` y el pedido
+   * se envía igual, sin esa ubicación (HU-09, no bloquea el envío; sin
+   * ambas ubicaciones, el precio del domicilio no se puede calcular
+   * hasta que se resuelvan). */
   abstract enviar(
     pacienteId: string,
     solicitudId: string,
     farmaciaLat: number | null,
     farmaciaLng: number | null,
+    entregaLat: number | null,
+    entregaLng: number | null,
   ): Promise<ResultadoEnviar>;
 
   /** G06. */
@@ -707,5 +753,34 @@ export abstract class SolicitudRepositoryPort {
   abstract actualizarConfiguracionAdmin(
     adminId: string,
     umbralMinutos: number,
+    parametrosPrecio: ParametrosPrecioDomicilio,
   ): Promise<ResultadoActualizarConfiguracionAdmin>;
+
+  /** Precio del pedido (copago + domicilio) — ver `DatosPrecioPedido`. */
+  abstract obtenerDatosPrecioPedido(
+    pacienteId: string,
+    solicitudId: string,
+  ): Promise<DatosPrecioPedido | null>;
+
+  /** Panel admin — CRUD del catálogo de niveles de copago propio de
+   * MediRuta (no el copago real de EPS). */
+  abstract listarNivelesCopagoAdmin(
+    adminId: string,
+  ): Promise<NivelCopagoAdmin[]>;
+
+  /** `id` null = crear uno nuevo; con `id`, actualiza ese. */
+  abstract guardarNivelCopagoAdmin(
+    adminId: string,
+    id: string | null,
+    nombre: string,
+    copago: number,
+    orden: number,
+  ): Promise<ResultadoGuardarNivelCopagoAdmin>;
+
+  /** `en_uso` si algún Paciente lo tiene declarado — hay que
+   * desvincularlo antes (no se hace acá, es una decisión del admin). */
+  abstract eliminarNivelCopagoAdmin(
+    adminId: string,
+    id: string,
+  ): Promise<ResultadoEliminarNivelCopagoAdmin>;
 }

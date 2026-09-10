@@ -15,9 +15,11 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ActualizarDatosComunesUseCase } from '../../application/use-cases/actualizar-datos-comunes.use-case';
 import { ActualizarDisponibilidadDomiciliarioUseCase } from '../../application/use-cases/actualizar-disponibilidad-domiciliario.use-case';
+import { ActualizarNivelCopagoPacienteUseCase } from '../../application/use-cases/actualizar-nivel-copago-paciente.use-case';
 import { ActualizarPerfilDomiciliarioUseCase } from '../../application/use-cases/actualizar-perfil-domiciliario.use-case';
 import { ActualizarPerfilPacienteUseCase } from '../../application/use-cases/actualizar-perfil-paciente.use-case';
 import { DesactivarCuentaUseCase } from '../../application/use-cases/desactivar-cuenta.use-case';
+import { ListarNivelesCopagoUseCase } from '../../application/use-cases/listar-niveles-copago.use-case';
 import { ObtenerPerfilUseCase } from '../../application/use-cases/obtener-perfil.use-case';
 import { EnviarSolicitudDomiciliarioUseCase } from '../../application/use-cases/enviar-solicitud-domiciliario.use-case';
 import { SolicitarRolDomiciliarioUseCase } from '../../application/use-cases/solicitar-rol-domiciliario.use-case';
@@ -30,6 +32,7 @@ import { UsuarioAutenticado } from '../decorators/usuario-autenticado.decorator'
 import { ActualizarDatosComunesDto } from '../dtos/actualizar-datos-comunes.dto';
 import { ActualizarDisponibilidadDomiciliarioDto } from '../dtos/actualizar-disponibilidad-domiciliario.dto';
 import { ActualizarPerfilDomiciliarioDto } from '../dtos/actualizar-perfil-domiciliario.dto';
+import { ActualizarNivelCopagoPacienteDto } from '../dtos/actualizar-nivel-copago-paciente.dto';
 import { ActualizarPerfilPacienteDto } from '../dtos/actualizar-perfil-paciente.dto';
 import { SubirDocumentoDomiciliarioDto } from '../dtos/subir-documento-domiciliario.dto';
 import { SubirFotoCedulaPacienteDto } from '../dtos/subir-foto-cedula-paciente.dto';
@@ -60,6 +63,8 @@ export class PerfilController {
     private readonly solicitarRolDomiciliario: SolicitarRolDomiciliarioUseCase,
     private readonly enviarSolicitudDomiciliario: EnviarSolicitudDomiciliarioUseCase,
     private readonly actualizarDisponibilidadDomiciliario: ActualizarDisponibilidadDomiciliarioUseCase,
+    private readonly listarNivelesCopago: ListarNivelesCopagoUseCase,
+    private readonly actualizarNivelCopagoPaciente: ActualizarNivelCopagoPacienteUseCase,
   ) {}
 
   @Get()
@@ -191,6 +196,24 @@ export class PerfilController {
       lat: dto.lat ?? null,
       lng: dto.lng ?? null,
     });
+  }
+
+  @Get('niveles-copago')
+  @HttpCode(HttpStatus.OK)
+  nivelesCopago(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
+    return this.listarNivelesCopago.execute(identidad.usuarioId);
+  }
+
+  @Patch('paciente/nivel-copago')
+  @HttpCode(HttpStatus.OK)
+  actualizarNivelCopago(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Body() dto: ActualizarNivelCopagoPacienteDto,
+  ) {
+    return this.actualizarNivelCopagoPaciente.execute(
+      identidad.usuarioId,
+      dto.nivelCopagoId,
+    );
   }
 
   @Post('desactivar')

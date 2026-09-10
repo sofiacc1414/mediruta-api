@@ -2,9 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import {
   LadoDocumento,
+  NivelCopago,
   Perfil,
   PerfilRepositoryPort,
   ResultadoActualizarDisponibilidad,
+  ResultadoActualizarNivelCopago,
   TipoDocumentoDomiciliario,
 } from '../../domain/ports/perfil.repository.port';
 
@@ -18,6 +20,7 @@ type FilaPerfil = {
   pac_foto_cedula_reverso_path: string | null;
   pac_departamento: string | null;
   pac_ciudad: string | null;
+  pac_nivel_copago_id: string | null;
   dom_direccion: string | null;
   dom_vehiculo_tipo: string | null;
   dom_vehiculo_placa: string | null;
@@ -52,7 +55,8 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
         fila.pac_foto_cedula_frente_path !== null ||
         fila.pac_foto_cedula_reverso_path !== null ||
         fila.pac_departamento !== null ||
-        fila.pac_ciudad !== null;
+        fila.pac_ciudad !== null ||
+        fila.pac_nivel_copago_id !== null;
       const tieneDomiciliario =
         fila.dom_direccion !== null ||
         fila.dom_vehiculo_tipo !== null ||
@@ -75,6 +79,7 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
               fotoCedulaReversoPath: fila.pac_foto_cedula_reverso_path,
               departamento: fila.pac_departamento,
               ciudad: fila.pac_ciudad,
+              nivelCopagoId: fila.pac_nivel_copago_id,
             }
           : null,
         domiciliario: tieneDomiciliario
@@ -205,6 +210,38 @@ export class PostgresPerfilRepository extends PerfilRepositoryPort {
         'select * from app.actualizar_disponibilidad_domiciliario($1, $2, $3, $4)',
         [usuarioId, disponible, lat, lng],
       );
+      return result.rows[0].resultado;
+    });
+  }
+
+  listarNivelesCopago(usuarioId: string): Promise<NivelCopago[]> {
+    return this.db.withUserContext(usuarioId, async (client) => {
+      const result = await client.query<{
+        id: string;
+        nombre: string;
+        copago: string;
+        orden: number;
+      }>('select * from app.listar_niveles_copago($1)', [usuarioId]);
+      return result.rows.map((fila) => ({
+        id: fila.id,
+        nombre: fila.nombre,
+        copago: Number(fila.copago),
+        orden: fila.orden,
+      }));
+    });
+  }
+
+  actualizarNivelCopagoPaciente(
+    pacienteId: string,
+    nivelCopagoId: string,
+  ): Promise<ResultadoActualizarNivelCopago> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<{
+        resultado: ResultadoActualizarNivelCopago;
+      }>('select * from app.actualizar_nivel_copago_perfil($1, $2)', [
+        pacienteId,
+        nivelCopagoId,
+      ]);
       return result.rows[0].resultado;
     });
   }

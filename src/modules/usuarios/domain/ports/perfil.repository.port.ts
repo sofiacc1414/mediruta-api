@@ -11,7 +11,23 @@ export type PerfilPaciente = {
    * pedido (se asume la misma ciudad del paciente). */
   departamento: string | null;
   ciudad: string | null;
+  /** Nivel de copago autodeclarado (ver `NivelCopago`) — `null` hasta
+   * que el Paciente lo elige, ni bloquea ni se pide en el registro. */
+  nivelCopagoId: string | null;
 };
+
+/** Catálogo propio de MediRuta (no el copago real de EPS, que depende
+ * de tarifas privadas EPS-IPS que no tenemos forma de conocer) — un
+ * valor fijo en COP por nivel, autodeclarado por el Paciente. */
+export type NivelCopago = {
+  id: string;
+  nombre: string;
+  copago: number;
+  orden: number;
+};
+
+export type ResultadoActualizarNivelCopago =
+  'actualizado' | 'nivel_no_encontrado' | 'perfil_no_encontrado';
 
 /** HU-09 — resultado de prender/apagar "Disponible para recibir
  * pedidos". `no_autorizado` si la cuenta no tiene DOMICILIARIO
@@ -112,4 +128,17 @@ export abstract class PerfilRepositoryPort {
     lat: number | null,
     lng: number | null,
   ): Promise<ResultadoActualizarDisponibilidad>;
+
+  /** Catálogo de niveles de copago (ver `NivelCopago`) — cualquier
+   * usuario autenticado lo puede leer, lo necesita el Paciente para
+   * elegir el suyo. */
+  abstract listarNivelesCopago(usuarioId: string): Promise<NivelCopago[]>;
+
+  /** El Paciente autodeclara su nivel de copago — sin aprobación,
+   * decisión de negocio (no como el rol Domiciliario, que sí la
+   * necesita). */
+  abstract actualizarNivelCopagoPaciente(
+    pacienteId: string,
+    nivelCopagoId: string,
+  ): Promise<ResultadoActualizarNivelCopago>;
 }

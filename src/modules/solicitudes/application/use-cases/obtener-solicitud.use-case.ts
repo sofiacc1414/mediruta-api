@@ -12,6 +12,7 @@ import {
   NovedadDelPaciente,
   SolicitudRepositoryPort,
 } from '../../domain/ports/solicitud.repository.port';
+import { CalcularPrecioPedidoUseCase, PrecioPedido } from './calcular-precio-pedido.use-case';
 
 export type ObtenerSolicitudResultado = {
   id: string;
@@ -37,6 +38,9 @@ export type ObtenerSolicitudResultado = {
   /** HU-07 — si hay una novedad abierta sobre este pedido, se muestra
    * acá; `null` si no hay ninguna. */
   novedadAbierta: NovedadDelPaciente | null;
+  /** Precio del pedido (copago + domicilio) — ver
+   * `CalcularPrecioPedidoUseCase`. */
+  precio: PrecioPedido | null;
 };
 
 /**
@@ -51,18 +55,20 @@ export class ObtenerSolicitudUseCase {
   constructor(
     private readonly solicitudes: SolicitudRepositoryPort,
     private readonly almacenamiento: AlmacenamientoArchivosPort,
+    private readonly calcularPrecio: CalcularPrecioPedidoUseCase,
   ) {}
 
   async execute(
     pacienteId: string,
     solicitudId: string,
   ): Promise<ObtenerSolicitudResultado> {
-    const [detalle, medicamentos, historial, novedadAbierta] =
+    const [detalle, medicamentos, historial, novedadAbierta, precio] =
       await Promise.all([
         this.solicitudes.obtener(pacienteId, solicitudId),
         this.solicitudes.listarMedicamentos(pacienteId, solicitudId),
         this.solicitudes.listarHistorial(pacienteId, solicitudId),
         this.solicitudes.obtenerNovedadAbierta(pacienteId, solicitudId),
+        this.calcularPrecio.execute(pacienteId, solicitudId),
       ]);
 
     if (!detalle) {
@@ -92,6 +98,7 @@ export class ObtenerSolicitudUseCase {
       historial,
       codigoEntrega: detalle.codigoEntrega,
       novedadAbierta,
+      precio,
     };
   }
 

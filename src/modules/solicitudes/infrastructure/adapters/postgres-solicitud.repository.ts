@@ -4,6 +4,7 @@ import {
   CodigoEntregaParaCorreo,
   ConfiguracionAdmin,
   DatosEdicionPedido,
+  DatosPrecioPedido,
   DocumentosPacienteParaRecoger,
   DomiciliarioCercanoAdmin,
   EstadoSolicitud,
@@ -11,11 +12,13 @@ import {
   FiltrosPedidosAdmin,
   Medicamento,
   EstadoNovedadAdmin,
+  NivelCopagoAdmin,
   NovedadAbierta,
   NovedadAbiertaPedidoAdmin,
   NovedadDelPaciente,
   NovedadDelPacienteConEstado,
   OrigenNovedad,
+  ParametrosPrecioDomicilio,
   PedidoActivoDomiciliario,
   PedidoAdmin,
   PedidoAdminDetalle,
@@ -27,8 +30,10 @@ import {
   ResultadoAsignarDomiciliarioAdmin,
   ResultadoCancelar,
   ResultadoCrear,
+  ResultadoEliminarNivelCopagoAdmin,
   ResultadoEnviar,
   ResultadoEntregarPedido,
+  ResultadoGuardarNivelCopagoAdmin,
   ResultadoRegenerarCodigoEntrega,
   ResultadoReportarNovedad,
   ResultadoResolverNovedad,
@@ -66,6 +71,10 @@ type FilaDatosGeocodificacionFarmacia = {
   direccion_farmacia: string | null;
   ciudad: string | null;
   departamento: string | null;
+};
+
+type FilaDatosGeocodificacionEnvio = FilaDatosGeocodificacionFarmacia & {
+  direccion_entrega: string | null;
 };
 
 type FilaPedidoDisponible = {
@@ -147,6 +156,32 @@ type FilaDomiciliarioCercanoAdmin = {
 
 type FilaConfiguracionAdmin = {
   umbral_demora_asignacion_minutos: number;
+  tarifa_base_domicilio: string;
+  tarifa_por_km: string;
+  tarifa_por_minuto: string;
+  tiempo_base_farmacia_min: number;
+  velocidad_promedio_kmh: string;
+  distancia_incluida_km: string;
+  tarifa_por_km_excedente: string;
+};
+
+type FilaDatosPrecioPedido = {
+  copago: string | null;
+  distancia_metros: number | null;
+  tarifa_base_domicilio: string;
+  tarifa_por_km: string;
+  tarifa_por_minuto: string;
+  tiempo_base_farmacia_min: number;
+  velocidad_promedio_kmh: string;
+  distancia_incluida_km: string;
+  tarifa_por_km_excedente: string;
+};
+
+type FilaNivelCopagoAdmin = {
+  id: string;
+  nombre: string;
+  copago: string;
+  orden: number;
 };
 
 type FilaDatosEdicionPedido = {
@@ -330,11 +365,12 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     solicitudId: string,
   ): Promise<{
     direccionFarmacia: string | null;
+    direccionEntrega: string | null;
     ciudad: string | null;
     departamento: string | null;
   } | null> {
     return this.db.withUserContext(pacienteId, async (client) => {
-      const result = await client.query<FilaDatosGeocodificacionFarmacia>(
+      const result = await client.query<FilaDatosGeocodificacionEnvio>(
         'select * from app.obtener_datos_geocodificacion_farmacia($1, $2)',
         [pacienteId, solicitudId],
       );
@@ -344,6 +380,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       const fila = result.rows[0];
       return {
         direccionFarmacia: fila.direccion_farmacia,
+        direccionEntrega: fila.direccion_entrega,
         ciudad: fila.ciudad,
         departamento: fila.departamento,
       };
@@ -431,11 +468,20 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     solicitudId: string,
     farmaciaLat: number | null,
     farmaciaLng: number | null,
+    entregaLat: number | null,
+    entregaLng: number | null,
   ): Promise<ResultadoEnviar> {
     return this.db.withUserContext(pacienteId, async (client) => {
       const result = await client.query<FilaEnviar>(
-        'select * from app.enviar_solicitud($1, $2, $3, $4)',
-        [pacienteId, solicitudId, farmaciaLat, farmaciaLng],
+        'select * from app.enviar_solicitud($1, $2, $3, $4, $5, $6)',
+        [
+          pacienteId,
+          solicitudId,
+          farmaciaLat,
+          farmaciaLng,
+          entregaLat,
+          entregaLng,
+        ],
       );
       const fila = result.rows[0];
 
@@ -1175,9 +1221,10 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       if (!result.rowCount) {
         return null;
       }
+      const fila = result.rows[0];
       return {
-        umbralDemoraAsignacionMinutos:
-          result.rows[0].umbral_demora_asignacion_minutos,
+        umbralDemoraAsignacionMinutos: fila.umbral_demora_asignacion_minutos,
+        ...mapearParametrosPrecio(fila),
       };
     });
   }
@@ -1185,15 +1232,119 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
   actualizarConfiguracionAdmin(
     adminId: string,
     umbralMinutos: number,
+    parametrosPrecio: ParametrosPrecioDomicilio,
   ): Promise<ResultadoActualizarConfiguracionAdmin> {
     return this.db.withUserContext(adminId, async (client) => {
       const result = await client.query<{
         resultado: ResultadoActualizarConfiguracionAdmin;
-      }>('select * from app.actualizar_configuracion_admin($1, $2)', [
+      }>(
+        'select * from app.actualizar_configuracion_admin($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [
+          adminId,
+          umbralMinutos,
+          parametrosPrecio.tarifaBaseDomicilio,
+          parametrosPrecio.tarifaPorKm,
+          parametrosPrecio.tarifaPorMinuto,
+          parametrosPrecio.tiempoBaseFarmaciaMin,
+          parametrosPrecio.velocidadPromedioKmh,
+          parametrosPrecio.distanciaIncluidaKm,
+          parametrosPrecio.tarifaPorKmExcedente,
+        ],
+      );
+      return result.rows[0].resultado;
+    });
+  }
+
+  obtenerDatosPrecioPedido(
+    pacienteId: string,
+    solicitudId: string,
+  ): Promise<DatosPrecioPedido | null> {
+    return this.db.withUserContext(pacienteId, async (client) => {
+      const result = await client.query<FilaDatosPrecioPedido>(
+        'select * from app.obtener_datos_precio_pedido($1, $2)',
+        [pacienteId, solicitudId],
+      );
+      if (!result.rowCount) {
+        return null;
+      }
+      const fila = result.rows[0];
+      return {
+        copago: fila.copago !== null ? Number(fila.copago) : null,
+        distanciaMetros: fila.distancia_metros,
+        ...mapearParametrosPrecio(fila),
+      };
+    });
+  }
+
+  listarNivelesCopagoAdmin(adminId: string): Promise<NivelCopagoAdmin[]> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<FilaNivelCopagoAdmin>(
+        'select * from app.listar_niveles_copago_admin($1)',
+        [adminId],
+      );
+      return result.rows.map((fila) => ({
+        id: fila.id,
+        nombre: fila.nombre,
+        copago: Number(fila.copago),
+        orden: fila.orden,
+      }));
+    });
+  }
+
+  guardarNivelCopagoAdmin(
+    adminId: string,
+    id: string | null,
+    nombre: string,
+    copago: number,
+    orden: number,
+  ): Promise<ResultadoGuardarNivelCopagoAdmin> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<{ resultado: string; id: string | null }>(
+        'select * from app.guardar_nivel_copago_admin($1, $2, $3, $4, $5)',
+        [adminId, id, nombre, copago, orden],
+      );
+      const fila = result.rows[0];
+      if (fila.resultado === 'guardado' && fila.id) {
+        return { resultado: 'guardado', id: fila.id };
+      }
+      return {
+        resultado: fila.resultado as 'no_autorizado' | 'invalido' | 'no_encontrado',
+      };
+    });
+  }
+
+  eliminarNivelCopagoAdmin(
+    adminId: string,
+    id: string,
+  ): Promise<ResultadoEliminarNivelCopagoAdmin> {
+    return this.db.withUserContext(adminId, async (client) => {
+      const result = await client.query<{
+        resultado: ResultadoEliminarNivelCopagoAdmin;
+      }>('select * from app.eliminar_nivel_copago_admin($1, $2)', [
         adminId,
-        umbralMinutos,
+        id,
       ]);
       return result.rows[0].resultado;
     });
   }
+}
+
+function mapearParametrosPrecio(fila: {
+  tarifa_base_domicilio: string;
+  tarifa_por_km: string;
+  tarifa_por_minuto: string;
+  tiempo_base_farmacia_min: number;
+  velocidad_promedio_kmh: string;
+  distancia_incluida_km: string;
+  tarifa_por_km_excedente: string;
+}): ParametrosPrecioDomicilio {
+  return {
+    tarifaBaseDomicilio: Number(fila.tarifa_base_domicilio),
+    tarifaPorKm: Number(fila.tarifa_por_km),
+    tarifaPorMinuto: Number(fila.tarifa_por_minuto),
+    tiempoBaseFarmaciaMin: fila.tiempo_base_farmacia_min,
+    velocidadPromedioKmh: Number(fila.velocidad_promedio_kmh),
+    distanciaIncluidaKm: Number(fila.distancia_incluida_km),
+    tarifaPorKmExcedente: Number(fila.tarifa_por_km_excedente),
+  };
 }
