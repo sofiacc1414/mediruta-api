@@ -117,14 +117,13 @@ describe('CalcularPrecioPedidoUseCase', () => {
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
-    // tiempo = 10 + (3/20)*60 = 19min
-    // domicilio = 7000 + 800*3 + 150*19 = 7000 + 2400 + 2850 = 12250
-    // total = 15000 + 12250 = 27250
+    // domicilio = 7000 + 800*3 = 9400 (sin componente de tiempo, ver doc)
+    // total = 15000 + 9400 = 24400
     expect(resultado).toEqual({
       disponible: true,
       copago: 15000,
-      domicilio: 12250,
-      total: 27250,
+      domicilio: 9400,
+      total: 24400,
       distanciaKm: 3,
     });
   });
@@ -139,14 +138,13 @@ describe('CalcularPrecioPedidoUseCase', () => {
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
-    // tiempo = 10 + (20/20)*60 = 70min
-    // domicilio = 7000 + 800*20 + 150*70 + (20-15)*1600 = 7000+16000+10500+8000 = 41500
-    // total = 25000 + 41500 = 66500
+    // domicilio = 7000 + 800*20 + (20-15)*1600 = 7000+16000+8000 = 31000
+    // total = 25000 + 31000 = 56000
     expect(resultado).toEqual({
       disponible: true,
       copago: 25000,
-      domicilio: 41500,
-      total: 66500,
+      domicilio: 31000,
+      total: 56000,
       distanciaKm: 20,
     });
   });
@@ -163,8 +161,8 @@ describe('CalcularPrecioPedidoUseCase', () => {
 
     expect(resultado).toMatchObject({ disponible: true });
     if (resultado?.disponible) {
-      // tiempo = 10 + (5/20)*60 = 25min; domicilio = 7000+4000+3750 = 14750
-      expect(resultado.domicilio).toBe(14750);
+      // domicilio = 7000 + 800*5 = 11000
+      expect(resultado.domicilio).toBe(11000);
     }
   });
 });

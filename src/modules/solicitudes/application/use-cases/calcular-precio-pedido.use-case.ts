@@ -23,9 +23,6 @@ export type ParametrosCalculoPrecio = {
   distanciaMetros: number | null;
   tarifaBaseDomicilio: number;
   tarifaPorKm: number;
-  tarifaPorMinuto: number;
-  tiempoBaseFarmaciaMin: number;
-  velocidadPromedioKmh: number;
   distanciaIncluidaKm: number;
   tarifaPorKmExcedente: number;
 };
@@ -37,14 +34,18 @@ export type ParametrosCalculoPrecio = {
  * propio, simplificado (ver migración `precio_pedido_copago`).
  *
  * Costo de domicilio:
- *   tiempo_min = tiempo_base_farmacia + (distancia_km / velocidad_promedio_kmh) × 60
- *   domicilio  = tarifa_base + (tarifa_por_km × distancia_km) + (tarifa_por_minuto × tiempo_min)
- *                + max(0, distancia_km − distancia_incluida_km) × tarifa_por_km_excedente
+ *   domicilio = tarifa_base + (tarifa_por_km × distancia_km)
+ *               + max(0, distancia_km − distancia_incluida_km) × tarifa_por_km_excedente
  *
- * El tiempo se deriva de la distancia real (no hay una fuente de datos
- * de tiempo de viaje aparte) más un tiempo fijo que cubre la diligencia
- * en la farmacia. El excedente evita que un domicilio larguísimo salga
- * gratis por un cálculo lineal sin ningún ajuste.
+ * A propósito SIN componente de tiempo (versión anterior sumaba
+ * tarifa_por_minuto × tiempo_min, con tiempo_min derivado en parte de
+ * la posición del domiciliario) — el precio se muestra ANTES de que
+ * exista un domiciliario asignado (estimado en el borrador, precio
+ * real al enviar), así que nada de lo que entra acá puede depender de
+ * dónde está el domiciliario: la única distancia que existe en ese
+ * momento es farmacia→entrega, fija desde el envío. Con esto el precio
+ * mostrado nunca sube después — es la misma cuenta con los mismos
+ * datos en cualquier momento de la vida del pedido.
  *
  * Función pura, sin acceso a datos — la comparten
  * `CalcularPrecioPedidoUseCase` (precio de una solicitud ya guardada,
@@ -64,15 +65,11 @@ export function calcularPrecioDesdeParametros(
   }
 
   const distanciaKm = datos.distanciaMetros / 1000;
-  const tiempoMin =
-    datos.tiempoBaseFarmaciaMin +
-    (distanciaKm / datos.velocidadPromedioKmh) * 60;
   const excedenteKm = Math.max(0, distanciaKm - datos.distanciaIncluidaKm);
 
   const domicilio =
     datos.tarifaBaseDomicilio +
     datos.tarifaPorKm * distanciaKm +
-    datos.tarifaPorMinuto * tiempoMin +
     excedenteKm * datos.tarifaPorKmExcedente;
 
   return {
