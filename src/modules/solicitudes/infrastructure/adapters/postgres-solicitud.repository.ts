@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
+import { calcularPrecioDesdeParametros } from '../../application/use-cases/calcular-precio-pedido.use-case';
 import { EventosTiempoRealPort } from '../../domain/ports/eventos-tiempo-real.port';
 import {
   CodigoEntregaParaCorreo,
@@ -94,6 +95,12 @@ type FilaPedidoHistorialDomiciliario = {
   estado: EstadoSolicitud;
   direccion_entrega: string | null;
   creado_en: string;
+  copago: number | null;
+  distancia_metros: number | null;
+  tarifa_base_domicilio: number;
+  tarifa_por_km: number;
+  distancia_incluida_km: number;
+  tarifa_por_km_excedente: number;
 };
 
 type FilaPedidoActivoDomiciliario = {
@@ -625,13 +632,28 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         'select * from app.listar_historial_pedidos_domiciliario($1)',
         [domiciliarioId],
       );
-      return result.rows.map((fila) => ({
-        id: fila.id,
-        codigoPedido: fila.codigo_pedido,
-        estado: fila.estado,
-        direccionEntrega: fila.direccion_entrega,
-        creadoEn: fila.creado_en,
-      }));
+      return result.rows.map((fila) => {
+        // Mismo cálculo puro que el precio real/estimado del Paciente
+        // (`calcularPrecioDesdeParametros`) — una sola fuente de verdad
+        // para la plata. `null` si falta el copago o la distancia (el
+        // domiciliario ve el pedido igual, solo sin el dato del valor).
+        const precio = calcularPrecioDesdeParametros({
+          copago: fila.copago,
+          distanciaMetros: fila.distancia_metros,
+          tarifaBaseDomicilio: fila.tarifa_base_domicilio,
+          tarifaPorKm: fila.tarifa_por_km,
+          distanciaIncluidaKm: fila.distancia_incluida_km,
+          tarifaPorKmExcedente: fila.tarifa_por_km_excedente,
+        });
+        return {
+          id: fila.id,
+          codigoPedido: fila.codigo_pedido,
+          estado: fila.estado,
+          direccionEntrega: fila.direccion_entrega,
+          creadoEn: fila.creado_en,
+          total: precio.disponible ? precio.total : null,
+        };
+      });
     });
   }
 
@@ -1124,17 +1146,17 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     novedadId: string,
     farmaciaLat: number | null = null,
     farmaciaLng: number | null = null,
+    entregaLat: number | null = null,
+    entregaLng: number | null = null,
   ): Promise<ResultadoAccionEdicionPedido> {
     return this.db
       .withUserContext(adminId, async (client) => {
         const result = await client.query<{
           resultado: ResultadoAccionEdicionPedido;
-        }>('select * from app.aprobar_edicion_pedido_admin($1, $2, $3, $4)', [
-          adminId,
-          novedadId,
-          farmaciaLat,
-          farmaciaLng,
-        ]);
+        }>(
+          'select * from app.aprobar_edicion_pedido_admin($1, $2, $3, $4, $5, $6)',
+          [adminId, novedadId, farmaciaLat, farmaciaLng, entregaLat, entregaLng],
+        );
         return result.rows[0].resultado;
       })
       .finally(() => this.eventos.emitirPedidoActualizado());
@@ -1145,11 +1167,12 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     novedadId: string,
   ): Promise<{
     direccionFarmacia: string | null;
+    direccionEntrega: string | null;
     ciudad: string | null;
     departamento: string | null;
   } | null> {
     return this.db.withUserContext(adminId, async (client) => {
-      const result = await client.query<FilaDatosGeocodificacionFarmacia>(
+      const result = await client.query<FilaDatosGeocodificacionEnvio>(
         'select * from app.obtener_datos_geocodificacion_novedad_admin($1, $2)',
         [adminId, novedadId],
       );
@@ -1159,6 +1182,7 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       const fila = result.rows[0];
       return {
         direccionFarmacia: fila.direccion_farmacia,
+        direccionEntrega: fila.direccion_entrega,
         ciudad: fila.ciudad,
         departamento: fila.departamento,
       };

@@ -26,8 +26,14 @@ export type NivelCopago = {
   orden: number;
 };
 
+/** Ronda 9 — `perfil_no_encontrado` ya no puede darse: la función SQL
+ * ahora hace upsert de `perfil_paciente` en vez de exigir que la fila
+ * ya exista (bug real: el Paciente no podía elegir su nivel de copago
+ * antes de completar el resto de su perfil). `no_autorizado` es el
+ * único caso de rol real — la cuenta ni siquiera tiene el rol
+ * PACIENTE. */
 export type ResultadoActualizarNivelCopago =
-  'actualizado' | 'nivel_no_encontrado' | 'perfil_no_encontrado';
+  'actualizado' | 'nivel_no_encontrado' | 'no_autorizado';
 
 /** HU-09 — resultado de prender/apagar "Disponible para recibir
  * pedidos". `no_autorizado` si la cuenta no tiene DOMICILIARIO

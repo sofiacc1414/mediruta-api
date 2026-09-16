@@ -50,9 +50,24 @@ describe('ActualizarNivelCopagoPacienteUseCase', () => {
     ).rejects.toThrow(NivelCopagoNoEncontradoError);
   });
 
-  it('lanza RolNoAutorizadoError si la cuenta no tiene perfil de Paciente', async () => {
+  it('elige el nivel aunque el perfil todavía no exista — la SQL hace upsert (regresión: antes fallaba con "no tiene rol")', async () => {
+    // Ya no hay un caso "perfil_no_encontrado": `actualizar_nivel_copago_perfil`
+    // ahora crea la fila de `perfil_paciente` si hace falta (ver migración
+    // 20260915010000). Este test documenta ese contrato desde el use case:
+    // 'actualizado' es el único resultado posible cuando la cuenta sí tiene
+    // el rol PACIENTE, exista o no el perfil todavía.
     (perfiles.actualizarNivelCopagoPaciente as jest.Mock).mockResolvedValue(
-      'perfil_no_encontrado',
+      'actualizado',
+    );
+
+    const resultado = await useCase.execute('paciente-uuid', 'nivel-uuid');
+
+    expect(resultado).toEqual({ message: MENSAJE_NIVEL_COPAGO_ACTUALIZADO });
+  });
+
+  it('lanza RolNoAutorizadoError si la cuenta no tiene el rol PACIENTE', async () => {
+    (perfiles.actualizarNivelCopagoPaciente as jest.Mock).mockResolvedValue(
+      'no_autorizado',
     );
 
     await expect(

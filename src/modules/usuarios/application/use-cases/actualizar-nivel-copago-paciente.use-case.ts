@@ -27,7 +27,7 @@ export class ActualizarNivelCopagoPacienteUseCase {
         return { message: MENSAJE_NIVEL_COPAGO_ACTUALIZADO };
       case 'nivel_no_encontrado':
         throw new NivelCopagoNoEncontradoError();
-      case 'perfil_no_encontrado':
+      case 'no_autorizado':
         throw new RolNoAutorizadoError();
     }
   }

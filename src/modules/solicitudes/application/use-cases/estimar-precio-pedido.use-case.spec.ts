@@ -113,6 +113,10 @@ describe('EstimarPrecioPedidoUseCase', () => {
     expect(resultado).toEqual({
       disponible: false,
       motivo: 'sin_nivel_copago',
+      direccionFarmaciaResuelta: null,
+      direccionFarmaciaPrecisa: true,
+      direccionEntregaResuelta: null,
+      direccionEntregaPrecisa: true,
     });
     expect(geocodificacion.geocodificar as jest.Mock).not.toHaveBeenCalled();
   });
@@ -122,7 +126,12 @@ describe('EstimarPrecioPedidoUseCase', () => {
       solicitudes.obtenerParametrosEstimacionPrecio as jest.Mock
     ).mockResolvedValue(parametros);
     (geocodificacion.geocodificar as jest.Mock)
-      .mockResolvedValueOnce({ lat: 6.2, lng: -75.6 })
+      .mockResolvedValueOnce({
+        lat: 6.2,
+        lng: -75.6,
+        direccionResuelta: 'Farmacia X resuelta',
+        precisa: true,
+      })
       .mockResolvedValueOnce(null);
 
     const resultado = await useCase.execute(
@@ -131,7 +140,50 @@ describe('EstimarPrecioPedidoUseCase', () => {
       'Dirección inventada',
     );
 
-    expect(resultado).toEqual({ disponible: false, motivo: 'sin_ubicaciones' });
+    expect(resultado).toEqual({
+      disponible: false,
+      motivo: 'sin_ubicaciones',
+      direccionFarmaciaResuelta: 'Farmacia X resuelta',
+      direccionFarmaciaPrecisa: true,
+      direccionEntregaResuelta: null,
+      direccionEntregaPrecisa: true,
+    });
+  });
+
+  it('propaga direccionResuelta y precisa=false de cada dirección geocodificada (sin bloquear el precio)', async () => {
+    (
+      solicitudes.obtenerParametrosEstimacionPrecio as jest.Mock
+    ).mockResolvedValue(parametros);
+    (geocodificacion.geocodificar as jest.Mock)
+      .mockResolvedValueOnce({
+        lat: 6.2142018,
+        lng: -75.5936713,
+        direccionResuelta: 'Universidad de Medellín, Calle 30A, Los Alpes',
+        precisa: false,
+      })
+      .mockResolvedValueOnce({
+        lat: 6.2093857,
+        lng: -75.5708593,
+        direccionResuelta: 'Carrera 43A # 5A-113, El Poblado',
+        precisa: true,
+      });
+
+    const resultado = await useCase.execute(
+      'paciente-uuid',
+      'Universidad de Medellín',
+      'Carrera 43A #5A-113',
+    );
+
+    expect(resultado?.direccionFarmaciaResuelta).toBe(
+      'Universidad de Medellín, Calle 30A, Los Alpes',
+    );
+    expect(resultado?.direccionFarmaciaPrecisa).toBe(false);
+    expect(resultado?.direccionEntregaResuelta).toBe(
+      'Carrera 43A # 5A-113, El Poblado',
+    );
+    expect(resultado?.direccionEntregaPrecisa).toBe(true);
+    // No bloquea: sigue calculando precio con el punto impreciso.
+    expect(resultado?.disponible).toBe(true);
   });
 
   it('calcula el precio con la distancia real entre los dos puntos geocodificados', async () => {

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
+import { PerfilDomiciliarioIncompletoParaDisponibilidadError } from '../../domain/errors/perfil-domiciliario-incompleto-para-disponibilidad.error';
 import { RolNoAutorizadoError } from '../../domain/errors/rol-no-autorizado.error';
 import { PerfilRepositoryPort } from '../../domain/ports/perfil.repository.port';
 
@@ -34,8 +35,11 @@ export class ActualizarDisponibilidadDomiciliarioUseCase {
       case 'actualizado':
         return { message: MENSAJE_DISPONIBILIDAD_ACTUALIZADA };
       case 'no_autorizado':
-      case 'no_encontrado':
         throw new RolNoAutorizadoError();
+      case 'no_encontrado':
+        // El domiciliario sí tiene el rol — falta la fila de
+        // `perfil_domiciliario` porque todavía no guardó su perfil.
+        throw new PerfilDomiciliarioIncompletoParaDisponibilidadError();
       case 'tiene_pedido_activo':
         throw new NoPuedeDesconectarseConPedidoActivoError();
     }

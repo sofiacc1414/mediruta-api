@@ -30,6 +30,7 @@ import { NivelCopagoNoEncontradoError } from '../../domain/errors/nivel-copago-n
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
 import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
 import { NuevaContrasenaIgualError } from '../../domain/errors/nueva-contrasena-igual.error';
+import { PerfilDomiciliarioIncompletoParaDisponibilidadError } from '../../domain/errors/perfil-domiciliario-incompleto-para-disponibilidad.error';
 import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-invalida.error';
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { RolNoAutorizadoError } from '../../domain/errors/rol-no-autorizado.error';
@@ -65,6 +66,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   CuentaDesactivadaError,
   NivelCopagoNoEncontradoError,
   NivelCopagoEnUsoError,
+  PerfilDomiciliarioIncompletoParaDisponibilidadError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -111,6 +113,7 @@ export class DominioHttpFilter implements ExceptionFilter {
     if (
       exception instanceof RolNoAutorizadoError ||
       exception instanceof PerfilIncompletoError ||
+      exception instanceof PerfilDomiciliarioIncompletoParaDisponibilidadError ||
       exception instanceof AccionCuentaNoAutorizadaError
     ) {
       response.status(HttpStatus.FORBIDDEN).json({

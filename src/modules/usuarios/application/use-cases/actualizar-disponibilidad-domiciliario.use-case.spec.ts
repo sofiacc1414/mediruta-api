@@ -1,4 +1,5 @@
 import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
+import { PerfilDomiciliarioIncompletoParaDisponibilidadError } from '../../domain/errors/perfil-domiciliario-incompleto-para-disponibilidad.error';
 import { RolNoAutorizadoError } from '../../domain/errors/rol-no-autorizado.error';
 import { PerfilRepositoryPort } from '../../domain/ports/perfil.repository.port';
 import {
@@ -80,6 +81,21 @@ describe('ActualizarDisponibilidadDomiciliarioUseCase', () => {
         lng: -74.06,
       }),
     ).rejects.toBeInstanceOf(RolNoAutorizadoError);
+  });
+
+  it('lanza PerfilDomiciliarioIncompletoParaDisponibilidadError (no RolNoAutorizadoError genérico) si el perfil aún no existe', async () => {
+    (
+      perfiles.actualizarDisponibilidadDomiciliario as jest.Mock
+    ).mockResolvedValue('no_encontrado');
+
+    await expect(
+      useCase.execute({
+        usuarioId: 'domiciliario-uuid',
+        disponible: true,
+        lat: 4.65,
+        lng: -74.06,
+      }),
+    ).rejects.toBeInstanceOf(PerfilDomiciliarioIncompletoParaDisponibilidadError);
   });
 
   it('lanza NoPuedeDesconectarseConPedidoActivoError si intenta desactivar con un pedido en curso', async () => {

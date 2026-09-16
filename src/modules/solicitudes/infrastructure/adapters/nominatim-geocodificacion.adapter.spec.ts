@@ -38,6 +38,18 @@ describe('NominatimGeocodificacionAdapter', () => {
     expect(url.searchParams.get('limit')).toBe('1');
   });
 
+  it('pide addressdetails=1 (necesario para leer house_number)', async () => {
+    fetchMock.mockResolvedValue(
+      respuestaJson([{ lat: '4.65', lon: '-74.06' }]),
+    );
+    const adapter = new NominatimGeocodificacionAdapter();
+
+    await adapter.geocodificar('Calle 80 # 20-15', 'Bogotá', 'Cundinamarca');
+
+    const [url] = fetchMock.mock.calls[0] as [URL];
+    expect(url.searchParams.get('addressdetails')).toBe('1');
+  });
+
   it('manda un User-Agent identificable (lo exige Nominatim)', async () => {
     fetchMock.mockResolvedValue(
       respuestaJson([{ lat: '4.65', lon: '-74.06' }]),
@@ -115,7 +127,7 @@ describe('NominatimGeocodificacionAdapter', () => {
     expect(url.searchParams.get('q')).toBe('Calle 80 # 20-15, Colombia');
   });
 
-  it('devuelve lat/lng numéricos del primer resultado', async () => {
+  it('devuelve lat/lng numéricos del primer resultado, precisa=true por defecto', async () => {
     fetchMock.mockResolvedValue(
       respuestaJson([{ lat: '4.6486', lon: '-74.0628' }]),
     );
@@ -127,7 +139,36 @@ describe('NominatimGeocodificacionAdapter', () => {
       'Cundinamarca',
     );
 
-    expect(resultado).toEqual({ lat: 4.6486, lng: -74.0628 });
+    expect(resultado).toEqual({
+      lat: 4.6486,
+      lng: -74.0628,
+      direccionResuelta: 'Calle 80', // sin display_name, cae al texto original
+      precisa: true,
+    });
+  });
+
+  it('usa los primeros 3 segmentos de display_name como direccionResuelta', async () => {
+    fetchMock.mockResolvedValue(
+      respuestaJson([
+        {
+          lat: '4.6486',
+          lon: '-74.0628',
+          display_name:
+            'Carrera 43A, El Poblado, Comuna 14 - El Poblado, Perímetro Urbano Medellín, Medellín, Antioquia, Colombia',
+        },
+      ]),
+    );
+    const adapter = new NominatimGeocodificacionAdapter();
+
+    const resultado = await adapter.geocodificar(
+      'Carrera 43A',
+      'Medellín',
+      'Antioquia',
+    );
+
+    expect(resultado?.direccionResuelta).toBe(
+      'Carrera 43A, El Poblado, Comuna 14 - El Poblado',
+    );
   });
 
   it('devuelve null si no hay resultados', async () => {
@@ -167,5 +208,111 @@ describe('NominatimGeocodificacionAdapter', () => {
     );
 
     expect(resultado).toBeNull();
+  });
+
+  // Bug real reportado: la dirección aceptaba lugares/instituciones sin
+  // punto de entrega preciso (ej. "Universidad de Medellín", un campus
+  // completo sin house_number). Todas las respuestas de estos tests
+  // (addresstype, house_number, display_name) son las que Nominatim
+  // devuelve de verdad, verificadas en vivo antes de escribir esto.
+  //
+  // Diseño final (dos vueltas de ajuste, ver comentario en el
+  // adapter): NO se rechaza el resultado — el lat/lng sigue siendo el
+  // mejor dato disponible (ej. el centro real del campus, navegable),
+  // solo se marca `precisa: false` para que quien consuma esto pueda
+  // avisarle al usuario sin bloquear el envío.
+  it.each(['amenity', 'shop', 'tourism', 'leisure', 'office', 'historic', 'building'])(
+    'geocodifica igual pero con precisa=false si es un lugar SIN house_number (addresstype="%s") — ej. Universidad de Medellín',
+    async (addresstype) => {
+      fetchMock.mockResolvedValue(
+        respuestaJson([
+          {
+            lat: '6.2310101',
+            lon: '-75.6114011',
+            addresstype,
+            address: {},
+            display_name: 'Universidad de Medellín, Calle 30A, Los Alpes, Medellín, Antioquia, Colombia',
+          },
+        ]),
+      );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar(
+        'Universidad de Medellín',
+        'Medellín',
+        'Antioquia',
+      );
+
+      expect(resultado).toEqual({
+        lat: 6.2310101,
+        lng: -75.6114011,
+        direccionResuelta: 'Universidad de Medellín, Calle 30A, Los Alpes',
+        precisa: false,
+      });
+    },
+  );
+
+  // Regresión del sobre-ajuste: "Centro Comercial El Tesoro" y "UPB"
+  // son lugares (addresstype shop/amenity) pero Nominatim SÍ les
+  // conoce un house_number preciso ("1 Sur - 45", "70 - 01") — son
+  // direcciones entregables de verdad, deben quedar precisa=true igual
+  // que cualquier otra dirección con número.
+  it.each([
+    ['shop', '1 Sur - 45', 'Centro Comercial El Tesoro'],
+    ['amenity', '70 - 01', 'Universidad Pontificia Bolivariana'],
+  ])(
+    'precisa=true para un lugar (addresstype="%s") si SÍ trae house_number ("%s") — ej. %s',
+    async (addresstype, houseNumber) => {
+      fetchMock.mockResolvedValue(
+        respuestaJson([
+          {
+            lat: '6.1970205',
+            lon: '-75.5591826',
+            addresstype,
+            address: { house_number: houseNumber },
+          },
+        ]),
+      );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar(
+        'Centro Comercial El Tesoro',
+        'Medellín',
+        'Antioquia',
+      );
+
+      expect(resultado?.precisa).toBe(true);
+      expect(resultado?.lat).toBe(6.1970205);
+      expect(resultado?.lng).toBe(-75.5591826);
+    },
+  );
+
+  it.each(['road', 'residential', 'house', 'suburb'])(
+    'precisa=true cuando el addresstype es de calle/dirección ("%s"), aunque falte house_number',
+    async (addresstype) => {
+      fetchMock.mockResolvedValue(
+        respuestaJson([{ lat: '4.6486', lon: '-74.0628', addresstype, address: {} }]),
+      );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar(
+        'Carrera 43A # 18-95',
+        'Medellín',
+        'Antioquia',
+      );
+
+      expect(resultado?.precisa).toBe(true);
+    },
+  );
+
+  it('precisa=true si la respuesta no trae addresstype ni address (compatibilidad hacia atrás)', async () => {
+    fetchMock.mockResolvedValue(
+      respuestaJson([{ lat: '4.6486', lon: '-74.0628' }]),
+    );
+    const adapter = new NominatimGeocodificacionAdapter();
+
+    const resultado = await adapter.geocodificar('Calle 80', 'Bogotá', 'Cundinamarca');
+
+    expect(resultado?.precisa).toBe(true);
   });
 });

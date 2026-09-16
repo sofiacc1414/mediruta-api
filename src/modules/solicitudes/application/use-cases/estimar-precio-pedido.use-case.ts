@@ -32,6 +32,29 @@ function distanciaMetrosEntre(
   return 2 * RADIO_TIERRA_METROS * Math.asin(Math.sqrt(h));
 }
 
+/** Ronda 9 — además del precio, la dirección tal como Nominatim la
+ * entendió (`direccionResuelta` de cada `Coordenadas`) para que la App
+ * se la muestre al Paciente como confirmación antes de enviar. Bug
+ * real que motiva esto: una búsqueda ambigua puede resolver al lugar
+ * equivocado (ej. "Parque Simón Bolívar" → un parque infantil
+ * distinto en otro barrio) sin que nada en el precio lo delate —
+ * mostrar la dirección resuelta es la forma de que el Paciente lo
+ * note y corrija antes de enviar.
+ *
+ * `direccionXResuelta` es `null` solo si esa dirección todavía no se
+ * pudo geocodificar (typo, dirección incompleta mientras escribe, o
+ * Nominatim/red caídos). `direccionXPrecisa` en `false` significa que
+ * SÍ se geocodificó pero es un lugar grande sin punto de entrega
+ * exacto (ej. "Universidad de Medellín") — la App puede usar esto para
+ * sugerirle al Paciente agregar más detalle, sin bloquear el envío: el
+ * punto sigue siendo válido, solo aproximado. */
+export type EstimacionPrecioPedido = PrecioPedido & {
+  direccionFarmaciaResuelta: string | null;
+  direccionFarmaciaPrecisa: boolean;
+  direccionEntregaResuelta: string | null;
+  direccionEntregaPrecisa: boolean;
+};
+
 /**
  * Estimado en vivo mientras el Paciente arma el borrador (App:
  * NuevaSolicitudScreen), antes de enviar el pedido — sin esto, el
@@ -53,7 +76,7 @@ export class EstimarPrecioPedidoUseCase {
     pacienteId: string,
     direccionFarmacia: string,
     direccionEntrega: string,
-  ): Promise<PrecioPedido | null> {
+  ): Promise<EstimacionPrecioPedido | null> {
     const parametros =
       await this.solicitudes.obtenerParametrosEstimacionPrecio(pacienteId);
     if (!parametros) {
@@ -61,7 +84,14 @@ export class EstimarPrecioPedidoUseCase {
     }
 
     if (parametros.copago === null) {
-      return { disponible: false, motivo: 'sin_nivel_copago' };
+      return {
+        disponible: false,
+        motivo: 'sin_nivel_copago',
+        direccionFarmaciaResuelta: null,
+        direccionFarmaciaPrecisa: true,
+        direccionEntregaResuelta: null,
+        direccionEntregaPrecisa: true,
+      };
     }
 
     const [farmacia, entrega] = await Promise.all([
@@ -80,9 +110,15 @@ export class EstimarPrecioPedidoUseCase {
     const distanciaMetros =
       farmacia && entrega ? distanciaMetrosEntre(farmacia, entrega) : null;
 
-    return calcularPrecioDesdeParametros({
-      ...parametros,
-      distanciaMetros,
-    });
+    return {
+      ...calcularPrecioDesdeParametros({
+        ...parametros,
+        distanciaMetros,
+      }),
+      direccionFarmaciaResuelta: farmacia?.direccionResuelta ?? null,
+      direccionFarmaciaPrecisa: farmacia?.precisa ?? true,
+      direccionEntregaResuelta: entrega?.direccionResuelta ?? null,
+      direccionEntregaPrecisa: entrega?.precisa ?? true,
+    };
   }
 }

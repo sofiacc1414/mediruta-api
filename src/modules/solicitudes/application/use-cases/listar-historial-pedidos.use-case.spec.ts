@@ -70,6 +70,7 @@ describe('ListarHistorialPedidosUseCase', () => {
         estado: 'entregado',
         direccionEntrega: 'Calle 1 #2-3',
         creadoEn: '2026-08-20T10:00:00.000Z',
+        total: 31000,
       },
       {
         id: 'solicitud-2',
@@ -77,6 +78,7 @@ describe('ListarHistorialPedidosUseCase', () => {
         estado: 'en_camino_entrega',
         direccionEntrega: 'Calle 4 #5-6',
         creadoEn: '2026-08-22T10:00:00.000Z',
+        total: null,
       },
     ];
     (solicitudes.listarHistorialPedidos as jest.Mock).mockResolvedValue(

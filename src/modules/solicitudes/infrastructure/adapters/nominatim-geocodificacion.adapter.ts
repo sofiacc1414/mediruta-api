@@ -16,7 +16,48 @@ const USER_AGENT =
   'MediRuta/1.0 (+https://github.com/sofiacc1414/mediruta-api)';
 const INTERVALO_MINIMO_MS = 1100;
 
-type ResultadoNominatim = { lat: string; lon: string };
+type ResultadoNominatim = {
+  lat: string;
+  lon: string;
+  addresstype?: string;
+  address?: { house_number?: string };
+  display_name?: string;
+};
+
+// Bug real reportado: la dirección de farmacia/entrega aceptaba
+// lugares/instituciones ("Universidad de Medellín") en vez de una
+// dirección puntual entregable.
+//
+// Primera versión RECHAZABA estos casos (devolvía null, sin lat/lng).
+// Dos problemas encontrados probando en vivo, en ese orden:
+//
+// 1. Filtrar solo por `addresstype` (amenity/shop/etc.) rechazaba de
+//    más: "Centro Comercial El Tesoro" o "Universidad Pontificia
+//    Bolivariana" SÍ traen un house_number preciso ("1 Sur - 45",
+//    "70 - 01") — perfectamente entregables, Nominatim los categoriza
+//    igual que a "Universidad de Medellín" (que sí carece de
+//    house_number) por compartir addresstype, sin que eso diga nada
+//    de si hay o no una dirección puntual.
+// 2. Rechazar del todo (devolver null) los que sí carecen de
+//    house_number tira a la basura un dato real y útil: el lat/lng
+//    que Nominatim devuelve para "Universidad de Medellín" es el
+//    centro real del campus, navegable de verdad — mucho mejor que no
+//    tener ninguna ubicación. Sin este punto, el pedido queda sin
+//    poder calcular precio ni entrar al pool de Domiciliarios por
+//    cercanía; con el punto (aunque impreciso), sigue funcionando.
+//
+// Por eso ya NO se rechaza nada acá — se marca `precisa: false` y
+// quien llama decide qué hacer con eso (ej. mostrarle un aviso al
+// Paciente para que agregue más detalle, sin bloquear el envío).
+const TIPOS_LUGAR_SIN_NUMERO_IMPRECISOS = new Set([
+  'amenity',
+  'shop',
+  'tourism',
+  'leisure',
+  'office',
+  'historic',
+  'building',
+]);
 
 // Nominatim no resuelve direcciones colombianas que escriben el
 // numeral como palabra ("num", "número", "no.", "n.", "nro") en vez de
@@ -31,6 +72,27 @@ const PATRON_NUMERAL =
 
 export function normalizarDireccion(direccion: string): string {
   return direccion.replace(PATRON_NUMERAL, '#').replace(/\s+/g, ' ').trim();
+}
+
+// `display_name` de Nominatim es la dirección completa hasta el país
+// ("Universidad Pontificia Bolivariana, 70 - 01, Circular 1, San
+// Joaquín, Comuna 11 - Laureles-Estadio, Perímetro Urbano Medellín,
+// Medellín, Valle de Aburrá, Antioquia, RAP del Agua y la Montaña,
+// 050031, Colombia") — demasiado largo y con ruido administrativo para
+// mostrárselo al Paciente. Los primeros 3 segmentos ya alcanzan para
+// que reconozca si Nominatim entendió bien: nombre del lugar (si
+// aplica) + número + calle, o calle + barrio si no hay nombre de
+// lugar.
+function direccionResueltaDesde(
+  displayName: string | undefined,
+  textoOriginal: string,
+): string {
+  if (!displayName) return textoOriginal;
+  const segmentos = displayName
+    .split(',')
+    .map((segmento) => segmento.trim())
+    .filter(Boolean);
+  return segmentos.slice(0, 3).join(', ') || textoOriginal;
 }
 
 /**
@@ -71,6 +133,9 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     url.searchParams.set('format', 'json');
     url.searchParams.set('limit', '1');
     url.searchParams.set('countrycodes', 'co');
+    // Necesario para leer `address.house_number` — ver el criterio de
+    // rechazo más abajo.
+    url.searchParams.set('addressdetails', '1');
 
     try {
       const respuesta = await fetch(url, {
@@ -89,7 +154,28 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
         return null;
       }
 
-      return { lat: Number(resultados[0].lat), lng: Number(resultados[0].lon) };
+      const resultado = resultados[0];
+      const tieneHouseNumber = !!resultado.address?.house_number;
+      const esLugarSinNumero =
+        !tieneHouseNumber &&
+        !!resultado.addresstype &&
+        TIPOS_LUGAR_SIN_NUMERO_IMPRECISOS.has(resultado.addresstype);
+
+      if (esLugarSinNumero) {
+        this.logger.warn(
+          `Nominatim resolvió "${consulta}" como un lugar sin dirección puntual (addresstype="${resultado.addresstype}", sin house_number) — se usa el punto igual, marcado como impreciso.`,
+        );
+      }
+
+      return {
+        lat: Number(resultado.lat),
+        lng: Number(resultado.lon),
+        direccionResuelta: direccionResueltaDesde(
+          resultado.display_name,
+          direccion,
+        ),
+        precisa: !esLugarSinNumero,
+      };
     } catch (error) {
       this.logger.warn(
         `No se pudo geocodificar una dirección: ${(error as Error).message}`,

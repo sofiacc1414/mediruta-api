@@ -78,6 +78,12 @@ export type PedidoHistorialDomiciliario = {
   estado: EstadoSolicitud;
   direccionEntrega: string | null;
   creadoEn: string;
+  /** Ronda 9 — bug real reportado: el histórico no mostraba el valor
+   * del pedido, un dato de interés real para el Domiciliario. Mismo
+   * cálculo que el precio real/estimado del Paciente
+   * (`calcularPrecioDesdeParametros`) — `null` si falta el copago o la
+   * distancia (pedido viejo sin geocodificar, por ejemplo). */
+  total: number | null;
 };
 
 /** HU-09/HU-07 — el pedido que el Domiciliario tiene en curso ahora
@@ -697,17 +703,26 @@ export abstract class SolicitudRepositoryPort {
    * caso de uso llama a `GeocodificacionPort` antes, mismo patrón que
    * `EnviarSolicitudUseCase`) — si la edición cambia la dirección de la
    * farmacia, actualiza también `farmacia_ubicacion` (si no, el
-   * domiciliario seguía viendo la distancia a la dirección vieja). */
+   * domiciliario seguía viendo la distancia a la dirección vieja).
+   *
+   * Ronda 9 — mismo tratamiento para `entregaLat`/`entregaLng`: bug
+   * real reportado, el precio del pedido se calcula en vivo con la
+   * distancia farmacia↔entrega, así que si la edición cambia la
+   * dirección de entrega y `entrega_ubicacion` no se actualiza acá, el
+   * precio queda calculado contra la dirección vieja. */
   abstract aprobarEdicionPedidoAdmin(
     adminId: string,
     novedadId: string,
     farmaciaLat?: number | null,
     farmaciaLng?: number | null,
+    entregaLat?: number | null,
+    entregaLng?: number | null,
   ): Promise<ResultadoAccionEdicionPedido>;
 
-  /** Ronda 8 — datos para geocodificar la farmacia al aprobar una
-   * edición: la dirección PROPUESTA si la novedad la cambia (si no, la
-   * actual), más ciudad/departamento del paciente como contexto para
+  /** Ronda 8/9 — datos para geocodificar farmacia y entrega al aprobar
+   * una edición: la dirección PROPUESTA si la novedad la cambia (si
+   * no, null — el caso de uso no vuelve a geocodificar lo que no
+   * cambió), más ciudad/departamento del paciente como contexto para
    * Nominatim (mismo patrón que `obtenerDatosGeocodificacionFarmacia`,
    * pero admin-scoped). */
   abstract obtenerDatosGeocodificacionNovedadAdmin(
@@ -715,6 +730,7 @@ export abstract class SolicitudRepositoryPort {
     novedadId: string,
   ): Promise<{
     direccionFarmacia: string | null;
+    direccionEntrega: string | null;
     ciudad: string | null;
     departamento: string | null;
   } | null>;
