@@ -25,6 +25,7 @@ import { CuentaNoEncontradaError } from '../../domain/errors/cuenta-no-encontrad
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
 import { CuentaDesactivadaError } from '../../domain/errors/cuenta-desactivada.error';
+import { DireccionNoValidaError } from '../../domain/errors/direccion-no-valida.error';
 import { NivelCopagoEnUsoError } from '../../domain/errors/nivel-copago-en-uso.error';
 import { NivelCopagoNoEncontradoError } from '../../domain/errors/nivel-copago-no-encontrado.error';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
@@ -67,6 +68,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   NivelCopagoNoEncontradoError,
   NivelCopagoEnUsoError,
   PerfilDomiciliarioIncompletoParaDisponibilidadError,
+  DireccionNoValidaError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {

@@ -35,7 +35,7 @@ describe('NominatimGeocodificacionAdapter', () => {
       'Calle 80 # 20-15, Bogotá, Cundinamarca, Colombia',
     );
     expect(url.searchParams.get('countrycodes')).toBe('co');
-    expect(url.searchParams.get('limit')).toBe('1');
+    expect(url.searchParams.get('limit')).toBe('5');
   });
 
   it('pide addressdetails=1 (necesario para leer house_number)', async () => {
@@ -314,5 +314,65 @@ describe('NominatimGeocodificacionAdapter', () => {
     const resultado = await adapter.geocodificar('Calle 80', 'Bogotá', 'Cundinamarca');
 
     expect(resultado?.precisa).toBe(true);
+  });
+
+  // Ronda 11 — bug real reportado: un Paciente registrado en un
+  // municipio (ej. Amagá) puede estar pidiendo desde otro (ej. San
+  // Antonio de Prado). Cuando el resultado elegido no es preciso, se
+  // ofrecen las demás coincidencias como candidatos alternos.
+  it('incluye los demás resultados como candidatos cuando el elegido no es preciso', async () => {
+    fetchMock.mockResolvedValue(
+      respuestaJson([
+        {
+          lat: '6.0392',
+          lon: '-75.6989',
+          addresstype: 'amenity',
+          address: {},
+          display_name: 'Amagá, Antioquia, Colombia',
+        },
+        {
+          lat: '6.1590',
+          lon: '-75.6280',
+          addresstype: 'suburb',
+          address: { house_number: '12-34' },
+          display_name: 'San Antonio de Prado, Medellín, Antioquia, Colombia',
+        },
+      ]),
+    );
+    const adapter = new NominatimGeocodificacionAdapter();
+
+    const resultado = await adapter.geocodificar(
+      'San Antonio de Prado',
+      'Amagá',
+      'Antioquia',
+    );
+
+    expect(resultado?.precisa).toBe(false);
+    expect(resultado?.candidatos).toHaveLength(1);
+    expect(resultado?.candidatos?.[0]).toMatchObject({
+      lat: 6.159,
+      lng: -75.628,
+      direccionResuelta: 'San Antonio de Prado, Medellín, Antioquia',
+      precisa: true,
+    });
+  });
+
+  it('no incluye candidatos cuando el resultado elegido ya es preciso (no hace falta ofrecer alternativas)', async () => {
+    fetchMock.mockResolvedValue(
+      respuestaJson([
+        { lat: '6.1590', lon: '-75.6280', addresstype: 'road', address: {} },
+        { lat: '6.0392', lon: '-75.6989', addresstype: 'amenity', address: {} },
+      ]),
+    );
+    const adapter = new NominatimGeocodificacionAdapter();
+
+    const resultado = await adapter.geocodificar(
+      'Carrera 43A # 18-95',
+      'Medellín',
+      'Antioquia',
+    );
+
+    expect(resultado?.precisa).toBe(true);
+    expect(resultado?.candidatos).toBeUndefined();
   });
 });

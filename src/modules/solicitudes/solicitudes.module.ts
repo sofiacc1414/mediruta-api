@@ -43,9 +43,7 @@ import { SolicitarEdicionPedidoUseCase } from './application/use-cases/solicitar
 import { SubirRecetaUseCase } from './application/use-cases/subir-receta.use-case';
 import { CorreoCodigoEntregaPort } from './domain/ports/correo-codigo-entrega.port';
 import { EventosTiempoRealPort } from './domain/ports/eventos-tiempo-real.port';
-import { GeocodificacionPort } from './domain/ports/geocodificacion.port';
 import { SolicitudRepositoryPort } from './domain/ports/solicitud.repository.port';
-import { NominatimGeocodificacionAdapter } from './infrastructure/adapters/nominatim-geocodificacion.adapter';
 import { PostgresSolicitudRepository } from './infrastructure/adapters/postgres-solicitud.repository';
 import { CorreoRelayCodigoEntregaAdapter } from './infrastructure/adapters/correo-relay-codigo-entrega.adapter';
 import { EventosGateway } from './infrastructure/websockets/eventos.gateway';
@@ -120,10 +118,10 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
       provide: SolicitudRepositoryPort,
       useClass: PostgresSolicitudRepository,
     },
-    {
-      provide: GeocodificacionPort,
-      useClass: NominatimGeocodificacionAdapter,
-    },
+    // GeocodificacionPort ya no se registra acá — ahora vive en
+    // GeocodificacionModule (@Global(), importado una sola vez desde
+    // AppModule) para que sea una única instancia real para toda la
+    // API, no una por módulo que la use. Ver doc de ese módulo.
     {
       provide: CorreoCodigoEntregaPort,
       useClass: CorreoRelayCodigoEntregaAdapter,

@@ -96,12 +96,18 @@ describe('EstimarPrecioPedidoUseCase', () => {
     expect(geocodificacion.geocodificar as jest.Mock).not.toHaveBeenCalled();
   });
 
-  it('no disponible si el Paciente no eligió nivel de copago — ni geocodifica', async () => {
+  it('no disponible si el Paciente no eligió nivel de copago — pero SÍ geocodifica (regresión: la confirmación de dirección debe verse igual sin copago)', async () => {
     (
       solicitudes.obtenerParametrosEstimacionPrecio as jest.Mock
     ).mockResolvedValue({
       ...parametros,
       copago: null,
+    });
+    (geocodificacion.geocodificar as jest.Mock).mockResolvedValue({
+      lat: 6.2,
+      lng: -75.6,
+      direccionResuelta: 'Farmacia X resuelta',
+      precisa: true,
     });
 
     const resultado = await useCase.execute(
@@ -113,12 +119,14 @@ describe('EstimarPrecioPedidoUseCase', () => {
     expect(resultado).toEqual({
       disponible: false,
       motivo: 'sin_nivel_copago',
-      direccionFarmaciaResuelta: null,
+      direccionFarmaciaResuelta: 'Farmacia X resuelta',
       direccionFarmaciaPrecisa: true,
-      direccionEntregaResuelta: null,
+      direccionFarmaciaCandidatos: [],
+      direccionEntregaResuelta: 'Farmacia X resuelta',
       direccionEntregaPrecisa: true,
+      direccionEntregaCandidatos: [],
     });
-    expect(geocodificacion.geocodificar as jest.Mock).not.toHaveBeenCalled();
+    expect(geocodificacion.geocodificar as jest.Mock).toHaveBeenCalledTimes(2);
   });
 
   it('no disponible si Nominatim no resuelve alguna de las dos direcciones', async () => {
@@ -145,8 +153,10 @@ describe('EstimarPrecioPedidoUseCase', () => {
       motivo: 'sin_ubicaciones',
       direccionFarmaciaResuelta: 'Farmacia X resuelta',
       direccionFarmaciaPrecisa: true,
+      direccionFarmaciaCandidatos: [],
       direccionEntregaResuelta: null,
       direccionEntregaPrecisa: true,
+      direccionEntregaCandidatos: [],
     });
   });
 
@@ -184,6 +194,41 @@ describe('EstimarPrecioPedidoUseCase', () => {
     expect(resultado?.direccionEntregaPrecisa).toBe(true);
     // No bloquea: sigue calculando precio con el punto impreciso.
     expect(resultado?.disponible).toBe(true);
+  });
+
+  it('propaga los candidatos alternos cuando la dirección elegida no es precisa (ronda 11 — modal para elegir)', async () => {
+    (
+      solicitudes.obtenerParametrosEstimacionPrecio as jest.Mock
+    ).mockResolvedValue(parametros);
+    const candidatoAlterno = {
+      lat: 6.15,
+      lng: -75.7,
+      direccionResuelta: 'San Antonio de Prado, Medellín',
+      precisa: true,
+    };
+    (geocodificacion.geocodificar as jest.Mock)
+      .mockResolvedValueOnce({
+        lat: 6.05,
+        lng: -75.7,
+        direccionResuelta: 'Amagá, Antioquia',
+        precisa: false,
+        candidatos: [candidatoAlterno],
+      })
+      .mockResolvedValueOnce({
+        lat: 6.2093857,
+        lng: -75.5708593,
+        direccionResuelta: 'Carrera 43A # 5A-113, El Poblado',
+        precisa: true,
+      });
+
+    const resultado = await useCase.execute(
+      'paciente-uuid',
+      'San Antonio de Prado',
+      'Carrera 43A #5A-113',
+    );
+
+    expect(resultado?.direccionFarmaciaCandidatos).toEqual([candidatoAlterno]);
+    expect(resultado?.direccionEntregaCandidatos).toEqual([]);
   });
 
   it('calcula el precio con la distancia real entre los dos puntos geocodificados', async () => {

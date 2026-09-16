@@ -108,6 +108,10 @@ describe('ObtenerPerfilUseCase', () => {
     expect(resultado.domiciliario?.licenciaUrl).toBeNull();
     expect(resultado.paciente?.departamento).toBe('Cundinamarca');
     expect(resultado.paciente?.ciudad).toBe('Bogotá');
+    // Regresión del bug real reportado ("el copago no persiste"): se
+    // guardaba bien en la base, pero este use case reconstruye el
+    // objeto `paciente` a mano y nunca incluía `nivelCopagoId`.
+    expect(resultado.paciente?.nivelCopagoId).toBe('nivel-uuid');
     expect(almacenamiento.obtenerUrlFirmada).toHaveBeenCalledWith(
       BUCKET_PERFILES,
       'perfil/usuario-uuid/foto.jpg',

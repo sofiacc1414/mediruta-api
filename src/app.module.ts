@@ -5,11 +5,13 @@ import { DomiciliariosModule } from './modules/domiciliarios/domiciliarios.modul
 import { SolicitudesModule } from './modules/solicitudes/solicitudes.module';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { DatabaseModule } from './shared/infrastructure/database/database.module';
+import { GeocodificacionModule } from './shared/infrastructure/geocodificacion/geocodificacion.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
+    GeocodificacionModule,
     UsuariosModule,
     DomiciliariosModule,
     SolicitudesModule,

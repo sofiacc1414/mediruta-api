@@ -22,7 +22,26 @@ export type Coordenadas = {
    * frecuente en Colombia y no es señal de imprecisión real, solo un
    * hueco de datos de OpenStreetMap). */
   precisa: boolean;
+  /** Ver `CandidatoDireccion` más abajo — otras coincidencias que
+   * Nominatim devolvió para la misma búsqueda, para ofrecerlas como
+   * alternativa cuando el resultado elegido no es preciso. `undefined`
+   * cuando no se pidieron (ej. dentro de un candidato de esta misma
+   * lista) o cuando Nominatim solo devolvió una coincidencia. */
+  candidatos?: CandidatoDireccion[];
 };
+
+/**
+ * Ronda 11 — bug real reportado: un Paciente registrado en un
+ * municipio (ej. Amagá) puede estar pidiendo desde otro (ej. San
+ * Antonio de Prado, ya en Medellín) — el primer resultado de Nominatim
+ * puede no ser el que el Paciente quiso decir. Cuando la dirección
+ * elegida queda `precisa: false` (o no hay ninguna), se ofrecen estos
+ * candidatos alternos (mismo request, sin costo extra de rate limit)
+ * para que el Paciente elija en vez de quedarse con el primero a
+ * ciegas. Cada candidato es un `Coordenadas` completo salvo que no
+ * trae, a su vez, su propia lista de candidatos.
+ */
+export type CandidatoDireccion = Omit<Coordenadas, 'candidatos'>;
 
 /**
  * Puerto de geocodificación (dirección de texto → lat/lng) — HU-09. El

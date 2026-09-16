@@ -18,6 +18,7 @@ export type ObtenerPerfilResultado = {
     fotoCedulaReversoUrl: string | null;
     departamento: string | null;
     ciudad: string | null;
+    nivelCopagoId: string | null;
   } | null;
   domiciliario: {
     direccion: string | null;
@@ -84,6 +85,14 @@ export class ObtenerPerfilUseCase {
             fotoCedulaReversoUrl,
             departamento: perfil.paciente.departamento,
             ciudad: perfil.paciente.ciudad,
+            // Bug real reportado: "el copago no persiste" — sí se
+            // guardaba bien en la base (ver
+            // ActualizarNivelCopagoPacienteUseCase), pero este
+            // reconstruye el objeto `paciente` a mano campo por campo
+            // y nunca incluía `nivelCopagoId` acá, así que la App
+            // jamás se enteraba de cuál estaba guardado al recargar
+            // el perfil — parecía que la selección "se perdía".
+            nivelCopagoId: perfil.paciente.nivelCopagoId,
           }
         : null,
       domiciliario: perfil.domiciliario

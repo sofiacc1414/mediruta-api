@@ -15,6 +15,10 @@ const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 const USER_AGENT =
   'MediRuta/1.0 (+https://github.com/sofiacc1414/mediruta-api)';
 const INTERVALO_MINIMO_MS = 1100;
+// Ronda 11 — se piden varias coincidencias (no solo la primera) para
+// poder ofrecerlas como candidatos alternos cuando la elegida no es
+// precisa. Mismo request, sin costo extra de rate limit.
+const LIMITE_RESULTADOS = 5;
 
 type ResultadoNominatim = {
   lat: string;
@@ -131,7 +135,7 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     const url = new URL(NOMINATIM_URL);
     url.searchParams.set('q', consulta);
     url.searchParams.set('format', 'json');
-    url.searchParams.set('limit', '1');
+    url.searchParams.set('limit', String(LIMITE_RESULTADOS));
     url.searchParams.set('countrycodes', 'co');
     // Necesario para leer `address.house_number` — ver el criterio de
     // rechazo más abajo.
@@ -154,34 +158,50 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
         return null;
       }
 
-      const resultado = resultados[0];
-      const tieneHouseNumber = !!resultado.address?.house_number;
-      const esLugarSinNumero =
-        !tieneHouseNumber &&
-        !!resultado.addresstype &&
-        TIPOS_LUGAR_SIN_NUMERO_IMPRECISOS.has(resultado.addresstype);
+      const [resultado, ...resto] = resultados;
+      const elegido = this.aCoordenadas(resultado, direccion, consulta);
 
-      if (esLugarSinNumero) {
-        this.logger.warn(
-          `Nominatim resolvió "${consulta}" como un lugar sin dirección puntual (addresstype="${resultado.addresstype}", sin house_number) — se usa el punto igual, marcado como impreciso.`,
+      if (!elegido.precisa && resto.length > 0) {
+        elegido.candidatos = resto.map((candidato) =>
+          this.aCoordenadas(candidato, direccion, consulta),
         );
       }
 
-      return {
-        lat: Number(resultado.lat),
-        lng: Number(resultado.lon),
-        direccionResuelta: direccionResueltaDesde(
-          resultado.display_name,
-          direccion,
-        ),
-        precisa: !esLugarSinNumero,
-      };
+      return elegido;
     } catch (error) {
       this.logger.warn(
         `No se pudo geocodificar una dirección: ${(error as Error).message}`,
       );
       return null;
     }
+  }
+
+  private aCoordenadas(
+    resultado: ResultadoNominatim,
+    direccionOriginal: string,
+    consultaCompleta: string,
+  ): Coordenadas {
+    const tieneHouseNumber = !!resultado.address?.house_number;
+    const esLugarSinNumero =
+      !tieneHouseNumber &&
+      !!resultado.addresstype &&
+      TIPOS_LUGAR_SIN_NUMERO_IMPRECISOS.has(resultado.addresstype);
+
+    if (esLugarSinNumero) {
+      this.logger.warn(
+        `Nominatim resolvió "${consultaCompleta}" como un lugar sin dirección puntual (addresstype="${resultado.addresstype}", sin house_number) — se usa el punto igual, marcado como impreciso.`,
+      );
+    }
+
+    return {
+      lat: Number(resultado.lat),
+      lng: Number(resultado.lon),
+      direccionResuelta: direccionResueltaDesde(
+        resultado.display_name,
+        direccionOriginal,
+      ),
+      precisa: !esLugarSinNumero,
+    };
   }
 
   private async esperarTurno(): Promise<void> {

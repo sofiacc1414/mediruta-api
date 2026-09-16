@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { GeocodificacionPort } from '../../domain/ports/geocodificacion.port';
+import {
+  CandidatoDireccion,
+  GeocodificacionPort,
+} from '../../domain/ports/geocodificacion.port';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
 import {
   calcularPrecioDesdeParametros,
@@ -47,12 +50,21 @@ function distanciaMetrosEntre(
  * SÍ se geocodificó pero es un lugar grande sin punto de entrega
  * exacto (ej. "Universidad de Medellín") — la App puede usar esto para
  * sugerirle al Paciente agregar más detalle, sin bloquear el envío: el
- * punto sigue siendo válido, solo aproximado. */
+ * punto sigue siendo válido, solo aproximado.
+ *
+ * Ronda 11 — `direccionXCandidatos` trae otras coincidencias que
+ * Nominatim devolvió para la misma búsqueda, solo cuando la elegida
+ * quedó `precisa: false` (bug real: un Paciente registrado en un
+ * municipio puede estar pidiendo desde otro — el primer resultado no
+ * siempre es el correcto). La App las ofrece en un modal para que el
+ * Paciente elija en vez de quedarse con la aproximación automática. */
 export type EstimacionPrecioPedido = PrecioPedido & {
   direccionFarmaciaResuelta: string | null;
   direccionFarmaciaPrecisa: boolean;
+  direccionFarmaciaCandidatos: CandidatoDireccion[];
   direccionEntregaResuelta: string | null;
   direccionEntregaPrecisa: boolean;
+  direccionEntregaCandidatos: CandidatoDireccion[];
 };
 
 /**
@@ -83,17 +95,13 @@ export class EstimarPrecioPedidoUseCase {
       return null;
     }
 
-    if (parametros.copago === null) {
-      return {
-        disponible: false,
-        motivo: 'sin_nivel_copago',
-        direccionFarmaciaResuelta: null,
-        direccionFarmaciaPrecisa: true,
-        direccionEntregaResuelta: null,
-        direccionEntregaPrecisa: true,
-      };
-    }
-
+    // Ronda 10 — bug real: esto se cortaba ACÁ si el Paciente todavía
+    // no había elegido nivel de copago, así que la confirmación de
+    // dirección (lo único que la App necesita mostrar bajo cada campo)
+    // nunca llegaba a calcularse para alguien armando su primer
+    // pedido. Geocodificar es independiente de tener o no copago — se
+    // separa: primero se geocodifica siempre que haya texto en los dos
+    // campos, y solo el PRECIO queda condicionado al copago.
     const [farmacia, entrega] = await Promise.all([
       this.geocodificacion.geocodificar(
         direccionFarmacia,
@@ -107,6 +115,26 @@ export class EstimarPrecioPedidoUseCase {
       ),
     ]);
 
+    const direccionFarmaciaResuelta = farmacia?.direccionResuelta ?? null;
+    const direccionFarmaciaPrecisa = farmacia?.precisa ?? true;
+    const direccionFarmaciaCandidatos = farmacia?.candidatos ?? [];
+    const direccionEntregaResuelta = entrega?.direccionResuelta ?? null;
+    const direccionEntregaPrecisa = entrega?.precisa ?? true;
+    const direccionEntregaCandidatos = entrega?.candidatos ?? [];
+
+    if (parametros.copago === null) {
+      return {
+        disponible: false,
+        motivo: 'sin_nivel_copago',
+        direccionFarmaciaResuelta,
+        direccionFarmaciaPrecisa,
+        direccionFarmaciaCandidatos,
+        direccionEntregaResuelta,
+        direccionEntregaPrecisa,
+        direccionEntregaCandidatos,
+      };
+    }
+
     const distanciaMetros =
       farmacia && entrega ? distanciaMetrosEntre(farmacia, entrega) : null;
 
@@ -115,10 +143,12 @@ export class EstimarPrecioPedidoUseCase {
         ...parametros,
         distanciaMetros,
       }),
-      direccionFarmaciaResuelta: farmacia?.direccionResuelta ?? null,
-      direccionFarmaciaPrecisa: farmacia?.precisa ?? true,
-      direccionEntregaResuelta: entrega?.direccionResuelta ?? null,
-      direccionEntregaPrecisa: entrega?.precisa ?? true,
+      direccionFarmaciaResuelta,
+      direccionFarmaciaPrecisa,
+      direccionFarmaciaCandidatos,
+      direccionEntregaResuelta,
+      direccionEntregaPrecisa,
+      direccionEntregaCandidatos,
     };
   }
 }
