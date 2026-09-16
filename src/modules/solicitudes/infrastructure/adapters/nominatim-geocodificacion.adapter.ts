@@ -16,6 +16,16 @@ const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 const USER_AGENT =
   'MediRuta/1.0 (+https://github.com/sofiacc1414/mediruta-api)';
 const INTERVALO_MINIMO_MS = 1100;
+// Ronda 14 — bug real reportado: una dirección que geocodificaba bien
+// consultada directo contra Nominatim, devolvía null pasando por la
+// API — de forma consistente, varios intentos seguidos. Diagnóstico
+// en vivo: Nominatim (servicio público, gratis, pensado para uso
+// bajo) empezó a responder con error/vacío específicamente desde el
+// servidor de la API — probablemente por el volumen alto de pruebas
+// de esta sesión. `buscar()` reintenta con espera creciente antes de
+// darse por vencido, en vez de devolver null ante el primer error.
+const REINTENTOS_MAXIMOS = 2;
+const ESPERA_ENTRE_REINTENTOS_MS = 1500;
 // Ronda 11 — se piden varias coincidencias (no solo la primera) para
 // poder ofrecerlas como candidatos alternos cuando la elegida no es
 // precisa. Mismo request, sin costo extra de rate limit.
@@ -316,11 +326,13 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
   /** `null` = falló la consulta (red/HTTP, no hay más que intentar).
    * `[]` = Nominatim respondió pero sin coincidencias (sí vale la pena
    * reintentar con una consulta más amplia). */
+  /** `null` solo después de agotar los reintentos — un error/timeout
+   * puntual de Nominatim no debe leerse como "la dirección no existe".
+   * Nunca reintenta ante un 200 con 0 resultados: eso es una
+   * respuesta válida (no hay ninguna coincidencia), no una falla. */
   private async buscar(
     consulta: string,
   ): Promise<ResultadoNominatim[] | null> {
-    await this.esperarTurno();
-
     const url = new URL(NOMINATIM_URL);
     url.searchParams.set('q', consulta);
     url.searchParams.set('format', 'json');
@@ -330,25 +342,35 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     // rechazo más abajo.
     url.searchParams.set('addressdetails', '1');
 
-    try {
-      const respuesta = await fetch(url, {
-        headers: { 'User-Agent': USER_AGENT },
-      });
+    for (let intento = 0; intento <= REINTENTOS_MAXIMOS; intento++) {
+      await this.esperarTurno();
 
-      if (!respuesta.ok) {
+      try {
+        const respuesta = await fetch(url, {
+          headers: { 'User-Agent': USER_AGENT },
+        });
+
+        if (respuesta.ok) {
+          return (await respuesta.json()) as ResultadoNominatim[];
+        }
+
         this.logger.warn(
-          `Nominatim respondió ${respuesta.status} para una dirección — se envía sin ubicación de farmacia.`,
+          `Nominatim respondió ${respuesta.status} para "${consulta}" (intento ${intento + 1}/${REINTENTOS_MAXIMOS + 1}).`,
         );
-        return null;
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo geocodificar "${consulta}": ${(error as Error).message} (intento ${intento + 1}/${REINTENTOS_MAXIMOS + 1}).`,
+        );
       }
 
-      return (await respuesta.json()) as ResultadoNominatim[];
-    } catch (error) {
-      this.logger.warn(
-        `No se pudo geocodificar una dirección: ${(error as Error).message}`,
-      );
-      return null;
+      if (intento < REINTENTOS_MAXIMOS) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, ESPERA_ENTRE_REINTENTOS_MS * (intento + 1)),
+        );
+      }
     }
+
+    return null;
   }
 
   private aCoordenadas(

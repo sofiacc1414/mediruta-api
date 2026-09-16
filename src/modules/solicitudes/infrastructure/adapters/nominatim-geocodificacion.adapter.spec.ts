@@ -343,6 +343,59 @@ describe('NominatimGeocodificacionAdapter', () => {
     expect(resultado).toBeNull();
   });
 
+  // Ronda 14 — bug real reportado: una dirección que geocodificaba
+  // bien consultada directo contra Nominatim, devolvía null pasando
+  // por la API — de forma consistente, en varios intentos seguidos.
+  // Diagnóstico en vivo: Nominatim (servicio público gratuito)
+  // respondió con error/vacío específicamente desde el servidor de la
+  // API en ese momento — probablemente por volumen alto de pruebas.
+  // Antes, CUALQUIER error de un solo intento se leía como "la
+  // dirección no existe"; ahora se reintenta antes de darse por
+  // vencido.
+  describe('reintentos ante un error/timeout de Nominatim (no ante una respuesta válida sin resultados)', () => {
+    it('reintenta si Nominatim responde con error HTTP y encuentra el resultado en el segundo intento', async () => {
+      fetchMock
+        .mockResolvedValueOnce(respuestaJson(null, false, 503))
+        .mockResolvedValueOnce(
+          respuestaJson([{ lat: '6.2', lon: '-75.6', address: { road: 'Calle 27' } }]),
+        );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar('Calle 27', 'Medellín', 'Antioquia');
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(resultado).not.toBeNull();
+      expect(resultado?.lat).toBe(6.2);
+    }, 15000);
+
+    it('reintenta ante una excepción de red y se recupera en un intento posterior', async () => {
+      fetchMock
+        .mockRejectedValueOnce(new Error('network error'))
+        .mockResolvedValueOnce(
+          respuestaJson([{ lat: '6.2', lon: '-75.6', address: { road: 'Calle 27' } }]),
+        );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar('Calle 27', 'Medellín', 'Antioquia');
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(resultado).not.toBeNull();
+    }, 15000);
+
+    it('NO reintenta cuando Nominatim responde 200 con 0 resultados — es una respuesta válida, no un error', async () => {
+      fetchMock.mockResolvedValue(respuestaJson([]));
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar('dirección inventada', null, null);
+
+      // Solo 1 llamada: ni siquiera hay ciudad/departamento que
+      // reintentar sin ellos, y una lista vacía con 200 OK no dispara
+      // el reintento por error.
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(resultado).toBeNull();
+    });
+  });
+
   // Bug real reportado: la dirección aceptaba lugares/instituciones sin
   // punto de entrega preciso (ej. "Universidad de Medellín", un campus
   // completo sin house_number). Todas las respuestas de estos tests
