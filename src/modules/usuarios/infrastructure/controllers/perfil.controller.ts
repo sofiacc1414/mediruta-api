@@ -26,6 +26,7 @@ import { SolicitarRolDomiciliarioUseCase } from '../../application/use-cases/sol
 import { SolicitarRolPacienteUseCase } from '../../application/use-cases/solicitar-rol-paciente.use-case';
 import { SubirDocumentoDomiciliarioUseCase } from '../../application/use-cases/subir-documento-domiciliario.use-case';
 import { SubirFotoCedulaPacienteUseCase } from '../../application/use-cases/subir-foto-cedula-paciente.use-case';
+import { AutocompletarDireccionUseCase } from '../../application/use-cases/autocompletar-direccion.use-case';
 import { SubirFotoPerfilUseCase } from '../../application/use-cases/subir-foto-perfil.use-case';
 import { VerificarDireccionUseCase } from '../../application/use-cases/verificar-direccion.use-case';
 import type { IdentidadAutenticada } from '../../domain/identidad-autenticada';
@@ -36,6 +37,7 @@ import { ActualizarPerfilDomiciliarioDto } from '../dtos/actualizar-perfil-domic
 import { ActualizarNivelCopagoPacienteDto } from '../dtos/actualizar-nivel-copago-paciente.dto';
 import { ActualizarPerfilPacienteDto } from '../dtos/actualizar-perfil-paciente.dto';
 import { SubirDocumentoDomiciliarioDto } from '../dtos/subir-documento-domiciliario.dto';
+import { AutocompletarDireccionDto } from '../dtos/autocompletar-direccion.dto';
 import { SubirFotoCedulaPacienteDto } from '../dtos/subir-foto-cedula-paciente.dto';
 import { VerificarDireccionDto } from '../dtos/verificar-direccion.dto';
 import { DominioHttpFilter } from '../filters/dominio-http.filter';
@@ -68,6 +70,7 @@ export class PerfilController {
     private readonly listarNivelesCopago: ListarNivelesCopagoUseCase,
     private readonly actualizarNivelCopagoPaciente: ActualizarNivelCopagoPacienteUseCase,
     private readonly verificarDireccion: VerificarDireccionUseCase,
+    private readonly autocompletarDireccion: AutocompletarDireccionUseCase,
   ) {}
 
   @Get()
@@ -112,6 +115,18 @@ export class PerfilController {
   verificarDireccionAction(@Body() dto: VerificarDireccionDto) {
     return this.verificarDireccion.execute({
       direccion: dto.direccion,
+      ciudad: dto.ciudad ?? null,
+      departamento: dto.departamento ?? null,
+    });
+  }
+
+  /** Ronda 13 — sugerencias mientras se escribe (ej. "universidad de
+   * medellin"), no solo al confirmar la dirección completa. */
+  @Post('autocompletar-direccion')
+  @HttpCode(HttpStatus.OK)
+  autocompletarDireccionAction(@Body() dto: AutocompletarDireccionDto) {
+    return this.autocompletarDireccion.execute({
+      texto: dto.texto,
       ciudad: dto.ciudad ?? null,
       departamento: dto.departamento ?? null,
     });

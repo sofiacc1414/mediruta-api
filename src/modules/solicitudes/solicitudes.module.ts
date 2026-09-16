@@ -8,6 +8,7 @@ import { ListarNivelesCopagoAdminUseCase } from './application/use-cases/listar-
 import { ActualizarSolicitudUseCase } from './application/use-cases/actualizar-solicitud.use-case';
 import { AdjuntarRecetaPropuestaEdicionUseCase } from './application/use-cases/adjuntar-receta-propuesta-edicion.use-case';
 import { AprobarEdicionPedidoAdminUseCase } from './application/use-cases/aprobar-edicion-pedido-admin.use-case';
+import { AutocompletarDireccionUseCase } from './application/use-cases/autocompletar-direccion.use-case';
 import { AsignarDomiciliarioAdminUseCase } from './application/use-cases/asignar-domiciliario-admin.use-case';
 import { CancelarSolicitudUseCase } from './application/use-cases/cancelar-solicitud.use-case';
 import { CrearSolicitudUseCase } from './application/use-cases/crear-solicitud.use-case';
@@ -72,6 +73,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     ListarSolicitudesUseCase,
     CalcularPrecioPedidoUseCase,
     EstimarPrecioPedidoUseCase,
+    AutocompletarDireccionUseCase,
     ObtenerSolicitudUseCase,
     ActualizarSolicitudUseCase,
     SubirRecetaUseCase,

@@ -61,6 +61,7 @@ describe('EstimarPrecioPedidoUseCase', () => {
   };
   const geocodificacion: GeocodificacionPort = {
     geocodificar: jest.fn(),
+    autocompletar: jest.fn(),
   };
   const useCase = new EstimarPrecioPedidoUseCase(solicitudes, geocodificacion);
 

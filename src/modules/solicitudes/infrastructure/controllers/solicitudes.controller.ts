@@ -23,6 +23,7 @@ import { AccessAuthGuard } from '../../../usuarios/infrastructure/guards/access-
 import { RolesGuard } from '../../../usuarios/infrastructure/guards/roles.guard';
 import { ActualizarSolicitudUseCase } from '../../application/use-cases/actualizar-solicitud.use-case';
 import { AdjuntarRecetaPropuestaEdicionUseCase } from '../../application/use-cases/adjuntar-receta-propuesta-edicion.use-case';
+import { AutocompletarDireccionUseCase } from '../../application/use-cases/autocompletar-direccion.use-case';
 import { CancelarSolicitudUseCase } from '../../application/use-cases/cancelar-solicitud.use-case';
 import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicitud.use-case';
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
@@ -35,6 +36,7 @@ import { ReportarNovedadPacienteUseCase } from '../../application/use-cases/repo
 import { SolicitarEdicionPedidoUseCase } from '../../application/use-cases/solicitar-edicion-pedido.use-case';
 import { SubirRecetaUseCase } from '../../application/use-cases/subir-receta.use-case';
 import { Medicamento } from '../../domain/ports/solicitud.repository.port';
+import { AutocompletarDireccionDto } from '../dtos/autocompletar-direccion.dto';
 import { DatosSolicitudDto } from '../dtos/datos-solicitud.dto';
 import { EstimarPrecioPedidoDto } from '../dtos/estimar-precio-pedido.dto';
 import { MedicamentoDto } from '../dtos/medicamento.dto';
@@ -92,6 +94,7 @@ export class SolicitudesController {
     private readonly reportarCodigoNoGenerado: ReportarCodigoNoGeneradoUseCase,
     private readonly listarNovedadesSolicitud: ListarNovedadesSolicitudUseCase,
     private readonly estimarPrecioPedido: EstimarPrecioPedidoUseCase,
+    private readonly autocompletarDireccionPedido: AutocompletarDireccionUseCase,
   ) {}
 
   @Post()
@@ -129,6 +132,21 @@ export class SolicitudesController {
       dto.direccionFarmacia,
       dto.direccionEntrega,
     );
+  }
+
+  /** Ronda 13 — sugerencias mientras el Paciente todavía está
+   * escribiendo la dirección de farmacia/entrega, no solo al perder
+   * el foco. */
+  @Post('autocompletar-direccion')
+  @HttpCode(HttpStatus.OK)
+  autocompletarDireccion(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Body() dto: AutocompletarDireccionDto,
+  ) {
+    return this.autocompletarDireccionPedido.execute({
+      pacienteId: identidad.usuarioId,
+      texto: dto.texto,
+    });
   }
 
   @Get(':id')

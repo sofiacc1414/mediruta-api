@@ -61,6 +61,7 @@ describe('EnviarSolicitudUseCase', () => {
   };
   const geocodificacion: GeocodificacionPort = {
     geocodificar: jest.fn(),
+    autocompletar: jest.fn(),
   };
   const useCase = new EnviarSolicitudUseCase(solicitudes, geocodificacion);
 

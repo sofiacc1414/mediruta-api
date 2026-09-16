@@ -14,6 +14,8 @@ import { SolicitarRolPacienteUseCase } from '../../application/use-cases/solicit
 import { SubirDocumentoDomiciliarioUseCase } from '../../application/use-cases/subir-documento-domiciliario.use-case';
 import { SubirFotoCedulaPacienteUseCase } from '../../application/use-cases/subir-foto-cedula-paciente.use-case';
 import { SubirFotoPerfilUseCase } from '../../application/use-cases/subir-foto-perfil.use-case';
+import { VerificarDireccionUseCase } from '../../application/use-cases/verificar-direccion.use-case';
+import { AutocompletarDireccionUseCase } from '../../application/use-cases/autocompletar-direccion.use-case';
 import { AccessAuthGuard } from '../guards/access-auth.guard';
 import { PerfilController } from './perfil.controller';
 
@@ -45,6 +47,8 @@ function crearController(overrides?: {
   actualizarDisponibilidadDomiciliario?: { execute: jest.Mock };
   listarNivelesCopago?: { execute: jest.Mock };
   actualizarNivelCopagoPaciente?: { execute: jest.Mock };
+  verificarDireccion?: { execute: jest.Mock };
+  autocompletarDireccion?: { execute: jest.Mock };
 }) {
   return new PerfilController(
     (overrides?.obtenerPerfil ?? {
@@ -89,6 +93,12 @@ function crearController(overrides?: {
     (overrides?.actualizarNivelCopagoPaciente ?? {
       execute: jest.fn(),
     }) as unknown as ActualizarNivelCopagoPacienteUseCase,
+    (overrides?.verificarDireccion ?? {
+      execute: jest.fn(),
+    }) as unknown as VerificarDireccionUseCase,
+    (overrides?.autocompletarDireccion ?? {
+      execute: jest.fn(),
+    }) as unknown as AutocompletarDireccionUseCase,
   );
 }
 

@@ -4,9 +4,11 @@ import { AccessAuthGuard } from '../../../usuarios/infrastructure/guards/access-
 import { RolesGuard } from '../../../usuarios/infrastructure/guards/roles.guard';
 import { ActualizarSolicitudUseCase } from '../../application/use-cases/actualizar-solicitud.use-case';
 import { AdjuntarRecetaPropuestaEdicionUseCase } from '../../application/use-cases/adjuntar-receta-propuesta-edicion.use-case';
+import { AutocompletarDireccionUseCase } from '../../application/use-cases/autocompletar-direccion.use-case';
 import { CancelarSolicitudUseCase } from '../../application/use-cases/cancelar-solicitud.use-case';
 import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicitud.use-case';
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
+import { EstimarPrecioPedidoUseCase } from '../../application/use-cases/estimar-precio-pedido.use-case';
 import { ListarNovedadesSolicitudUseCase } from '../../application/use-cases/listar-novedades-solicitud.use-case';
 import { ListarSolicitudesUseCase } from '../../application/use-cases/listar-solicitudes.use-case';
 import { ObtenerSolicitudUseCase } from '../../application/use-cases/obtener-solicitud.use-case';
@@ -48,6 +50,8 @@ function crearController(overrides?: {
   adjuntarRecetaPropuestaEdicion?: { execute: jest.Mock };
   reportarCodigoNoGenerado?: { execute: jest.Mock };
   listarNovedadesSolicitud?: { execute: jest.Mock };
+  estimarPrecioPedido?: { execute: jest.Mock };
+  autocompletarDireccion?: { execute: jest.Mock };
 }) {
   return new SolicitudesController(
     (overrides?.crearSolicitud ?? {
@@ -86,6 +90,12 @@ function crearController(overrides?: {
     (overrides?.listarNovedadesSolicitud ?? {
       execute: jest.fn(),
     }) as unknown as ListarNovedadesSolicitudUseCase,
+    (overrides?.estimarPrecioPedido ?? {
+      execute: jest.fn(),
+    }) as unknown as EstimarPrecioPedidoUseCase,
+    (overrides?.autocompletarDireccion ?? {
+      execute: jest.fn(),
+    }) as unknown as AutocompletarDireccionUseCase,
   );
 }
 

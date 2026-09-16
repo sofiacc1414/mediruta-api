@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  CandidatoDireccion,
   Coordenadas,
   GeocodificacionPort,
 } from '../../domain/ports/geocodificacion.port';
@@ -178,6 +179,50 @@ function direccionResueltaDesde(
 export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
   private readonly logger = new Logger(NominatimGeocodificacionAdapter.name);
   private ultimaLlamadaEn = 0;
+
+  /** Ronda 13 — sugerencias mientras el usuario todavía está
+   * escribiendo (ej. "universidad de medellin"), no solo al perder el
+   * foco. Mismo criterio de acotar por ciudad/departamento y, si eso
+   * no encuentra nada, reintentar sin ellos (ver `geocodificar`) —
+   * pero acá se devuelven TODAS las coincidencias como candidatos por
+   * igual, sin elegir una como "la buena": es el usuario quien elige
+   * tocando una, no un algoritmo de precisión. */
+  async autocompletar(
+    texto: string,
+    ciudad: string | null,
+    departamento: string | null,
+  ): Promise<CandidatoDireccion[]> {
+    const { acotada, amplia } = this.armarConsultas(texto, ciudad, departamento);
+    if (!acotada) return [];
+
+    const resultadosAcotados = await this.buscar(acotada);
+    if (resultadosAcotados && resultadosAcotados.length > 0) {
+      return resultadosAcotados.map((r) => this.aCoordenadas(r, texto, acotada));
+    }
+
+    if (!amplia) return [];
+    const resultadosAmplios = await this.buscar(amplia);
+    if (!resultadosAmplios) return [];
+    return resultadosAmplios.map((r) => this.aCoordenadas(r, texto, amplia));
+  }
+
+  private armarConsultas(
+    texto: string,
+    ciudad: string | null,
+    departamento: string | null,
+  ): { acotada: string; amplia: string | null } {
+    const normalizada = normalizarDireccion(texto);
+    const acotada = [normalizada, ciudad, departamento, 'Colombia']
+      .filter((parte): parte is string => !!parte && parte.trim().length > 0)
+      .join(', ');
+    if (!ciudad && !departamento) {
+      return { acotada, amplia: null };
+    }
+    const amplia = [normalizada, 'Colombia']
+      .filter((parte): parte is string => !!parte && parte.trim().length > 0)
+      .join(', ');
+    return { acotada, amplia };
+  }
 
   async geocodificar(
     direccion: string,

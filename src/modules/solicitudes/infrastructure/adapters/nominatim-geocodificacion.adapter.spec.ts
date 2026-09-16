@@ -622,4 +622,78 @@ describe('NominatimGeocodificacionAdapter', () => {
       );
     });
   });
+
+  // Ronda 13 — sugerencias mientras se escribe (ej. "universidad de
+  // medellin"), no solo al confirmar la dirección completa.
+  describe('autocompletar', () => {
+    it('devuelve TODAS las coincidencias como candidatos, sin elegir una', async () => {
+      fetchMock.mockResolvedValue(
+        respuestaJson([
+          {
+            lat: '6.2419444',
+            lon: '-75.5895294',
+            addresstype: 'amenity',
+            address: { amenity: 'Universidad de Medellín' },
+            display_name: 'Universidad de Medellín, Medellín, Antioquia, Colombia',
+          },
+          {
+            lat: '6.2',
+            lon: '-75.6',
+            addresstype: 'amenity',
+            address: { amenity: 'Universidad Nacional de Medellín' },
+            display_name: 'Universidad Nacional de Medellín, Medellín, Antioquia, Colombia',
+          },
+        ]),
+      );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.autocompletar(
+        'universidad de medellin',
+        'Medellín',
+        'Antioquia',
+      );
+
+      expect(resultado).toHaveLength(2);
+      expect(resultado[0].direccionResuelta).toBe('Universidad de Medellín, Medellín, Antioquia');
+      expect(resultado[1].direccionResuelta).toBe(
+        'Universidad Nacional de Medellín, Medellín, Antioquia',
+      );
+    });
+
+    it('reintenta sin ciudad/departamento si la búsqueda acotada no encuentra nada', async () => {
+      fetchMock
+        .mockResolvedValueOnce(respuestaJson([]))
+        .mockResolvedValueOnce(
+          respuestaJson([
+            { lat: '6.2', lon: '-75.6', address: { road: 'Calle 27' } },
+          ]),
+        );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.autocompletar('Calle 27', 'Amagá', 'Antioquia');
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      const [urlAmplia] = fetchMock.mock.calls[1] as [URL];
+      expect(urlAmplia.searchParams.get('q')).toBe('Calle 27, Colombia');
+      expect(resultado).toHaveLength(1);
+    });
+
+    it('devuelve una lista vacía (no null) si no hay coincidencias', async () => {
+      fetchMock.mockResolvedValue(respuestaJson([]));
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.autocompletar('dirección inventada', null, null);
+
+      expect(resultado).toEqual([]);
+    });
+
+    it('devuelve una lista vacía (no lanza) si Nominatim falla', async () => {
+      fetchMock.mockRejectedValue(new Error('network error'));
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.autocompletar('Calle 27', null, null);
+
+      expect(resultado).toEqual([]);
+    });
+  });
 });

@@ -57,4 +57,18 @@ export abstract class GeocodificacionPort {
     ciudad: string | null,
     departamento: string | null,
   ): Promise<Coordenadas | null>;
+
+  /** Ronda 13 — bug real reportado: había que terminar de escribir y
+   * salir del campo para enterarse de si una dirección existía o no.
+   * Se pide para sugerir mientras el usuario todavía está escribiendo
+   * (ej. "universidad de medellin" → la lista de direcciones reales
+   * que coinciden), no solo para confirmar al final. Siempre devuelve
+   * una lista (puede ser vacía) — a diferencia de `geocodificar`, acá
+   * no hay un "elegido", todas las coincidencias son candidatas por
+   * igual hasta que el usuario toque una. */
+  abstract autocompletar(
+    texto: string,
+    ciudad: string | null,
+    departamento: string | null,
+  ): Promise<CandidatoDireccion[]>;
 }

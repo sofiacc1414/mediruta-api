@@ -30,6 +30,7 @@ import { SolicitarRolDomiciliarioUseCase } from './application/use-cases/solicit
 import { SolicitarRolPacienteUseCase } from './application/use-cases/solicitar-rol-paciente.use-case';
 import { SubirDocumentoDomiciliarioUseCase } from './application/use-cases/subir-documento-domiciliario.use-case';
 import { SubirFotoCedulaPacienteUseCase } from './application/use-cases/subir-foto-cedula-paciente.use-case';
+import { AutocompletarDireccionUseCase } from './application/use-cases/autocompletar-direccion.use-case';
 import { SubirFotoPerfilUseCase } from './application/use-cases/subir-foto-perfil.use-case';
 import { VerificarDireccionUseCase } from './application/use-cases/verificar-direccion.use-case';
 import { AccessTokenPort } from './domain/ports/access-token.port';
@@ -112,6 +113,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
     ActualizarDatosComunesUseCase,
     ActualizarPerfilPacienteUseCase,
     VerificarDireccionUseCase,
+    AutocompletarDireccionUseCase,
     ListarNivelesCopagoUseCase,
     ActualizarNivelCopagoPacienteUseCase,
     ActualizarDisponibilidadDomiciliarioUseCase,

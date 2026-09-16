@@ -2,7 +2,10 @@ import { GeocodificacionPort } from '../../../solicitudes/domain/ports/geocodifi
 import { VerificarDireccionUseCase } from './verificar-direccion.use-case';
 
 describe('VerificarDireccionUseCase', () => {
-  const geocodificacion: GeocodificacionPort = { geocodificar: jest.fn() };
+  const geocodificacion: GeocodificacionPort = {
+    geocodificar: jest.fn(),
+    autocompletar: jest.fn(),
+  };
   const useCase = new VerificarDireccionUseCase(geocodificacion);
 
   beforeEach(() => jest.resetAllMocks());

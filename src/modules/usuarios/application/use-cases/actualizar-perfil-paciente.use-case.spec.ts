@@ -23,6 +23,7 @@ describe('ActualizarPerfilPacienteUseCase', () => {
   };
   const geocodificacion: GeocodificacionPort = {
     geocodificar: jest.fn(),
+    autocompletar: jest.fn(),
   };
 
   const useCase = new ActualizarPerfilPacienteUseCase(perfiles, geocodificacion);
