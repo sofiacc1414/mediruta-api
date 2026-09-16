@@ -171,6 +171,139 @@ describe('NominatimGeocodificacionAdapter', () => {
     );
   });
 
+  // Bug real reportado: al confirmar una dirección, el barrio/comuna
+  // y la ciudad no se veían — son justo el dato que permite notar un
+  // resultado equivocado (ej. "Guayabal" vs "Belén", dos comunas bien
+  // distintas de Medellín). El recorte por posición en `display_name`
+  // se quedaba en "calle, sub-barrio, comuna" SIN la ciudad (que
+  // aparece más adelante, después de un segmento de puro ruido
+  // administrativo). Ahora se arma desde los campos estructurados de
+  // `address` en vez de adivinar por posición.
+  describe('direccionResuelta construida desde los campos estructurados de address', () => {
+    it('incluye el barrio/comuna (suburb) y la ciudad, aunque display_name los tenga separados por ruido administrativo', async () => {
+      fetchMock.mockResolvedValue(
+        respuestaJson([
+          {
+            lat: '6.2284773',
+            lon: '-75.5849215',
+            address: {
+              road: 'Calle 27',
+              neighbourhood: 'Trinidad',
+              suburb: 'Comuna 15 - Guayabal',
+              city: 'Perímetro Urbano Medellín',
+            },
+            display_name:
+              'Calle 27, Trinidad, Comuna 15 - Guayabal, Perímetro Urbano Medellín, Medellín, Antioquia, Colombia',
+          },
+        ]),
+      );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar('Calle 27', 'Medellín', 'Antioquia');
+
+      // "Perímetro Urbano " se limpia del nombre de la ciudad, y
+      // `suburb` (la comuna) se prefiere sobre `neighbourhood` (el
+      // sub-barrio, menos reconocible).
+      expect(resultado?.direccionResuelta).toBe(
+        'Calle 27, Comuna 15 - Guayabal, Medellín',
+      );
+    });
+
+    it('usa city_district cuando la ciudad no expone suburb (ej. Bucaramanga/Cali)', async () => {
+      fetchMock.mockResolvedValue(
+        respuestaJson([
+          {
+            lat: '7.1',
+            lon: '-73.1',
+            address: {
+              road: 'Calle 10',
+              city_district: 'Comuna 13 - Oriental',
+              city: 'Perímetro Urbano Bucaramanga',
+            },
+          },
+        ]),
+      );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar('Calle 10', 'Bucaramanga', 'Santander');
+
+      expect(resultado?.direccionResuelta).toBe(
+        'Calle 10, Comuna 13 - Oriental, Bucaramanga',
+      );
+    });
+
+    it('limpia el sufijo " ciudad" del nombre de la ciudad (ej. Bogotá/Cali)', async () => {
+      fetchMock.mockResolvedValue(
+        respuestaJson([
+          {
+            lat: '4.6',
+            lon: '-74.1',
+            address: {
+              road: 'Carrera 43A',
+              suburb: 'Localidad Teusaquillo',
+              city: 'Bogotá ciudad',
+            },
+          },
+        ]),
+      );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar('Carrera 43A', 'Bogotá', null);
+
+      expect(resultado?.direccionResuelta).toBe(
+        'Carrera 43A, Localidad Teusaquillo, Bogotá',
+      );
+    });
+
+    it('incluye el nombre del lugar + número + calle antes del barrio/ciudad, para un lugar con nombre', async () => {
+      fetchMock.mockResolvedValue(
+        respuestaJson([
+          {
+            lat: '6.24',
+            lon: '-75.58',
+            addresstype: 'amenity',
+            address: {
+              amenity: 'Universidad Pontificia Bolivariana',
+              house_number: '70 - 01',
+              road: 'Circular 1',
+              suburb: 'Comuna 11 - Laureles-Estadio',
+              city: 'Perímetro Urbano Medellín',
+            },
+          },
+        ]),
+      );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar(
+        'Universidad Pontificia Bolivariana',
+        'Medellín',
+        'Antioquia',
+      );
+
+      expect(resultado?.direccionResuelta).toBe(
+        'Universidad Pontificia Bolivariana, 70 - 01, Circular 1, Comuna 11 - Laureles-Estadio, Medellín',
+      );
+    });
+
+    it('cae al recorte de display_name si address no trae ni barrio ni ciudad', async () => {
+      fetchMock.mockResolvedValue(
+        respuestaJson([
+          {
+            lat: '4.6',
+            lon: '-74.1',
+            address: { road: 'Calle 80', house_number: '20-15' },
+            display_name: 'Calle 80, 20-15, Bogotá, Colombia',
+          },
+        ]),
+      );
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar('Calle 80', 'Bogotá', null);
+
+      expect(resultado?.direccionResuelta).toBe('Calle 80, 20-15, Bogotá');
+    });
+  });
+
   it('devuelve null si no hay resultados', async () => {
     fetchMock.mockResolvedValue(respuestaJson([]));
     const adapter = new NominatimGeocodificacionAdapter();

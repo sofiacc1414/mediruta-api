@@ -24,7 +24,29 @@ type ResultadoNominatim = {
   lat: string;
   lon: string;
   addresstype?: string;
-  address?: { house_number?: string };
+  address?: {
+    house_number?: string;
+    amenity?: string;
+    shop?: string;
+    tourism?: string;
+    leisure?: string;
+    office?: string;
+    historic?: string;
+    building?: string;
+    road?: string;
+    /** Barrio — el nombre del campo varía según la ciudad: Medellín
+     * usa `suburb` ("Comuna 15 - Guayabal"), Bucaramanga/Cali usan
+     * `city_district` ("Comuna 13 - Oriental"). Se prueban ambos. */
+    suburb?: string;
+    city_district?: string;
+    neighbourhood?: string;
+    /** También varía con ruido administrativo distinto según la
+     * ciudad: "Perímetro Urbano Medellín", "Bogotá ciudad" — ver
+     * `limpiarNombreCiudad`. */
+    city?: string;
+    town?: string;
+    municipality?: string;
+  };
   display_name?: string;
 };
 
@@ -78,21 +100,66 @@ export function normalizarDireccion(direccion: string): string {
   return direccion.replace(PATRON_NUMERAL, '#').replace(/\s+/g, ' ').trim();
 }
 
-// `display_name` de Nominatim es la dirección completa hasta el país
-// ("Universidad Pontificia Bolivariana, 70 - 01, Circular 1, San
-// Joaquín, Comuna 11 - Laureles-Estadio, Perímetro Urbano Medellín,
-// Medellín, Valle de Aburrá, Antioquia, RAP del Agua y la Montaña,
-// 050031, Colombia") — demasiado largo y con ruido administrativo para
-// mostrárselo al Paciente. Los primeros 3 segmentos ya alcanzan para
-// que reconozca si Nominatim entendió bien: nombre del lugar (si
-// aplica) + número + calle, o calle + barrio si no hay nombre de
-// lugar.
+// El campo `address.city` de Nominatim trae ruido administrativo que
+// varía por ciudad ("Perímetro Urbano Medellín", "Bogotá ciudad",
+// "Perímetro Urbano Bucaramanga") — nunca es solo el nombre limpio.
+function limpiarNombreCiudad(valor: string | undefined): string | undefined {
+  if (!valor) return undefined;
+  const limpio = valor
+    .replace(/^Per[ií]metro Urbano\s+/i, '')
+    .replace(/\s+ciudad$/i, '')
+    .trim();
+  return limpio || undefined;
+}
+
+// Bug real reportado: al confirmar una dirección, el barrio/comuna y
+// la ciudad (ej. "Guayabal"/"Belén", "Medellín") no se veían — son
+// justo el dato que permite notar un resultado equivocado (dos
+// direcciones "Calle 27" bien distintas según el barrio o la ciudad).
+// Antes esto se armaba cortando `display_name` a sus primeros 3
+// segmentos — funcionaba para "nombre de lugar + número + calle" pero
+// para una calle común se quedaba en "calle, sub-barrio, comuna" SIN
+// la ciudad, que recién aparece más adelante en `display_name`
+// (verificado en vivo: entre la comuna y la ciudad hay un segmento de
+// ruido, "Perímetro Urbano Medellín", que además NO es el nombre
+// limpio de la ciudad).
+//
+// Ahora se arma desde los campos estructurados de `address`
+// (`addressdetails=1`) en vez de adivinar por posición en el texto:
+// nombre del lugar (si aplica) + número + calle + barrio/comuna +
+// ciudad. Cada pieza se agrega solo si Nominatim la trajo. Si no trae
+// ni barrio ni ciudad (fixtures/respuestas mínimas), cae al recorte
+// de `display_name` de siempre — sigue siendo mejor que nada.
 function direccionResueltaDesde(
-  displayName: string | undefined,
+  resultado: ResultadoNominatim,
   textoOriginal: string,
 ): string {
-  if (!displayName) return textoOriginal;
-  const segmentos = displayName
+  const address = resultado.address;
+  const barrio = address?.suburb ?? address?.city_district ?? address?.neighbourhood;
+  const ciudad = limpiarNombreCiudad(
+    address?.city ?? address?.town ?? address?.municipality,
+  );
+
+  if (address && (barrio || ciudad)) {
+    const partes = [
+      address.amenity ??
+        address.shop ??
+        address.tourism ??
+        address.leisure ??
+        address.office ??
+        address.historic ??
+        address.building,
+      address.house_number,
+      address.road,
+      barrio,
+      ciudad,
+    ].filter((parte): parte is string => !!parte && parte.trim().length > 0);
+    if (partes.length > 0) return partes.join(', ');
+  }
+
+  // Respaldo: recorte de `display_name` (mismo criterio que antes).
+  if (!resultado.display_name) return textoOriginal;
+  const segmentos = resultado.display_name
     .split(',')
     .map((segmento) => segmento.trim())
     .filter(Boolean);
@@ -259,10 +326,7 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     return {
       lat: Number(resultado.lat),
       lng: Number(resultado.lon),
-      direccionResuelta: direccionResueltaDesde(
-        resultado.display_name,
-        direccionOriginal,
-      ),
+      direccionResuelta: direccionResueltaDesde(resultado, direccionOriginal),
       precisa: !esLugarSinNumero,
     };
   }

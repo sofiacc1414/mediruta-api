@@ -27,6 +27,7 @@ import { SolicitarRolPacienteUseCase } from '../../application/use-cases/solicit
 import { SubirDocumentoDomiciliarioUseCase } from '../../application/use-cases/subir-documento-domiciliario.use-case';
 import { SubirFotoCedulaPacienteUseCase } from '../../application/use-cases/subir-foto-cedula-paciente.use-case';
 import { SubirFotoPerfilUseCase } from '../../application/use-cases/subir-foto-perfil.use-case';
+import { VerificarDireccionUseCase } from '../../application/use-cases/verificar-direccion.use-case';
 import type { IdentidadAutenticada } from '../../domain/identidad-autenticada';
 import { UsuarioAutenticado } from '../decorators/usuario-autenticado.decorator';
 import { ActualizarDatosComunesDto } from '../dtos/actualizar-datos-comunes.dto';
@@ -36,6 +37,7 @@ import { ActualizarNivelCopagoPacienteDto } from '../dtos/actualizar-nivel-copag
 import { ActualizarPerfilPacienteDto } from '../dtos/actualizar-perfil-paciente.dto';
 import { SubirDocumentoDomiciliarioDto } from '../dtos/subir-documento-domiciliario.dto';
 import { SubirFotoCedulaPacienteDto } from '../dtos/subir-foto-cedula-paciente.dto';
+import { VerificarDireccionDto } from '../dtos/verificar-direccion.dto';
 import { DominioHttpFilter } from '../filters/dominio-http.filter';
 import { AccessAuthGuard } from '../guards/access-auth.guard';
 
@@ -65,6 +67,7 @@ export class PerfilController {
     private readonly actualizarDisponibilidadDomiciliario: ActualizarDisponibilidadDomiciliarioUseCase,
     private readonly listarNivelesCopago: ListarNivelesCopagoUseCase,
     private readonly actualizarNivelCopagoPaciente: ActualizarNivelCopagoPacienteUseCase,
+    private readonly verificarDireccion: VerificarDireccionUseCase,
   ) {}
 
   @Get()
@@ -98,6 +101,19 @@ export class PerfilController {
       fechaNacimiento: dto.fechaNacimiento,
       departamento: dto.departamento,
       ciudad: dto.ciudad,
+    });
+  }
+
+  /** Ronda 12 — geocodifica sin guardar, para que la App muestre un
+   * loader + confirmación/candidatos apenas se pierde el foco del
+   * campo de dirección, en vez de recién validar al tocar "Guardar". */
+  @Post('verificar-direccion')
+  @HttpCode(HttpStatus.OK)
+  verificarDireccionAction(@Body() dto: VerificarDireccionDto) {
+    return this.verificarDireccion.execute({
+      direccion: dto.direccion,
+      ciudad: dto.ciudad ?? null,
+      departamento: dto.departamento ?? null,
     });
   }
 

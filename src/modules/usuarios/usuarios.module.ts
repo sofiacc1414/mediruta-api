@@ -31,6 +31,7 @@ import { SolicitarRolPacienteUseCase } from './application/use-cases/solicitar-r
 import { SubirDocumentoDomiciliarioUseCase } from './application/use-cases/subir-documento-domiciliario.use-case';
 import { SubirFotoCedulaPacienteUseCase } from './application/use-cases/subir-foto-cedula-paciente.use-case';
 import { SubirFotoPerfilUseCase } from './application/use-cases/subir-foto-perfil.use-case';
+import { VerificarDireccionUseCase } from './application/use-cases/verificar-direccion.use-case';
 import { AccessTokenPort } from './domain/ports/access-token.port';
 import { AlmacenamientoArchivosPort } from './domain/ports/almacenamiento-archivos.port';
 import { CambioContrasenaRepositoryPort } from './domain/ports/cambio-contrasena.repository.port';
@@ -110,6 +111,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
     ObtenerPerfilUseCase,
     ActualizarDatosComunesUseCase,
     ActualizarPerfilPacienteUseCase,
+    VerificarDireccionUseCase,
     ListarNivelesCopagoUseCase,
     ActualizarNivelCopagoPacienteUseCase,
     ActualizarDisponibilidadDomiciliarioUseCase,
