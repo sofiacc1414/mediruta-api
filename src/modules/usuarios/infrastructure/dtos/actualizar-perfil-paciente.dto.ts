@@ -1,4 +1,11 @@
-import { IsDateString, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { EsFechaPasada } from './es-fecha-pasada.validator';
 
 export class ActualizarPerfilPacienteDto {
@@ -22,4 +29,16 @@ export class ActualizarPerfilPacienteDto {
   @MinLength(3)
   @MaxLength(100)
   ciudad: string;
+
+  /** Ronda 14 — `true` solo cuando la App ya confirmó ESTA dirección
+   * exacta contra Nominatim en esta misma sesión (vía
+   * /perfil/verificar-direccion o al elegir una sugerencia de
+   * /perfil/autocompletar-direccion) y el paciente no la volvió a
+   * editar después. Ver `ActualizarPerfilPacienteUseCase` — evita un
+   * segundo geocode redundante al guardar, que puede fallar por una
+   * inconsistencia de caché regional de Nominatim aunque la primera
+   * consulta ya haya confirmado la dirección. */
+  @IsOptional()
+  @IsBoolean()
+  direccionVerificada?: boolean;
 }

@@ -158,7 +158,27 @@ describe('PerfilController', () => {
       fechaNacimiento: '1990-05-10',
       departamento: 'Cundinamarca',
       ciudad: 'Bogotá',
+      direccionVerificada: false,
     });
+  });
+
+  it('PATCH /perfil/paciente propaga direccionVerificada:true cuando la App ya confirmó la dirección', async () => {
+    const actualizarPerfilPaciente = {
+      execute: jest.fn().mockResolvedValue({ message: 'ok' }),
+    };
+    const controller = crearController({ actualizarPerfilPaciente });
+
+    await controller.actualizarPaciente(identidad, {
+      direccion: 'Calle 123',
+      fechaNacimiento: '1990-05-10',
+      departamento: 'Cundinamarca',
+      ciudad: 'Bogotá',
+      direccionVerificada: true,
+    });
+
+    expect(actualizarPerfilPaciente.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ direccionVerificada: true }),
+    );
   });
 
   it('POST /perfil/domiciliario/disponibilidad delega en ActualizarDisponibilidadDomiciliarioUseCase', async () => {

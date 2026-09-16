@@ -34,6 +34,7 @@ describe('ActualizarPerfilPacienteUseCase', () => {
     fechaNacimiento: '1990-05-10',
     departamento: 'Cundinamarca',
     ciudad: 'Bogotá',
+    direccionVerificada: false,
   };
 
   beforeEach(() => {
@@ -101,5 +102,39 @@ describe('ActualizarPerfilPacienteUseCase', () => {
     await expect(useCase.execute(command)).rejects.toBeInstanceOf(
       RolNoAutorizadoError,
     );
+  });
+
+  // Ronda 14 — bug real reportado: guardar volvía a fallar con "no
+  // pudimos ubicar esa dirección" para una dirección que la App ya
+  // había confirmado segundos antes (Nominatim puede responder
+  // distinto entre dos requests por una inconsistencia de caché
+  // regional, verificado en vivo). Si la App ya confirmó este mismo
+  // texto en esta misma sesión, no tiene sentido volver a
+  // geocodificarlo acá — el resultado nunca se guarda, es solo una
+  // validación de "¿esto existe?" que la App ya hizo.
+  describe('direccionVerificada: true — no repite la geocodificación', () => {
+    it('no llama a geocodificar y guarda directo', async () => {
+      (perfiles.upsertPerfilPaciente as jest.Mock).mockResolvedValue(true);
+
+      const resultado = await useCase.execute({ ...command, direccionVerificada: true });
+
+      expect(geocodificacion.geocodificar).not.toHaveBeenCalled();
+      expect(perfiles.upsertPerfilPaciente).toHaveBeenCalledWith(
+        'usuario-uuid',
+        'Calle 123 #45-67',
+        '1990-05-10',
+        'Cundinamarca',
+        'Bogotá',
+      );
+      expect(resultado).toEqual({ message: MENSAJE_PERFIL_PACIENTE_ACTUALIZADO });
+    });
+
+    it('igual lanza RolNoAutorizadoError si la cuenta no tiene rol PACIENTE (la geocodificación no es lo único que valida)', async () => {
+      (perfiles.upsertPerfilPaciente as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        useCase.execute({ ...command, direccionVerificada: true }),
+      ).rejects.toBeInstanceOf(RolNoAutorizadoError);
+    });
   });
 });

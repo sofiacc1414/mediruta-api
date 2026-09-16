@@ -104,6 +104,7 @@ export class PerfilController {
       fechaNacimiento: dto.fechaNacimiento,
       departamento: dto.departamento,
       ciudad: dto.ciudad,
+      direccionVerificada: dto.direccionVerificada ?? false,
     });
   }
 

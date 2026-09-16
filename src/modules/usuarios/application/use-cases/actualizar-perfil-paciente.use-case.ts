@@ -15,6 +15,8 @@ export type ActualizarPerfilPacienteCommand = {
    * resto de los campos acá. */
   departamento: string;
   ciudad: string;
+  /** Ver `ActualizarPerfilPacienteDto.direccionVerificada`. */
+  direccionVerificada: boolean;
 };
 
 export type ActualizarPerfilPacienteResultado = {
@@ -29,7 +31,20 @@ export type ActualizarPerfilPacienteResultado = {
  * Nominatim no encuentra NADA se rechaza el guardado
  * (`DireccionNoValidaError`); si encuentra un lugar impreciso (ej. un
  * barrio, sin punto exacto) se deja guardar igual — no tiene sentido
- * ser más estricto acá que al enviar un pedido de verdad. */
+ * ser más estricto acá que al enviar un pedido de verdad.
+ *
+ * Ronda 14 — bug real reportado: guardar volvía a fallar con "no
+ * pudimos ubicar esa dirección" para una dirección que la propia App
+ * ya había confirmado segundos antes (al elegir una sugerencia, o por
+ * el chequeo en vivo al salir del campo). Causa: geocodificar acá es
+ * un SEGUNDO request a Nominatim, independiente del que ya hizo la
+ * App — y Nominatim puede responder distinto entre uno y otro por una
+ * inconsistencia de caché regional (verificado en vivo). El resultado
+ * de esa geocodificación nunca se guarda (el perfil solo persiste el
+ * texto, ver `upsertPerfilPaciente`) — es puramente una validación de
+ * "¿esto existe?", así que si la App ya lo confirmó para este mismo
+ * texto en esta misma sesión (`direccionVerificada`), repetirla acá
+ * no suma seguridad, solo un punto más de falla. */
 @Injectable()
 export class ActualizarPerfilPacienteUseCase {
   constructor(
@@ -40,13 +55,15 @@ export class ActualizarPerfilPacienteUseCase {
   async execute(
     command: ActualizarPerfilPacienteCommand,
   ): Promise<ActualizarPerfilPacienteResultado> {
-    const coordenadas = await this.geocodificacion.geocodificar(
-      command.direccion,
-      command.ciudad,
-      command.departamento,
-    );
-    if (!coordenadas) {
-      throw new DireccionNoValidaError();
+    if (!command.direccionVerificada) {
+      const coordenadas = await this.geocodificacion.geocodificar(
+        command.direccion,
+        command.ciudad,
+        command.departamento,
+      );
+      if (!coordenadas) {
+        throw new DireccionNoValidaError();
+      }
     }
 
     const actualizado = await this.perfiles.upsertPerfilPaciente(
