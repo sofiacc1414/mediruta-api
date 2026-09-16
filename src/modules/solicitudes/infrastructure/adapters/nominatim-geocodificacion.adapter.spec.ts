@@ -375,4 +375,118 @@ describe('NominatimGeocodificacionAdapter', () => {
     expect(resultado?.precisa).toBe(true);
     expect(resultado?.candidatos).toBeUndefined();
   });
+
+  // Ronda 11 — bug real reportado: "no se está ubicando ninguna
+  // dirección". Causa encontrada en vivo: la ciudad/departamento del
+  // PERFIL del Paciente se pega a la búsqueda para acotarla, pero un
+  // Paciente registrado en un municipio (ej. Amagá) puede estar
+  // pidiendo desde otro (ej. Medellín) — Nominatim, al recibir una
+  // calle real pegada a una ciudad donde esa calle no existe, no
+  // devuelve una aproximación: devuelve CERO resultados. Sin este
+  // reintento, eso era un fallo total sin ninguna sugerencia.
+  describe('reintento sin ciudad/departamento cuando la búsqueda acotada no encuentra nada', () => {
+    it('si la búsqueda acotada da 0 resultados, reintenta sin ciudad/departamento y ofrece el resultado como candidato (impreciso, sin confirmar)', async () => {
+      fetchMock
+        .mockResolvedValueOnce(respuestaJson([])) // con ciudad/departamento del perfil
+        .mockResolvedValueOnce(
+          respuestaJson([
+            {
+              lat: '6.2093857',
+              lon: '-75.5708593',
+              addresstype: 'road',
+              address: { house_number: '5A-113' },
+              display_name: 'Carrera 43A, El Poblado, Medellín, Antioquia, Colombia',
+            },
+          ]),
+        ); // sin ciudad/departamento
+
+      const adapter = new NominatimGeocodificacionAdapter();
+      const resultado = await adapter.geocodificar(
+        'Carrera 43A #5A-113',
+        'Amagá',
+        'Antioquia',
+      );
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      const [urlAcotada] = fetchMock.mock.calls[0] as [URL];
+      const [urlAmplia] = fetchMock.mock.calls[1] as [URL];
+      expect(urlAcotada.searchParams.get('q')).toBe(
+        'Carrera 43A #5A-113, Amagá, Antioquia, Colombia',
+      );
+      expect(urlAmplia.searchParams.get('q')).toBe(
+        'Carrera 43A #5A-113, Colombia',
+      );
+      // Nunca "precisa" en este camino — aunque tenga house_number, no
+      // se confirmó que esté en la ciudad que el Paciente tiene
+      // registrada, así que igual hay que avisarle y dejar que elija.
+      expect(resultado?.precisa).toBe(false);
+      expect(resultado?.lat).toBe(6.2093857);
+      expect(resultado?.direccionResuelta).toBe(
+        'Carrera 43A, El Poblado, Medellín',
+      );
+    });
+
+    it('si ninguna de las dos búsquedas encuentra nada, devuelve null (fallo real, no solo de ciudad)', async () => {
+      fetchMock.mockResolvedValue(respuestaJson([]));
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar(
+        'dirección que no existe en ningún lado',
+        'Amagá',
+        'Antioquia',
+      );
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(resultado).toBeNull();
+    });
+
+    it('no reintenta si ya no había ciudad/departamento que quitar (nada más que probar)', async () => {
+      fetchMock.mockResolvedValue(respuestaJson([]));
+      const adapter = new NominatimGeocodificacionAdapter();
+
+      const resultado = await adapter.geocodificar(
+        'dirección inventada',
+        null,
+        null,
+      );
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(resultado).toBeNull();
+    });
+
+    it('ofrece los demás resultados de la búsqueda amplia como candidatos', async () => {
+      fetchMock
+        .mockResolvedValueOnce(respuestaJson([]))
+        .mockResolvedValueOnce(
+          respuestaJson([
+            {
+              lat: '6.2093857',
+              lon: '-75.5708593',
+              addresstype: 'road',
+              address: { house_number: '5A-113' },
+              display_name: 'Carrera 43A, El Poblado, Medellín, Antioquia, Colombia',
+            },
+            {
+              lat: '6.1590',
+              lon: '-75.6280',
+              addresstype: 'road',
+              address: { house_number: '5A-113' },
+              display_name: 'Carrera 43A, San Antonio de Prado, Medellín, Antioquia, Colombia',
+            },
+          ]),
+        );
+
+      const adapter = new NominatimGeocodificacionAdapter();
+      const resultado = await adapter.geocodificar(
+        'Carrera 43A #5A-113',
+        'Amagá',
+        'Antioquia',
+      );
+
+      expect(resultado?.candidatos).toHaveLength(1);
+      expect(resultado?.candidatos?.[0].direccionResuelta).toBe(
+        'Carrera 43A, San Antonio de Prado, Medellín',
+      );
+    });
+  });
 });

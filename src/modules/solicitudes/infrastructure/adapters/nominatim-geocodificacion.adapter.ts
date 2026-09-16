@@ -117,19 +117,96 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     ciudad: string | null,
     departamento: string | null,
   ): Promise<Coordenadas | null> {
-    const consulta = [
-      normalizarDireccion(direccion),
-      ciudad,
-      departamento,
-      'Colombia',
-    ]
+    const direccionNormalizada = normalizarDireccion(direccion);
+    const consultaAcotada = [direccionNormalizada, ciudad, departamento, 'Colombia']
       .filter((parte): parte is string => !!parte && parte.trim().length > 0)
       .join(', ');
 
-    if (!consulta) {
+    if (!consultaAcotada) {
       return null;
     }
 
+    const resultadosAcotados = await this.buscar(consultaAcotada);
+    if (resultadosAcotados === null) {
+      // Error de red/HTTP — no hay nada más que intentar.
+      return null;
+    }
+    if (resultadosAcotados.length > 0) {
+      return this.aElegidoConCandidatos(
+        resultadosAcotados,
+        direccion,
+        consultaAcotada,
+      );
+    }
+
+    // Ronda 11 — bug real reportado: "no se está ubicando ninguna
+    // dirección". La ciudad/departamento del PERFIL del Paciente se
+    // pega a la búsqueda para acotarla (ver `ParametrosEstimacionPrecio`),
+    // pero un Paciente registrado en un municipio (ej. Amagá) puede
+    // estar pidiendo desde otro (ej. Medellín) — Nominatim, al recibir
+    // una calle real pegada a una ciudad donde esa calle NO existe
+    // (ej. "Carrera 43A #5A-113, Amagá, Antioquia"), no devuelve una
+    // aproximación: devuelve CERO resultados. Antes, esto terminaba en
+    // un fallo total sin ninguna sugerencia (ni siquiera el modal de
+    // candidatos, que solo se armaba a partir de la MISMA búsqueda
+    // acotada). Ahora, si la búsqueda acotada no encuentra nada, se
+    // reintenta sin ciudad/departamento — y si esa sí encuentra algo,
+    // se ofrece como candidato (nunca como "precisa", porque no se
+    // pudo confirmar dentro de la ciudad esperada del Paciente) en vez
+    // de fallar en silencio.
+    if (!ciudad && !departamento) {
+      return null;
+    }
+    const consultaAmplia = [direccionNormalizada, 'Colombia']
+      .filter((parte): parte is string => !!parte && parte.trim().length > 0)
+      .join(', ');
+    const resultadosAmplios = await this.buscar(consultaAmplia);
+    if (!resultadosAmplios || resultadosAmplios.length === 0) {
+      return null;
+    }
+
+    this.logger.warn(
+      `"${consultaAcotada}" no dio resultados, pero sin la ciudad/departamento del perfil sí ("${consultaAmplia}") — se ofrece como candidato sin confirmar.`,
+    );
+    const [resultado, ...resto] = resultadosAmplios;
+    const elegido = this.aCoordenadas(resultado, direccion, consultaAmplia);
+    // Forzado a impreciso aunque tenga house_number: nunca se confirmó
+    // que esté en la ciudad que el Paciente tiene registrada. Va ANTES
+    // de armar `candidatos` (que solo se ofrecen cuando `!precisa`).
+    elegido.precisa = false;
+    if (resto.length > 0) {
+      elegido.candidatos = resto.map((candidato) =>
+        this.aCoordenadas(candidato, direccion, consultaAmplia),
+      );
+    }
+    return elegido;
+  }
+
+  /** Arma el resultado elegido (el primero) + sus candidatos alternos
+   * (el resto), si la elección no quedó precisa — ver `Coordenadas`. */
+  private aElegidoConCandidatos(
+    resultados: ResultadoNominatim[],
+    direccionOriginal: string,
+    consulta: string,
+  ): Coordenadas {
+    const [resultado, ...resto] = resultados;
+    const elegido = this.aCoordenadas(resultado, direccionOriginal, consulta);
+
+    if (!elegido.precisa && resto.length > 0) {
+      elegido.candidatos = resto.map((candidato) =>
+        this.aCoordenadas(candidato, direccionOriginal, consulta),
+      );
+    }
+
+    return elegido;
+  }
+
+  /** `null` = falló la consulta (red/HTTP, no hay más que intentar).
+   * `[]` = Nominatim respondió pero sin coincidencias (sí vale la pena
+   * reintentar con una consulta más amplia). */
+  private async buscar(
+    consulta: string,
+  ): Promise<ResultadoNominatim[] | null> {
     await this.esperarTurno();
 
     const url = new URL(NOMINATIM_URL);
@@ -153,21 +230,7 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
         return null;
       }
 
-      const resultados = (await respuesta.json()) as ResultadoNominatim[];
-      if (resultados.length === 0) {
-        return null;
-      }
-
-      const [resultado, ...resto] = resultados;
-      const elegido = this.aCoordenadas(resultado, direccion, consulta);
-
-      if (!elegido.precisa && resto.length > 0) {
-        elegido.candidatos = resto.map((candidato) =>
-          this.aCoordenadas(candidato, direccion, consulta),
-        );
-      }
-
-      return elegido;
+      return (await respuesta.json()) as ResultadoNominatim[];
     } catch (error) {
       this.logger.warn(
         `No se pudo geocodificar una dirección: ${(error as Error).message}`,
