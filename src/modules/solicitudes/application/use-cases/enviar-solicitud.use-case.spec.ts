@@ -187,4 +187,94 @@ describe('EnviarSolicitudUseCase', () => {
       useCase.execute('paciente-uuid', 'solicitud-uuid'),
     ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
   });
+
+  // Ronda 14 — bug real reportado: aunque el estimado en vivo ya
+  // hubiera confirmado la dirección, "Enviar solicitud" la volvía a
+  // geocodificar desde cero — un segundo viaje a Nominatim que podía
+  // fallar aunque el primero hubiera funcionado (peor que en el
+  // perfil: acá, si falla, el pedido queda SIN ubicación, en
+  // silencio). Si la App manda las coordenadas ya confirmadas para el
+  // mismo texto que hay guardado, se usan directo.
+  describe('verificación previa — evita repetir la geocodificación si la App ya la confirmó', () => {
+    it('usa lat/lng ya confirmados para farmacia y entrega, sin llamar a geocodificar', async () => {
+      (solicitudes.enviar as jest.Mock).mockResolvedValue({
+        resultado: 'enviada',
+        codigoPedido: 'MR-000123',
+      });
+
+      await useCase.execute(
+        'paciente-uuid',
+        'solicitud-uuid',
+        { direccionVerificadaPara: 'Farmacia La Rebaja Cl 80', lat: 4.7, lng: -74.1 },
+        { direccionVerificadaPara: 'Calle 1 #2-3', lat: 4.8, lng: -74.2 },
+      );
+
+      expect(geocodificacion.geocodificar).not.toHaveBeenCalled();
+      expect(solicitudes.enviar).toHaveBeenCalledWith(
+        'paciente-uuid',
+        'solicitud-uuid',
+        4.7,
+        -74.1,
+        4.8,
+        -74.2,
+      );
+    });
+
+    it('ignora la verificación previa si el texto ya no coincide (se editó después de confirmar) y geocodifica como siempre', async () => {
+      (solicitudes.enviar as jest.Mock).mockResolvedValue({
+        resultado: 'enviada',
+        codigoPedido: 'MR-000123',
+      });
+
+      await useCase.execute(
+        'paciente-uuid',
+        'solicitud-uuid',
+        { direccionVerificadaPara: 'Un texto viejo que ya no es el actual', lat: 4.7, lng: -74.1 },
+        undefined,
+      );
+
+      expect(geocodificacion.geocodificar).toHaveBeenCalledWith(
+        'Farmacia La Rebaja Cl 80',
+        'Bogotá',
+        'Cundinamarca',
+      );
+      expect(solicitudes.enviar).toHaveBeenCalledWith(
+        'paciente-uuid',
+        'solicitud-uuid',
+        4.6486,
+        -74.0628,
+        4.6486,
+        -74.0628,
+      );
+    });
+
+    it('solo confía en la que coincide — la otra dirección se geocodifica igual si no viene verificada', async () => {
+      (solicitudes.enviar as jest.Mock).mockResolvedValue({
+        resultado: 'enviada',
+        codigoPedido: 'MR-000123',
+      });
+
+      await useCase.execute(
+        'paciente-uuid',
+        'solicitud-uuid',
+        { direccionVerificadaPara: 'Farmacia La Rebaja Cl 80', lat: 4.7, lng: -74.1 },
+        undefined,
+      );
+
+      expect(geocodificacion.geocodificar).toHaveBeenCalledTimes(1);
+      expect(geocodificacion.geocodificar).toHaveBeenCalledWith(
+        'Calle 1 #2-3',
+        'Bogotá',
+        'Cundinamarca',
+      );
+      expect(solicitudes.enviar).toHaveBeenCalledWith(
+        'paciente-uuid',
+        'solicitud-uuid',
+        4.7,
+        -74.1,
+        4.6486,
+        -74.0628,
+      );
+    });
+  });
 });

@@ -6,6 +6,26 @@ import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository
 
 export const MENSAJE_SOLICITUD_ENVIADA = 'Tu solicitud fue enviada a revisión.';
 
+/** Ronda 14 — bug real reportado: aunque el estimado en vivo ya
+ * hubiera confirmado ambas direcciones mientras se armaba el
+ * borrador, "Enviar solicitud" las volvía a geocodificar desde cero —
+ * un segundo viaje a Nominatim que podía fallar aunque el primero
+ * hubiera funcionado, y a diferencia de guardar el perfil, acá SÍ
+ * importa: si falla, el pedido se envía igual pero SIN ubicación, en
+ * silencio, y queda fuera del pool de Domiciliarios por cercanía.
+ *
+ * Si la App manda esto y `direccionVerificadaPara` coincide EXACTO
+ * con el texto que hay guardado ahora mismo para esa dirección (no se
+ * editó después de confirmarla), se usan `lat`/`lng` directo — son
+ * las mismas coordenadas reales que ya dio Nominatim, solo que no se
+ * vuelven a pedir. Si no coincide (se editó, o nunca se confirmó),
+ * se geocodifica como antes. */
+export type VerificacionDireccionPrevia = {
+  direccionVerificadaPara: string;
+  lat: number;
+  lng: number;
+};
+
 /** G05 — envía a revisión. Si falta algún obligatorio, no cambia nada y
  * lanza SolicitudIncompletaError con el detalle de qué falta.
  *
@@ -32,6 +52,8 @@ export class EnviarSolicitudUseCase {
   async execute(
     pacienteId: string,
     solicitudId: string,
+    farmaciaVerificada?: VerificacionDireccionPrevia,
+    entregaVerificada?: VerificacionDireccionPrevia,
   ): Promise<{ message: string; codigoPedido: string }> {
     const datos = await this.solicitudes.obtenerDatosGeocodificacionFarmacia(
       pacienteId,
@@ -39,15 +61,17 @@ export class EnviarSolicitudUseCase {
     );
 
     const [farmacia, entrega] = await Promise.all([
-      this.geocodificarSiHay(
+      this.resolverUbicacion(
         datos?.direccionFarmacia ?? null,
         datos?.ciudad ?? null,
         datos?.departamento ?? null,
+        farmaciaVerificada,
       ),
-      this.geocodificarSiHay(
+      this.resolverUbicacion(
         datos?.direccionEntrega ?? null,
         datos?.ciudad ?? null,
         datos?.departamento ?? null,
+        entregaVerificada,
       ),
     ]);
 
@@ -73,13 +97,20 @@ export class EnviarSolicitudUseCase {
     }
   }
 
-  private async geocodificarSiHay(
+  private async resolverUbicacion(
     direccion: string | null,
     ciudad: string | null,
     departamento: string | null,
+    verificada: VerificacionDireccionPrevia | undefined,
   ): Promise<{ lat: number | null; lng: number | null }> {
     if (!direccion) {
       return { lat: null, lng: null };
+    }
+    // La App ya confirmó ESTE texto exacto (no se editó después) —
+    // se usan esas coordenadas directo, sin un segundo viaje a
+    // Nominatim que podría fallar aunque el primero haya funcionado.
+    if (verificada && verificada.direccionVerificadaPara === direccion) {
+      return { lat: verificada.lat, lng: verificada.lng };
     }
     const coordenadas = await this.geocodificacion.geocodificar(
       direccion,

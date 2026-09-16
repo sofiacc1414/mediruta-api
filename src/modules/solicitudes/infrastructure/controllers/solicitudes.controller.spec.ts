@@ -217,6 +217,31 @@ describe('SolicitudesController', () => {
     expect(enviarSolicitud.execute).toHaveBeenCalledWith(
       'paciente-desde-guard',
       'solicitud-uuid',
+      undefined,
+      undefined,
+    );
+  });
+
+  it('POST /solicitudes/:id/enviar arma la verificación previa solo cuando la App manda texto + lat + lng completos', async () => {
+    const enviarSolicitud = {
+      execute: jest.fn().mockResolvedValue({ message: 'ok' }),
+    };
+    const controller = crearController({ enviarSolicitud });
+
+    await controller.enviar(identidad, 'solicitud-uuid', {
+      direccionFarmaciaVerificadaPara: 'Calle 80',
+      farmaciaLat: 6.2,
+      farmaciaLng: -75.6,
+      // Entrega incompleta (falta lng) — no debe armar la verificación.
+      direccionEntregaVerificadaPara: 'Calle 90',
+      entregaLat: 6.3,
+    });
+
+    expect(enviarSolicitud.execute).toHaveBeenCalledWith(
+      'paciente-desde-guard',
+      'solicitud-uuid',
+      { direccionVerificadaPara: 'Calle 80', lat: 6.2, lng: -75.6 },
+      undefined,
     );
   });
 

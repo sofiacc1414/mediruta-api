@@ -38,6 +38,7 @@ import { SubirRecetaUseCase } from '../../application/use-cases/subir-receta.use
 import { Medicamento } from '../../domain/ports/solicitud.repository.port';
 import { AutocompletarDireccionDto } from '../dtos/autocompletar-direccion.dto';
 import { DatosSolicitudDto } from '../dtos/datos-solicitud.dto';
+import { EnviarSolicitudDto } from '../dtos/enviar-solicitud.dto';
 import { EstimarPrecioPedidoDto } from '../dtos/estimar-precio-pedido.dto';
 import { MedicamentoDto } from '../dtos/medicamento.dto';
 import { ReportarCodigoNoGeneradoDto } from '../dtos/reportar-codigo-no-generado.dto';
@@ -197,8 +198,32 @@ export class SolicitudesController {
   enviar(
     @UsuarioAutenticado() identidad: IdentidadAutenticada,
     @Param('id', ParseUUIDPipe) solicitudId: string,
+    // App-anteriores no mandan body acá — sigue funcionando igual
+    // (geocodifica como siempre, ver `EnviarSolicitudUseCase`).
+    @Body() dto: EnviarSolicitudDto = {},
   ) {
-    return this.enviarSolicitud.execute(identidad.usuarioId, solicitudId);
+    return this.enviarSolicitud.execute(
+      identidad.usuarioId,
+      solicitudId,
+      dto.direccionFarmaciaVerificadaPara != null &&
+        dto.farmaciaLat != null &&
+        dto.farmaciaLng != null
+        ? {
+            direccionVerificadaPara: dto.direccionFarmaciaVerificadaPara,
+            lat: dto.farmaciaLat,
+            lng: dto.farmaciaLng,
+          }
+        : undefined,
+      dto.direccionEntregaVerificadaPara != null &&
+        dto.entregaLat != null &&
+        dto.entregaLng != null
+        ? {
+            direccionVerificadaPara: dto.direccionEntregaVerificadaPara,
+            lat: dto.entregaLat,
+            lng: dto.entregaLng,
+          }
+        : undefined,
+    );
   }
 
   @Post(':id/cancelar')

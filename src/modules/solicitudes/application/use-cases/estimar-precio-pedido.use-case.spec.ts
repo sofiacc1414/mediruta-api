@@ -123,9 +123,13 @@ describe('EstimarPrecioPedidoUseCase', () => {
       direccionFarmaciaResuelta: 'Farmacia X resuelta',
       direccionFarmaciaPrecisa: true,
       direccionFarmaciaCandidatos: [],
+      direccionFarmaciaLat: 6.2,
+      direccionFarmaciaLng: -75.6,
       direccionEntregaResuelta: 'Farmacia X resuelta',
       direccionEntregaPrecisa: true,
       direccionEntregaCandidatos: [],
+      direccionEntregaLat: 6.2,
+      direccionEntregaLng: -75.6,
     });
     expect(geocodificacion.geocodificar as jest.Mock).toHaveBeenCalledTimes(2);
   });
@@ -155,9 +159,13 @@ describe('EstimarPrecioPedidoUseCase', () => {
       direccionFarmaciaResuelta: 'Farmacia X resuelta',
       direccionFarmaciaPrecisa: true,
       direccionFarmaciaCandidatos: [],
+      direccionFarmaciaLat: 6.2,
+      direccionFarmaciaLng: -75.6,
       direccionEntregaResuelta: null,
       direccionEntregaPrecisa: true,
       direccionEntregaCandidatos: [],
+      direccionEntregaLat: null,
+      direccionEntregaLng: null,
     });
   });
 

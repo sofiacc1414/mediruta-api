@@ -58,13 +58,30 @@ function distanciaMetrosEntre(
  * municipio puede estar pidiendo desde otro — el primer resultado no
  * siempre es el correcto). La App las ofrece en un modal para que el
  * Paciente elija en vez de quedarse con la aproximación automática. */
+/** Ronda 14 — bug real reportado: aunque el estimado en vivo ya
+ * hubiera confirmado una dirección, "Enviar solicitud" volvía a
+ * geocodificarla desde cero — un segundo viaje a Nominatim que podía
+ * fallar aunque el primero hubiera funcionado (verificado en vivo:
+ * Nominatim puede responder distinto entre dos requests por una
+ * inconsistencia de caché regional). Peor — a diferencia de guardar
+ * el perfil, acá SÍ importa: si esa segunda geocodificación falla, el
+ * pedido se envía igual pero SIN ubicación, en silencio (no bloquea,
+ * pero tampoco avisa), y queda fuera del pool de Domiciliarios por
+ * cercanía. Se exponen `lat`/`lng` acá para que la App pueda
+ * guardarlas y devolverlas tal cual a `EnviarSolicitudUseCase` en vez
+ * de forzarlo a volver a geocodificar el mismo texto que este mismo
+ * endpoint ya resolvió. */
 export type EstimacionPrecioPedido = PrecioPedido & {
   direccionFarmaciaResuelta: string | null;
   direccionFarmaciaPrecisa: boolean;
   direccionFarmaciaCandidatos: CandidatoDireccion[];
+  direccionFarmaciaLat: number | null;
+  direccionFarmaciaLng: number | null;
   direccionEntregaResuelta: string | null;
   direccionEntregaPrecisa: boolean;
   direccionEntregaCandidatos: CandidatoDireccion[];
+  direccionEntregaLat: number | null;
+  direccionEntregaLng: number | null;
 };
 
 /**
@@ -118,9 +135,13 @@ export class EstimarPrecioPedidoUseCase {
     const direccionFarmaciaResuelta = farmacia?.direccionResuelta ?? null;
     const direccionFarmaciaPrecisa = farmacia?.precisa ?? true;
     const direccionFarmaciaCandidatos = farmacia?.candidatos ?? [];
+    const direccionFarmaciaLat = farmacia?.lat ?? null;
+    const direccionFarmaciaLng = farmacia?.lng ?? null;
     const direccionEntregaResuelta = entrega?.direccionResuelta ?? null;
     const direccionEntregaPrecisa = entrega?.precisa ?? true;
     const direccionEntregaCandidatos = entrega?.candidatos ?? [];
+    const direccionEntregaLat = entrega?.lat ?? null;
+    const direccionEntregaLng = entrega?.lng ?? null;
 
     if (parametros.copago === null) {
       return {
@@ -129,9 +150,13 @@ export class EstimarPrecioPedidoUseCase {
         direccionFarmaciaResuelta,
         direccionFarmaciaPrecisa,
         direccionFarmaciaCandidatos,
+        direccionFarmaciaLat,
+        direccionFarmaciaLng,
         direccionEntregaResuelta,
         direccionEntregaPrecisa,
         direccionEntregaCandidatos,
+        direccionEntregaLat,
+        direccionEntregaLng,
       };
     }
 
@@ -146,9 +171,13 @@ export class EstimarPrecioPedidoUseCase {
       direccionFarmaciaResuelta,
       direccionFarmaciaPrecisa,
       direccionFarmaciaCandidatos,
+      direccionFarmaciaLat,
+      direccionFarmaciaLng,
       direccionEntregaResuelta,
       direccionEntregaPrecisa,
       direccionEntregaCandidatos,
+      direccionEntregaLat,
+      direccionEntregaLng,
     };
   }
 }
