@@ -12,6 +12,7 @@ import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors
 import { DomiciliarioConPedidoActivoError } from '../../../solicitudes/domain/errors/domiciliario-con-pedido-activo.error';
 import { DomiciliarioNoDisponibleParaAsignarError } from '../../../solicitudes/domain/errors/domiciliario-no-disponible-para-asignar.error';
 import { DocumentosPacienteNoDisponiblesError } from '../../../solicitudes/domain/errors/documentos-paciente-no-disponibles.error';
+import { FueraDeUbicacionAutorizadaError } from '../../../solicitudes/domain/errors/fuera-de-ubicacion-autorizada.error';
 import { NovedadNoEncontradaError } from '../../../solicitudes/domain/errors/novedad-no-encontrada.error';
 import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { PerfilIncompletoError } from '../../../solicitudes/domain/errors/perfil-incompleto.error';
@@ -118,6 +119,14 @@ export class DominioHttpFilter implements ExceptionFilter {
       exception instanceof PerfilDomiciliarioIncompletoParaDisponibilidadError ||
       exception instanceof AccionCuentaNoAutorizadaError
     ) {
+      response.status(HttpStatus.FORBIDDEN).json({
+        statusCode: HttpStatus.FORBIDDEN,
+        message: exception.message,
+      });
+      return;
+    }
+
+    if (exception instanceof FueraDeUbicacionAutorizadaError) {
       response.status(HttpStatus.FORBIDDEN).json({
         statusCode: HttpStatus.FORBIDDEN,
         message: exception.message,

@@ -12,6 +12,8 @@ export type VerificarDireccionCommand = {
 
 export type VerificarDireccionResultado = {
   direccionResuelta: string | null;
+  lat: number | null;
+  lng: number | null;
   precisa: boolean;
   candidatos: CandidatoDireccion[];
 };
@@ -39,6 +41,8 @@ export class VerificarDireccionUseCase {
 
     return {
       direccionResuelta: coordenadas?.direccionResuelta ?? null,
+      lat: coordenadas?.lat ?? null,
+      lng: coordenadas?.lng ?? null,
       precisa: coordenadas?.precisa ?? true,
       candidatos: coordenadas?.candidatos ?? [],
     };

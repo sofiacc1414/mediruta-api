@@ -6,6 +6,7 @@ import {
 } from '../../domain/ports/geocodificacion.port';
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
+const PHOTON_URL = 'https://photon.komoot.io/api/';
 
 // Términos de uso de Nominatim (OpenStreetMap): User-Agent
 // identificable — sin esto responden con error — y máximo 1 request
@@ -57,6 +58,7 @@ type ResultadoNominatim = {
     city?: string;
     town?: string;
     municipality?: string;
+    state?: string;
   };
   display_name?: string;
 };
@@ -109,6 +111,22 @@ const PATRON_NUMERAL =
 
 export function normalizarDireccion(direccion: string): string {
   return direccion.replace(PATRON_NUMERAL, '#').replace(/\s+/g, ' ').trim();
+}
+
+/** Nominatim y Photon resuelven mejor "Carrera"/"Calle" que "Cra"/"Cll",
+ * y el numeral colombiano pegado al número ("#28-120"). */
+export function expandirNomenclaturaColombiana(direccion: string): string {
+  return direccion
+    .replace(/\bCra\.?\b/gi, 'Carrera')
+    .replace(/\bCr\.?\b/gi, 'Carrera')
+    .replace(/\bCll\.?\b/gi, 'Calle')
+    .replace(/\bCl\.?\b/gi, 'Calle')
+    .replace(/\bAvda\.?\b|\bAv\.?\b/gi, 'Avenida')
+    .replace(/\bTv\.?\b|\bTransv\.?\b/gi, 'Transversal')
+    .replace(/\bDg\.?\b|\bDiag\.?\b/gi, 'Diagonal')
+    .replace(/#(?=\S)/g, '# ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // El campo `address.city` de Nominatim trae ruido administrativo que
@@ -210,10 +228,18 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
       return resultadosAcotados.map((r) => this.aCoordenadas(r, texto, acotada));
     }
 
-    if (!amplia) return [];
+    if (!amplia) {
+      const respaldo = await this.respaldoPhoton(texto, acotada);
+      if (!respaldo) return [];
+      return [respaldo, ...(respaldo.candidatos ?? [])];
+    }
     const resultadosAmplios = await this.buscar(amplia);
-    if (!resultadosAmplios) return [];
-    return resultadosAmplios.map((r) => this.aCoordenadas(r, texto, amplia));
+    if (resultadosAmplios && resultadosAmplios.length > 0) {
+      return resultadosAmplios.map((r) => this.aCoordenadas(r, texto, amplia));
+    }
+    const respaldo = await this.respaldoPhoton(texto, acotada);
+    if (!respaldo) return [];
+    return [respaldo, ...(respaldo.candidatos ?? [])];
   }
 
   private armarConsultas(
@@ -221,11 +247,9 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     ciudad: string | null,
     departamento: string | null,
   ): { acotada: string; amplia: string | null } {
-    const normalizada = normalizarDireccion(texto);
-    const acotada = [normalizada, ciudad, departamento, 'Colombia']
-      .filter((parte): parte is string => !!parte && parte.trim().length > 0)
-      .join(', ');
-    if (!ciudad && !departamento) {
+    const normalizada = this.textoBusqueda(texto);
+    const acotada = this.consultaConContexto(normalizada, ciudad, departamento);
+    if (!ciudad?.trim() && !departamento?.trim()) {
       return { acotada, amplia: null };
     }
     const amplia = [normalizada, 'Colombia']
@@ -234,74 +258,149 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     return { acotada, amplia };
   }
 
+  /** "Cra"/"Cll" y "#28-120" pasan a la forma que Nominatim sí indexa. */
+  private textoBusqueda(direccion: string): string {
+    return expandirNomenclaturaColombiana(normalizarDireccion(direccion));
+  }
+
+  /**
+   * Si el formulario todavía no tiene ciudad, la búsqueda no puede ir
+   * solo con la calle: Nominatim devuelve otra "Calle 48" (Bogotá) o
+   * cero resultados. El contexto por defecto de MediRuta es Medellín.
+   */
+  private consultaConContexto(
+    texto: string,
+    ciudad: string | null,
+    departamento: string | null,
+  ): string {
+    const sinContexto = !ciudad?.trim() && !departamento?.trim();
+    return [texto, sinContexto ? 'Medellín' : ciudad, sinContexto ? 'Antioquia' : departamento, 'Colombia']
+      .filter((parte): parte is string => !!parte && parte.trim().length > 0)
+      .join(', ');
+  }
+
   async geocodificar(
     direccion: string,
     ciudad: string | null,
     departamento: string | null,
   ): Promise<Coordenadas | null> {
-    const direccionNormalizada = normalizarDireccion(direccion);
-    const consultaAcotada = [direccionNormalizada, ciudad, departamento, 'Colombia']
-      .filter((parte): parte is string => !!parte && parte.trim().length > 0)
-      .join(', ');
+    const direccionNormalizada = this.textoBusqueda(direccion);
+    const consultaAcotada = this.consultaConContexto(
+      direccionNormalizada,
+      ciudad,
+      departamento,
+    );
+    this.logger.log(
+      `Geocode dirección="${direccion}" ciudad="${ciudad ?? ''}" departamento="${departamento ?? ''}" consulta="${consultaAcotada}"`,
+    );
 
     if (!consultaAcotada) {
       return null;
     }
 
     const resultadosAcotados = await this.buscar(consultaAcotada);
-    if (resultadosAcotados === null) {
-      // Error de red/HTTP — no hay nada más que intentar.
-      return null;
-    }
-    if (resultadosAcotados.length > 0) {
+    if (resultadosAcotados && resultadosAcotados.length > 0) {
       return this.aElegidoConCandidatos(
-        resultadosAcotados,
+        this.priorizar(resultadosAcotados, ciudad, departamento),
         direccion,
         consultaAcotada,
       );
     }
 
-    // Ronda 11 — bug real reportado: "no se está ubicando ninguna
-    // dirección". La ciudad/departamento del PERFIL del Paciente se
-    // pega a la búsqueda para acotarla (ver `ParametrosEstimacionPrecio`),
-    // pero un Paciente registrado en un municipio (ej. Amagá) puede
-    // estar pidiendo desde otro (ej. Medellín) — Nominatim, al recibir
-    // una calle real pegada a una ciudad donde esa calle NO existe
-    // (ej. "Carrera 43A #5A-113, Amagá, Antioquia"), no devuelve una
-    // aproximación: devuelve CERO resultados. Antes, esto terminaba en
-    // un fallo total sin ninguna sugerencia (ni siquiera el modal de
-    // candidatos, que solo se armaba a partir de la MISMA búsqueda
-    // acotada). Ahora, si la búsqueda acotada no encuentra nada, se
-    // reintenta sin ciudad/departamento — y si esa sí encuentra algo,
-    // se ofrece como candidato (nunca como "precisa", porque no se
-    // pudo confirmar dentro de la ciudad esperada del Paciente) en vez
-    // de fallar en silencio.
-    if (!ciudad && !departamento) {
-      return null;
-    }
-    const consultaAmplia = [direccionNormalizada, 'Colombia']
-      .filter((parte): parte is string => !!parte && parte.trim().length > 0)
-      .join(', ');
-    const resultadosAmplios = await this.buscar(consultaAmplia);
-    if (!resultadosAmplios || resultadosAmplios.length === 0) {
-      return null;
+    if (ciudad || departamento) {
+      const consultaAmplia = [direccionNormalizada, 'Colombia']
+        .filter((parte): parte is string => !!parte && parte.trim().length > 0)
+        .join(', ');
+      if (resultadosAcotados !== null) {
+        const resultadosAmplios = await this.buscar(consultaAmplia);
+        if (resultadosAmplios && resultadosAmplios.length > 0) {
+          this.logger.warn(
+            `"${consultaAcotada}" no dio resultados, pero sin la ciudad/departamento del perfil sí ("${consultaAmplia}") — se ofrece como candidato sin confirmar.`,
+          );
+          const [resultado, ...resto] = resultadosAmplios;
+          const elegido = this.aCoordenadas(resultado, direccion, consultaAmplia);
+          elegido.precisa = false;
+          if (resto.length > 0) {
+            elegido.candidatos = resto.map((candidato) =>
+              this.aCoordenadas(candidato, direccion, consultaAmplia),
+            );
+          }
+          return elegido;
+        }
+      }
     }
 
-    this.logger.warn(
-      `"${consultaAcotada}" no dio resultados, pero sin la ciudad/departamento del perfil sí ("${consultaAmplia}") — se ofrece como candidato sin confirmar.`,
-    );
-    const [resultado, ...resto] = resultadosAmplios;
-    const elegido = this.aCoordenadas(resultado, direccion, consultaAmplia);
-    // Forzado a impreciso aunque tenga house_number: nunca se confirmó
-    // que esté en la ciudad que el Paciente tiene registrada. Va ANTES
-    // de armar `candidatos` (que solo se ofrecen cuando `!precisa`).
-    elegido.precisa = false;
-    if (resto.length > 0) {
-      elegido.candidatos = resto.map((candidato) =>
-        this.aCoordenadas(candidato, direccion, consultaAmplia),
+    // Nominatim público a veces responde vacío o con error desde el
+    // servidor de la API. Photon usa los mismos datos de OpenStreetMap
+    // y resuelve la nomenclatura colombiana (Calle 48 #28-120, Cra,
+    // lugares como Universidad de Medellín) cuando Nominatim no.
+    return this.respaldoPhoton(direccion, consultaAcotada);
+  }
+
+  /** Photon (OpenStreetMap) cuando Nominatim no devuelve coordenadas. */
+  private async respaldoPhoton(
+    direccionOriginal: string,
+    consulta: string,
+  ): Promise<Coordenadas | null> {
+    const url = new URL(PHOTON_URL);
+    url.searchParams.set('q', expandirNomenclaturaColombiana(consulta));
+    url.searchParams.set('limit', String(LIMITE_RESULTADOS));
+    url.searchParams.set('lang', 'es');
+
+    await this.esperarTurno();
+    try {
+      const respuesta = await fetch(url, {
+        headers: { 'User-Agent': USER_AGENT },
+      });
+      if (!respuesta.ok) return null;
+      const cuerpo = (await respuesta.json()) as {
+        features?: Array<{
+          geometry?: { coordinates?: [number, number] };
+          properties?: {
+            name?: string;
+            street?: string;
+            housenumber?: string;
+            city?: string;
+            state?: string;
+            countrycode?: string;
+            type?: string;
+          };
+        }>;
+      };
+      const resultados = (cuerpo.features ?? [])
+        .filter((feature) => {
+          const pais = feature.properties?.countrycode?.toLowerCase();
+          return !pais || pais === 'co';
+        })
+        .map((feature): ResultadoNominatim | null => {
+          const coords = feature.geometry?.coordinates;
+          const props = feature.properties;
+          if (!coords || !props) return null;
+          return {
+            lat: String(coords[1]),
+            lon: String(coords[0]),
+            addresstype: props.type,
+            display_name: [props.name, props.street, props.housenumber, props.city]
+              .filter(Boolean)
+              .join(', '),
+            address: {
+              house_number: props.housenumber,
+              road: props.street ?? props.name,
+              city: props.city,
+              amenity: props.type === 'house' ? undefined : props.name,
+            },
+          };
+        })
+        .filter((item): item is ResultadoNominatim => item !== null);
+
+      if (resultados.length === 0) return null;
+      return this.aElegidoConCandidatos(resultados, direccionOriginal, consulta);
+    } catch (error) {
+      this.logger.warn(
+        `Photon no pudo geocodificar "${consulta}": ${(error as Error).message}`,
       );
+      return null;
     }
-    return elegido;
   }
 
   /** Arma el resultado elegido (el primero) + sus candidatos alternos
@@ -313,6 +412,9 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
   ): Coordenadas {
     const [resultado, ...resto] = resultados;
     const elegido = this.aCoordenadas(resultado, direccionOriginal, consulta);
+    this.logger.log(
+      `Geocode coordenadas lat=${elegido.lat} lng=${elegido.lng} resuelta="${elegido.direccionResuelta}" precisa=${elegido.precisa}`,
+    );
 
     if (!elegido.precisa && resto.length > 0) {
       elegido.candidatos = resto.map((candidato) =>
@@ -321,6 +423,30 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     }
 
     return elegido;
+  }
+
+  /** Si hay varias "Calle 48", gana la de la ciudad pedida (o Medellín). */
+  private priorizar(
+    resultados: ResultadoNominatim[],
+    ciudad: string | null,
+    departamento: string | null,
+  ): ResultadoNominatim[] {
+    const ciudadObj = (ciudad?.trim() || 'Medellín').toLowerCase();
+    const deptoObj = (departamento?.trim() || 'Antioquia').toLowerCase();
+    const puntaje = (resultado: ResultadoNominatim) => {
+      const address = resultado.address;
+      const city = limpiarNombreCiudad(
+        address?.city ?? address?.town ?? address?.municipality,
+      )?.toLowerCase() ?? '';
+      const state = (address?.state ?? '').toLowerCase();
+      const texto = `${resultado.display_name ?? ''} ${city} ${state}`.toLowerCase();
+      let puntos = 0;
+      if (city.includes(ciudadObj) || texto.includes(ciudadObj)) puntos += 50;
+      if (state.includes(deptoObj) || texto.includes(deptoObj)) puntos += 30;
+      if (address?.house_number) puntos += 20;
+      return puntos;
+    };
+    return [...resultados].sort((a, b) => puntaje(b) - puntaje(a));
   }
 
   /** `null` = falló la consulta (red/HTTP, no hay más que intentar).
@@ -351,11 +477,15 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
         });
 
         if (respuesta.ok) {
-          return (await respuesta.json()) as ResultadoNominatim[];
+          const datos = (await respuesta.json()) as ResultadoNominatim[];
+          this.logger.log(
+            `Geocode url="${url.toString()}" status=${respuesta.status} resultados=${datos.length}`,
+          );
+          return datos;
         }
 
         this.logger.warn(
-          `Nominatim respondió ${respuesta.status} para "${consulta}" (intento ${intento + 1}/${REINTENTOS_MAXIMOS + 1}).`,
+          `Nominatim respondió ${respuesta.status} para "${consulta}" url="${url.toString()}" (intento ${intento + 1}/${REINTENTOS_MAXIMOS + 1}).`,
         );
       } catch (error) {
         this.logger.warn(

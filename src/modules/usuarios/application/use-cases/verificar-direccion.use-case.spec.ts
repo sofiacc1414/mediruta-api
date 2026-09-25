@@ -29,6 +29,8 @@ describe('VerificarDireccionUseCase', () => {
 
     expect(resultado).toEqual({
       direccionResuelta: 'Carrera 43A, El Poblado',
+      lat: 6.2,
+      lng: -75.6,
       precisa: false,
       candidatos: [
         { lat: 6.1, lng: -75.5, direccionResuelta: 'otra calle', precisa: true },
@@ -52,6 +54,8 @@ describe('VerificarDireccionUseCase', () => {
 
     expect(resultado).toEqual({
       direccionResuelta: null,
+      lat: null,
+      lng: null,
       precisa: true,
       candidatos: [],
     });

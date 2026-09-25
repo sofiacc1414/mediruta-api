@@ -98,7 +98,7 @@ describe('NominatimGeocodificacionAdapter', () => {
     await adapter.geocodificar(entrada, null, null);
 
     const [url] = fetchMock.mock.calls[0] as [URL];
-    expect(url.searchParams.get('q')).toBe(`${esperado}, Colombia`);
+    expect(url.searchParams.get('q')).toBe(`${esperado.replace(/^Cra /, 'Carrera ')}, Medellín, Antioquia, Colombia`);
   });
 
   it('no toca "no" cuando no es un numeral (palabra común, ni "Norte")', async () => {
@@ -111,11 +111,11 @@ describe('NominatimGeocodificacionAdapter', () => {
 
     const [url] = fetchMock.mock.calls[0] as [URL];
     expect(url.searchParams.get('q')).toBe(
-      'Avenida Norte con Calle 5, Colombia',
+      'Avenida Norte con Calle 5, Medellín, Antioquia, Colombia',
     );
   });
 
-  it('omite ciudad/departamento nulos sin dejar comas de más', async () => {
+  it('sin ciudad ni departamento busca en Medellín, Antioquia, Colombia', async () => {
     fetchMock.mockResolvedValue(
       respuestaJson([{ lat: '4.65', lon: '-74.06' }]),
     );
@@ -124,7 +124,9 @@ describe('NominatimGeocodificacionAdapter', () => {
     await adapter.geocodificar('Calle 80 # 20-15', null, null);
 
     const [url] = fetchMock.mock.calls[0] as [URL];
-    expect(url.searchParams.get('q')).toBe('Calle 80 # 20-15, Colombia');
+    expect(url.searchParams.get('q')).toBe(
+      'Calle 80 # 20-15, Medellín, Antioquia, Colombia',
+    );
   });
 
   it('devuelve lat/lng numéricos del primer resultado, precisa=true por defecto', async () => {
@@ -388,10 +390,8 @@ describe('NominatimGeocodificacionAdapter', () => {
 
       const resultado = await adapter.geocodificar('dirección inventada', null, null);
 
-      // Solo 1 llamada: ni siquiera hay ciudad/departamento que
-      // reintentar sin ellos, y una lista vacía con 200 OK no dispara
-      // el reintento por error.
-      expect(fetchMock).toHaveBeenCalledTimes(1);
+      // Nominatim vacío y, después, el respaldo Photon.
+      expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(resultado).toBeNull();
     });
   });
@@ -622,11 +622,12 @@ describe('NominatimGeocodificacionAdapter', () => {
         'Antioquia',
       );
 
-      expect(fetchMock).toHaveBeenCalledTimes(2);
+      // Nominatim acotada + amplia, y el respaldo Photon.
+      expect(fetchMock).toHaveBeenCalledTimes(3);
       expect(resultado).toBeNull();
     });
 
-    it('no reintenta si ya no había ciudad/departamento que quitar (nada más que probar)', async () => {
+    it('no reintenta Nominatim si ya no había ciudad/departamento que quitar, y consulta Photon', async () => {
       fetchMock.mockResolvedValue(respuestaJson([]));
       const adapter = new NominatimGeocodificacionAdapter();
 
@@ -636,7 +637,7 @@ describe('NominatimGeocodificacionAdapter', () => {
         null,
       );
 
-      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(resultado).toBeNull();
     });
 
