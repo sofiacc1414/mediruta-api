@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { DomiciliariosModule } from './modules/domiciliarios/domiciliarios.module';
+import { NotificacionesModule } from './modules/notificaciones/notificaciones.module';
 import { SolicitudesModule } from './modules/solicitudes/solicitudes.module';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { DatabaseModule } from './shared/infrastructure/database/database.module';
@@ -14,6 +15,7 @@ import { GeocodificacionModule } from './shared/infrastructure/geocodificacion/g
     GeocodificacionModule,
     UsuariosModule,
     DomiciliariosModule,
+    NotificacionesModule,
     SolicitudesModule,
   ],
   controllers: [AppController],
