@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { RolNoAutorizadoError } from '../../../usuarios/domain/errors/rol-no-autorizado.error';
 import { DocumentacionIncompletaError } from '../../domain/errors/documentacion-incompleta.error';
 import { DomiciliarioNoEncontradoError } from '../../domain/errors/domiciliario-no-encontrado.error';
+import { NotificarValidacionCuentaUseCase } from '../../../notificaciones/application/use-cases/notificar-validacion-cuenta.use-case';
 import { ValidacionDomiciliarioRepositoryPort } from '../../domain/ports/validacion-domiciliario.repository.port';
 
 export const MENSAJE_DOMICILIARIO_APROBADO = 'El domiciliario fue aprobado.';
@@ -15,6 +16,7 @@ export type AprobarDomiciliarioResultado = { message: string };
 export class AprobarDomiciliarioUseCase {
   constructor(
     private readonly validaciones: ValidacionDomiciliarioRepositoryPort,
+    private readonly notificarCuenta: NotificarValidacionCuentaUseCase,
   ) {}
 
   async execute(
@@ -25,6 +27,7 @@ export class AprobarDomiciliarioUseCase {
 
     switch (resultado.resultado) {
       case 'aprobado':
+        await this.notificarCuenta.execute(domiciliarioId, 'aprobada');
         return { message: MENSAJE_DOMICILIARIO_APROBADO };
       case 'incompleto':
         throw new DocumentacionIncompletaError(resultado.faltantes);

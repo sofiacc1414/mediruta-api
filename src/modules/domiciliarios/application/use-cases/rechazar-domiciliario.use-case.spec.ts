@@ -1,6 +1,7 @@
 import { RolNoAutorizadoError } from '../../../usuarios/domain/errors/rol-no-autorizado.error';
 import { DomiciliarioNoEncontradoError } from '../../domain/errors/domiciliario-no-encontrado.error';
 import { ValidacionDomiciliarioRepositoryPort } from '../../domain/ports/validacion-domiciliario.repository.port';
+import { NotificarValidacionCuentaUseCase } from '../../../notificaciones/application/use-cases/notificar-validacion-cuenta.use-case';
 import {
   MENSAJE_DOMICILIARIO_RECHAZADO,
   RechazarDomiciliarioUseCase,
@@ -15,7 +16,10 @@ describe('RechazarDomiciliarioUseCase', () => {
     aprobar: jest.fn(),
     rechazar: jest.fn(),
   };
-  const useCase = new RechazarDomiciliarioUseCase(validaciones);
+  const notificarCuenta = {
+    execute: jest.fn().mockResolvedValue(undefined),
+  } as unknown as NotificarValidacionCuentaUseCase;
+  const useCase = new RechazarDomiciliarioUseCase(validaciones, notificarCuenta);
 
   beforeEach(() => {
     jest.resetAllMocks();

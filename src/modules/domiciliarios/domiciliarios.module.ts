@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { AprobarDomiciliarioUseCase } from './application/use-cases/aprobar-domiciliario.use-case';
 import { ListarDomiciliariosAdminUseCase } from './application/use-cases/listar-domiciliarios-admin.use-case';
@@ -15,7 +16,7 @@ import { DomiciliariosAdminController } from './infrastructure/controllers/domic
  * RolesGuard (necesita UsuarioRepositoryPort), AlmacenamientoArchivosPort
  * (URLs firmadas de los documentos que ya sube HU-02). */
 @Module({
-  imports: [UsuariosModule],
+  imports: [UsuariosModule, NotificacionesModule],
   controllers: [DomiciliariosAdminController],
   providers: [
     ListarDomiciliariosPendientesUseCase,
