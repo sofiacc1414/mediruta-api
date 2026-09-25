@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
 import { calcularPrecioDesdeParametros } from '../../application/use-cases/calcular-precio-pedido.use-case';
 import { EventosTiempoRealPort } from '../../domain/ports/eventos-tiempo-real.port';
+import { AccesoTemporalRepositoryPort } from '../../domain/ports/acceso-temporal.repository.port';
+import { NotificacionesPedidoPort } from '../../domain/ports/notificaciones-pedido.port';
 import {
   CodigoEntregaParaCorreo,
   ConfiguracionAdmin,
@@ -293,11 +295,45 @@ type FilaEnviar = {
  * castea con `::jsonb` y los descompone con `jsonb_to_recordset`. */
 @Injectable()
 export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
+  private readonly logger = new Logger(PostgresSolicitudRepository.name);
+
   constructor(
     private readonly db: DatabaseService,
     private readonly eventos: EventosTiempoRealPort,
+    private readonly notificaciones: NotificacionesPedidoPort,
+    private readonly accesos: AccesoTemporalRepositoryPort,
   ) {
     super();
+  }
+
+  private trasCambio<T>(
+    solicitudId: string,
+    promesa: Promise<T>,
+    esExito: (valor: T) => boolean,
+  ): Promise<T> {
+    return promesa.then((valor) => {
+      if (esExito(valor)) {
+        this.avisarPedido(solicitudId);
+        this.revocarAcceso(solicitudId);
+      }
+      return valor;
+    });
+  }
+
+  private revocarAcceso(solicitudId: string): void {
+    void this.accesos.revocarPorPedido(solicitudId).catch((error: unknown) => {
+      this.logger.warn(
+        `No se pudo revocar el acceso del pedido ${solicitudId}: ${(error as Error).message}`,
+      );
+    });
+  }
+
+  private avisarPedido(solicitudId: string): void {
+    void this.notificaciones.notificarPedido(solicitudId).catch((error: unknown) => {
+      this.logger.warn(
+        `No se pudo notificar el pedido ${solicitudId}: ${(error as Error).message}`,
+      );
+    });
   }
 
   crear(
@@ -496,7 +532,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     entregaLat: number | null,
     entregaLng: number | null,
   ): Promise<ResultadoEnviar> {
-    return this.db
+    return this.trasCambio(
+      solicitudId,
+      this.db
       .withUserContext<ResultadoEnviar>(pacienteId, async (client) => {
         const result = await client.query<FilaEnviar>(
           'select * from app.enviar_solicitud($1, $2, $3, $4, $5, $6)',
@@ -524,14 +562,18 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
           `Resultado inesperado de app.enviar_solicitud: ${fila.resultado}`,
         );
       })
-      .finally(() => this.eventos.emitirPedidoActualizado());
+      .finally(() => this.eventos.emitirPedidoActualizado()),
+      (valor) => valor.resultado === 'enviada',
+    );
   }
 
   cancelar(
     pacienteId: string,
     solicitudId: string,
   ): Promise<ResultadoCancelar> {
-    return this.db
+    return this.trasCambio(
+      solicitudId,
+      this.db
       .withUserContext(pacienteId, async (client) => {
         const result = await client.query<{
           cancelar_solicitud: ResultadoCancelar;
@@ -541,7 +583,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         ]);
         return result.rows[0].cancelar_solicitud;
       })
-      .finally(() => this.eventos.emitirPedidoActualizado());
+      .finally(() => this.eventos.emitirPedidoActualizado()),
+      (valor) => valor === 'cancelada',
+    );
   }
 
   obtenerNovedadAbierta(
@@ -661,7 +705,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     domiciliarioId: string,
     solicitudId: string,
   ): Promise<ResultadoAceptarPedido> {
-    return this.db
+    return this.trasCambio(
+      solicitudId,
+      this.db
       .withUserContext(domiciliarioId, async (client) => {
         const result = await client.query<{
           resultado: ResultadoAceptarPedido;
@@ -671,14 +717,39 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         ]);
         return result.rows[0].resultado;
       })
-      .finally(() => this.eventos.emitirPedidoActualizado());
+      .finally(() => this.eventos.emitirPedidoActualizado()),
+      (valor) => valor === 'aceptado',
+    );
+  }
+
+  marcarEnFarmacia(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoTransicionPedido> {
+    return this.trasCambio(
+      solicitudId,
+      this.db
+      .withUserContext(domiciliarioId, async (client) => {
+        const result = await client.query<{
+          resultado: ResultadoTransicionPedido;
+        }>('select * from app.marcar_en_farmacia($1, $2)', [
+          domiciliarioId,
+          solicitudId,
+        ]);
+        return result.rows[0].resultado;
+      })
+      .finally(() => this.eventos.emitirPedidoActualizado()),
+      (valor) => valor === 'actualizado',
+    );
   }
 
   marcarMedicamentosRecogidos(
     domiciliarioId: string,
     solicitudId: string,
   ): Promise<ResultadoTransicionPedido> {
-    return this.db
+    return this.trasCambio(
+      solicitudId,
+      this.db
       .withUserContext(domiciliarioId, async (client) => {
         const result = await client.query<{
           resultado: ResultadoTransicionPedido;
@@ -688,14 +759,18 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         ]);
         return result.rows[0].resultado;
       })
-      .finally(() => this.eventos.emitirPedidoActualizado());
+      .finally(() => this.eventos.emitirPedidoActualizado()),
+      (valor) => valor === 'actualizado',
+    );
   }
 
   iniciarEntrega(
     domiciliarioId: string,
     solicitudId: string,
   ): Promise<ResultadoTransicionPedido> {
-    return this.db
+    return this.trasCambio(
+      solicitudId,
+      this.db
       .withUserContext(domiciliarioId, async (client) => {
         const result = await client.query<{
           resultado: ResultadoTransicionPedido;
@@ -705,14 +780,18 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         ]);
         return result.rows[0].resultado;
       })
-      .finally(() => this.eventos.emitirPedidoActualizado());
+      .finally(() => this.eventos.emitirPedidoActualizado()),
+      (valor) => valor === 'actualizado',
+    );
   }
 
   marcarEnSitio(
     domiciliarioId: string,
     solicitudId: string,
   ): Promise<ResultadoTransicionPedido> {
-    return this.db
+    return this.trasCambio(
+      solicitudId,
+      this.db
       .withUserContext(domiciliarioId, async (client) => {
         const result = await client.query<{
           resultado: ResultadoTransicionPedido;
@@ -722,7 +801,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         ]);
         return result.rows[0].resultado;
       })
-      .finally(() => this.eventos.emitirPedidoActualizado());
+      .finally(() => this.eventos.emitirPedidoActualizado()),
+      (valor) => valor === 'actualizado',
+    );
   }
 
   entregarPedido(
@@ -730,7 +811,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     solicitudId: string,
     codigo: string,
   ): Promise<ResultadoEntregarPedido> {
-    return this.db
+    return this.trasCambio(
+      solicitudId,
+      this.db
       .withUserContext(domiciliarioId, async (client) => {
         const result = await client.query<{
           resultado: ResultadoEntregarPedido;
@@ -741,7 +824,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         ]);
         return result.rows[0].resultado;
       })
-      .finally(() => this.eventos.emitirPedidoActualizado());
+      .finally(() => this.eventos.emitirPedidoActualizado()),
+      (valor) => valor === 'entregado',
+    );
   }
 
   reportarNovedad(
@@ -1272,7 +1357,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     solicitudId: string,
     domiciliarioId: string,
   ): Promise<ResultadoAsignarDomiciliarioAdmin> {
-    return this.db
+    return this.trasCambio(
+      solicitudId,
+      this.db
       .withUserContext(adminId, async (client) => {
         const result = await client.query<{
           resultado: ResultadoAsignarDomiciliarioAdmin;
@@ -1283,7 +1370,9 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         ]);
         return result.rows[0].resultado;
       })
-      .finally(() => this.eventos.emitirPedidoActualizado());
+      .finally(() => this.eventos.emitirPedidoActualizado()),
+      (valor) => valor === 'asignado',
+    );
   }
 
   obtenerConfiguracionAdmin(

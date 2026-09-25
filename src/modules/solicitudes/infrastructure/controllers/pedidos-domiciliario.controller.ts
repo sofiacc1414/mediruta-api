@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseFilters,
   UseGuards,
 } from '@nestjs/common';
@@ -23,6 +24,7 @@ import { ListarHistorialPedidosUseCase } from '../../application/use-cases/lista
 import { ListarNovedadesSolicitudDomiciliarioUseCase } from '../../application/use-cases/listar-novedades-solicitud-domiciliario.use-case';
 import { ObtenerDocumentosPacienteParaRecogerUseCase } from '../../application/use-cases/obtener-documentos-paciente-para-recoger.use-case';
 import { ListarPedidosDisponiblesUseCase } from '../../application/use-cases/listar-pedidos-disponibles.use-case';
+import { MarcarEnFarmaciaUseCase } from '../../application/use-cases/marcar-en-farmacia.use-case';
 import { MarcarEnSitioUseCase } from '../../application/use-cases/marcar-en-sitio.use-case';
 import { MarcarMedicamentosRecogidosUseCase } from '../../application/use-cases/marcar-medicamentos-recogidos.use-case';
 import { ObtenerPedidoActivoUseCase } from '../../application/use-cases/obtener-pedido-activo.use-case';
@@ -44,6 +46,7 @@ export class PedidosDomiciliarioController {
   constructor(
     private readonly listarPedidosDisponibles: ListarPedidosDisponiblesUseCase,
     private readonly aceptarPedido: AceptarPedidoUseCase,
+    private readonly marcarEnFarmacia: MarcarEnFarmaciaUseCase,
     private readonly marcarMedicamentosRecogidos: MarcarMedicamentosRecogidosUseCase,
     private readonly iniciarEntrega: IniciarEntregaUseCase,
     private readonly marcarEnSitio: MarcarEnSitioUseCase,
@@ -102,10 +105,14 @@ export class PedidosDomiciliarioController {
   documentosPaciente(
     @UsuarioAutenticado() identidad: IdentidadAutenticada,
     @Param('id', ParseUUIDPipe) solicitudId: string,
+    @Query('lat') lat?: string,
+    @Query('lng') lng?: string,
   ) {
     return this.obtenerDocumentosPacienteParaRecoger.execute(
       identidad.usuarioId,
       solicitudId,
+      numeroOpcional(lat),
+      numeroOpcional(lng),
     );
   }
 
@@ -116,6 +123,15 @@ export class PedidosDomiciliarioController {
     @Param('id', ParseUUIDPipe) solicitudId: string,
   ) {
     return this.aceptarPedido.execute(identidad.usuarioId, solicitudId);
+  }
+
+  @Post(':id/en-farmacia')
+  @HttpCode(HttpStatus.OK)
+  enFarmacia(
+    @UsuarioAutenticado() identidad: IdentidadAutenticada,
+    @Param('id', ParseUUIDPipe) solicitudId: string,
+  ) {
+    return this.marcarEnFarmacia.execute(identidad.usuarioId, solicitudId);
   }
 
   @Post(':id/recogido')
@@ -189,4 +205,10 @@ export class PedidosDomiciliarioController {
       dto.detalle,
     );
   }
+}
+
+function numeroOpcional(valor: string | undefined): number | null {
+  if (valor == null || valor.trim() === '') return null;
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : null;
 }

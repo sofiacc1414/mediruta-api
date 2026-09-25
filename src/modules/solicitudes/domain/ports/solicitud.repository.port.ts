@@ -580,6 +580,11 @@ export abstract class SolicitudRepositoryPort {
     solicitudId: string,
   ): Promise<ResultadoAceptarPedido>;
 
+  abstract marcarEnFarmacia(
+    domiciliarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoTransicionPedido>;
+
   abstract marcarMedicamentosRecogidos(
     domiciliarioId: string,
     solicitudId: string,

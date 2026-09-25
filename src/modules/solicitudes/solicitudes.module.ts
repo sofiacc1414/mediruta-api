@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { AceptarPedidoUseCase } from './application/use-cases/aceptar-pedido.use-case';
 import { ActualizarConfiguracionAdminUseCase } from './application/use-cases/actualizar-configuracion-admin.use-case';
@@ -23,6 +24,7 @@ import { ListarNovedadesSolicitudDomiciliarioUseCase } from './application/use-c
 import { ListarPedidosAdminUseCase } from './application/use-cases/listar-pedidos-admin.use-case';
 import { ListarPedidosDisponiblesUseCase } from './application/use-cases/listar-pedidos-disponibles.use-case';
 import { ListarSolicitudesUseCase } from './application/use-cases/listar-solicitudes.use-case';
+import { MarcarEnFarmaciaUseCase } from './application/use-cases/marcar-en-farmacia.use-case';
 import { MarcarEnSitioUseCase } from './application/use-cases/marcar-en-sitio.use-case';
 import { MarcarMedicamentosRecogidosUseCase } from './application/use-cases/marcar-medicamentos-recogidos.use-case';
 import { ObtenerConfiguracionAdminUseCase } from './application/use-cases/obtener-configuracion-admin.use-case';
@@ -42,9 +44,13 @@ import { ReportarNovedadUseCase } from './application/use-cases/reportar-novedad
 import { ResolverNovedadUseCase } from './application/use-cases/resolver-novedad.use-case';
 import { SolicitarEdicionPedidoUseCase } from './application/use-cases/solicitar-edicion-pedido.use-case';
 import { SubirRecetaUseCase } from './application/use-cases/subir-receta.use-case';
+import { AccesoTemporalRepositoryPort } from './domain/ports/acceso-temporal.repository.port';
 import { CorreoCodigoEntregaPort } from './domain/ports/correo-codigo-entrega.port';
 import { EventosTiempoRealPort } from './domain/ports/eventos-tiempo-real.port';
+import { NotificacionesPedidoPort } from './domain/ports/notificaciones-pedido.port';
 import { SolicitudRepositoryPort } from './domain/ports/solicitud.repository.port';
+import { PostgresAccesoTemporalRepository } from './infrastructure/adapters/postgres-acceso-temporal.repository';
+import { NotificacionesPedidoAdapter } from './infrastructure/adapters/notificaciones-pedido.adapter';
 import { PostgresSolicitudRepository } from './infrastructure/adapters/postgres-solicitud.repository';
 import { CorreoRelayCodigoEntregaAdapter } from './infrastructure/adapters/correo-relay-codigo-entrega.adapter';
 import { EventosGateway } from './infrastructure/websockets/eventos.gateway';
@@ -60,7 +66,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
  * reutilizar AccessAuthGuard/RolesGuard, mismo mecanismo construido en
  * HU-08. */
 @Module({
-  imports: [UsuariosModule],
+  imports: [UsuariosModule, NotificacionesModule],
   controllers: [
     SolicitudesController,
     PedidosDomiciliarioController,
@@ -83,6 +89,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     AceptarPedidoUseCase,
     MarcarMedicamentosRecogidosUseCase,
     IniciarEntregaUseCase,
+    MarcarEnFarmaciaUseCase,
     MarcarEnSitioUseCase,
     EntregarPedidoUseCase,
     ReportarNovedadUseCase,
@@ -115,6 +122,14 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     {
       provide: EventosTiempoRealPort,
       useExisting: EventosGateway,
+    },
+    {
+      provide: AccesoTemporalRepositoryPort,
+      useClass: PostgresAccesoTemporalRepository,
+    },
+    {
+      provide: NotificacionesPedidoPort,
+      useClass: NotificacionesPedidoAdapter,
     },
     {
       provide: SolicitudRepositoryPort,

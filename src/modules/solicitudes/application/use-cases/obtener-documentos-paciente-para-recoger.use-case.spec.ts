@@ -1,9 +1,8 @@
 import { AlmacenamientoArchivosPort } from '../../../usuarios/domain/ports/almacenamiento-archivos.port';
-import {
-  BUCKET_PERFILES,
-  URL_FIRMADA_EXPIRA_SEGUNDOS,
-} from '../../../usuarios/application/use-cases/subir-foto-cedula-paciente.use-case';
+import { BUCKET_PERFILES } from '../../../usuarios/application/use-cases/subir-foto-cedula-paciente.use-case';
 import { DocumentosPacienteNoDisponiblesError } from '../../domain/errors/documentos-paciente-no-disponibles.error';
+import { ACCESO_TEMPORAL_SEGUNDOS } from '../../domain/geocerca-acceso';
+import { AccesoTemporalRepositoryPort } from '../../domain/ports/acceso-temporal.repository.port';
 import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
 import { ObtenerDocumentosPacienteParaRecogerUseCase } from './obtener-documentos-paciente-para-recoger.use-case';
 
@@ -63,10 +62,26 @@ describe('ObtenerDocumentosPacienteParaRecogerUseCase', () => {
     subir: jest.fn(),
     obtenerUrlFirmada: jest.fn(),
   };
+  const accesos: AccesoTemporalRepositoryPort = {
+    puntoFarmacia: jest.fn(),
+    registrar: jest.fn(),
+    revocarPorPedido: jest.fn(),
+  };
   const useCase = new ObtenerDocumentosPacienteParaRecogerUseCase(
     solicitudes,
     almacenamiento,
+    accesos,
   );
+
+  const enFarmacia = () => {
+    (accesos.puntoFarmacia as jest.Mock).mockResolvedValue({
+      estado: 'en_farmacia',
+      farmaciaLat: 6.244,
+      farmaciaLng: -75.581,
+    });
+    (accesos.registrar as jest.Mock).mockResolvedValue(undefined);
+    (accesos.revocarPorPedido as jest.Mock).mockResolvedValue(undefined);
+  };
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -77,6 +92,7 @@ describe('ObtenerDocumentosPacienteParaRecogerUseCase', () => {
   });
 
   it('resuelve URLs firmadas para ambos lados de la cédula y la fórmula médica', async () => {
+    enFarmacia();
     (
       solicitudes.obtenerDocumentosPacienteParaRecoger as jest.Mock
     ).mockResolvedValue({
@@ -88,6 +104,8 @@ describe('ObtenerDocumentosPacienteParaRecogerUseCase', () => {
     const resultado = await useCase.execute(
       'domiciliario-uuid',
       'solicitud-uuid',
+      6.244,
+      -75.581,
     );
 
     expect(resultado.cedulaFrenteUrl).toBe(
@@ -96,23 +114,25 @@ describe('ObtenerDocumentosPacienteParaRecogerUseCase', () => {
     expect(resultado.cedulaReversoUrl).toBe(
       'https://firmada.test/paciente/usuario-uuid/cedula_reverso.jpg',
     );
-    expect(resultado.recetaUrl).toBe(
-      'https://firmada.test/solicitud/solicitud-uuid/receta.jpg',
-    );
+    expect(resultado.recetaUrl).toBeNull();
     expect(
       solicitudes.obtenerDocumentosPacienteParaRecoger,
     ).toHaveBeenCalledWith('domiciliario-uuid', 'solicitud-uuid');
     expect(almacenamiento.obtenerUrlFirmada).toHaveBeenCalledWith(
       BUCKET_PERFILES,
       'paciente/usuario-uuid/cedula_frente.jpg',
-      URL_FIRMADA_EXPIRA_SEGUNDOS,
+      ACCESO_TEMPORAL_SEGUNDOS,
     );
   });
 
   it('lanza DocumentosPacienteNoDisponiblesError fuera de la ventana permitida', async () => {
-    (
-      solicitudes.obtenerDocumentosPacienteParaRecoger as jest.Mock
-    ).mockResolvedValue(null);
+    (accesos.puntoFarmacia as jest.Mock).mockResolvedValue({
+      estado: 'en_camino_entrega',
+      farmaciaLat: 6.244,
+      farmaciaLng: -75.581,
+    });
+    (accesos.registrar as jest.Mock).mockResolvedValue(undefined);
+    (accesos.revocarPorPedido as jest.Mock).mockResolvedValue(undefined);
 
     await expect(
       useCase.execute('domiciliario-uuid', 'solicitud-uuid'),
@@ -120,6 +140,7 @@ describe('ObtenerDocumentosPacienteParaRecogerUseCase', () => {
   });
 
   it('las URLs quedan null (no revienta con 500) si Storage no puede firmar la URL', async () => {
+    enFarmacia();
     (
       solicitudes.obtenerDocumentosPacienteParaRecoger as jest.Mock
     ).mockResolvedValue({
@@ -134,6 +155,8 @@ describe('ObtenerDocumentosPacienteParaRecogerUseCase', () => {
     const resultado = await useCase.execute(
       'domiciliario-uuid',
       'solicitud-uuid',
+      6.244,
+      -75.581,
     );
 
     expect(resultado.cedulaFrenteUrl).toBeNull();

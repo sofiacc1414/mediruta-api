@@ -7,7 +7,7 @@
 export class DocumentosPacienteNoDisponiblesError extends Error {
   constructor() {
     super(
-      'Los documentos del paciente solo están disponibles mientras vas en camino a la farmacia con el pedido ya aceptado.',
+      'Los documentos del paciente solo están disponibles cuando el pedido está en la farmacia.',
     );
     this.name = 'DocumentosPacienteNoDisponiblesError';
   }
