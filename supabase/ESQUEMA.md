@@ -1192,3 +1192,34 @@ sesión actual sigue válida; las demás quedan revocadas
 ```
 
 **Migración:** `20260822224316_create_change_password_functions.sql`
+
+## Tabla `calificaciones` (HU-18)
+
+Calificación del servicio después de la entrega. Una fila activa por pedido
+(`unique` parcial `where estado = 'activa'`). El retiro cambia `estado` a
+`retirada`, anula `puntuacion` y `comentario`, y conserva `solicitud_id`,
+`paciente_id`, `creado_en` y `retirado_en` para auditoría. No hay `DELETE` físico.
+
+| Columna | Tipo | Notas |
+| --- | --- | --- |
+| `id` | `uuid` | PK |
+| `solicitud_id` | `uuid` | FK `solicitudes.id` `ON DELETE RESTRICT` |
+| `paciente_id` | `uuid` | FK `usuarios.id` `ON DELETE RESTRICT` |
+| `puntuacion` | `smallint` | 1–5 si `activa`; `NULL` si `retirada` |
+| `comentario` | `text` | opcional, máx. 300; `NULL` al retirar |
+| `estado` | `text` | `activa` \| `retirada` |
+| `creado_en` | `timestamptz` | |
+| `actualizado_en` | `timestamptz` | |
+| `retirado_en` | `timestamptz` | nullable |
+
+RLS: `paciente_lee_sus_calificaciones` — `select` solo si
+`paciente_id = app.current_user_id()`. Escritura solo vía funciones
+`security definer`.
+
+- **`app.listar_pedidos_calificacion(p_usuario_id)`** — pedidos propios distintos de borrador, con conteo de medicamentos y si tienen calificación activa.
+- **`app.obtener_calificacion`** — calificación activa del dueño. Códigos: `ok`, `pedido_no_encontrado`, `pedido_ajeno`, `sin_calificacion`, `no_autorizado`.
+- **`app.crear_calificacion`** — solo pedido propio en `entregado` y sin calificación activa.
+- **`app.actualizar_calificacion`** — solo el dueño de la calificación activa.
+- **`app.retirar_calificacion`** — pasa a `retirada` sin borrar la fila.
+
+**Migración:** `20260925000000_create_calificaciones.sql`
