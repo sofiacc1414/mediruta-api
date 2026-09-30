@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../shared/infrastructure/database/database.service';
+import { ChatEventosPort } from '../../domain/ports/chat-eventos.port';
 import {
   ChatRepositoryPort,
   MensajeChat,
@@ -58,7 +59,16 @@ function mensajeDesde(fila: FilaMensaje, chatIdRespaldo: string): MensajeChat {
 
 @Injectable()
 export class PostgresChatRepository extends ChatRepositoryPort {
-  constructor(private readonly db: DatabaseService) {
+  constructor(
+    private readonly db: DatabaseService,
+    // `forwardRef` — ver el comentario en `ChatEventosPort`: el
+    // gateway depende de los use-cases de chat, que dependen de este
+    // repositorio, que ahora depende de vuelta del gateway para
+    // transmitir. Sin esto Nest nunca termina de armar el grafo al
+    // arrancar (se queda colgado, sin tirar ni siquiera un error claro).
+    @Inject(forwardRef(() => ChatEventosPort))
+    private readonly eventos: ChatEventosPort,
+  ) {
     super();
   }
 
@@ -87,30 +97,41 @@ export class PostgresChatRepository extends ChatRepositoryPort {
     chatId: string,
     contenido: string,
   ): Promise<ResultadoEnviarMensaje> {
-    return this.db.withUserContext(usuarioId, async (client) => {
-      const result = await client.query<FilaEnviarMensaje>(
-        'select * from app.enviar_mensaje_chat($1, $2, $3)',
-        [usuarioId, chatId, contenido],
-      );
-      const fila = result.rows[0];
-      if (fila.resultado !== 'ok') {
-        return { resultado: fila.resultado };
-      }
-      return {
-        resultado: 'ok',
-        mensaje: {
-          id: fila.id!,
-          chatId: fila.chat_id!,
-          remitenteId: fila.remitente_id!,
-          rolRemitente: fila.rol_remitente!,
-          contenido: fila.contenido!,
-          creadoEn: instante(fila.creado_en!),
-          leidoEn: null,
-        },
-        destinatarioId: fila.destinatario_id!,
-        solicitudId: fila.solicitud_id!,
-      };
-    });
+    const resultado = await this.db.withUserContext<ResultadoEnviarMensaje>(
+      usuarioId,
+      async (client) => {
+        const result = await client.query<FilaEnviarMensaje>(
+          'select * from app.enviar_mensaje_chat($1, $2, $3)',
+          [usuarioId, chatId, contenido],
+        );
+        const fila = result.rows[0];
+        if (fila.resultado !== 'ok') {
+          return { resultado: fila.resultado };
+        }
+        return {
+          resultado: 'ok',
+          mensaje: {
+            id: fila.id!,
+            chatId: fila.chat_id!,
+            remitenteId: fila.remitente_id!,
+            rolRemitente: fila.rol_remitente!,
+            contenido: fila.contenido!,
+            creadoEn: instante(fila.creado_en!),
+            leidoEn: null,
+          },
+          destinatarioId: fila.destinatario_id!,
+          solicitudId: fila.solicitud_id!,
+        };
+      },
+    );
+    // Único lugar donde se transmite el mensaje por WebSocket — REST
+    // (`ChatController.enviar`) y WS (`ChatGateway.enviar`) pasan los
+    // dos por `EnviarMensajeChatUseCase`, que pasa por acá, así que
+    // nunca se duplica (antes cada canal emitía por su cuenta).
+    if (resultado.resultado === 'ok') {
+      this.eventos.emitirNuevoMensaje(resultado.mensaje.chatId, resultado.mensaje);
+    }
+    return resultado;
   }
 
   async listarMensajes(usuarioId: string, chatId: string): Promise<MensajeChat[]> {

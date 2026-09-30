@@ -16,7 +16,16 @@ const CONTENIDO_MAX_LARGO = 60;
  * guardó). Se dispara siempre, no solo si la contraparte está
  * desconectada — detectar presencia en tiempo real es más
  * complejidad de la que vale la pena acá; el cliente puede silenciar
- * la notificación si ya tiene el chat abierto. */
+ * la notificación si ya tiene el chat abierto.
+ *
+ * El broadcast por WebSocket (`ChatEventosPort`) NO se dispara acá —
+ * vive en `PostgresChatRepository`, igual que `emitirPedidoActualizado()`
+ * vive en `PostgresSolicitudRepository` y no en sus use-cases. Ponerlo
+ * acá generaba una dependencia circular: `ChatGateway` ya depende de
+ * este use-case para atender `chat:enviar_mensaje`, así que si este
+ * use-case a su vez dependiera de `ChatEventosPort` (resuelto a
+ * `ChatGateway`), Nest nunca podía terminar de armar el grafo de
+ * dependencias al arrancar. */
 @Injectable()
 export class EnviarMensajeChatUseCase {
   private readonly logger = new Logger(EnviarMensajeChatUseCase.name);

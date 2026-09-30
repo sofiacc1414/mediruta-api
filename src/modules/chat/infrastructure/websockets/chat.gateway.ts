@@ -13,6 +13,8 @@ import { AccessTokenPort } from '../../../usuarios/domain/ports/access-token.por
 import { SesionRepositoryPort } from '../../../usuarios/domain/ports/sesion.repository.port';
 import { EnviarMensajeChatUseCase } from '../../application/use-cases/enviar-mensaje-chat.use-case';
 import { ObtenerChatPedidoUseCase } from '../../application/use-cases/obtener-chat-pedido.use-case';
+import { ChatEventosPort } from '../../domain/ports/chat-eventos.port';
+import { MensajeChat } from '../../domain/ports/chat.repository.port';
 
 /** Gateway de WebSocket dedicado al chat — separado de `EventosGateway`
  * (que vive en `solicitudes` y hace `server.emit()` global sin rooms,
@@ -30,7 +32,10 @@ import { ObtenerChatPedidoUseCase } from '../../application/use-cases/obtener-ch
   cors: { origin: true, credentials: true },
   path: '/ws-chat',
 })
-export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway
+  extends ChatEventosPort
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   private readonly logger = new Logger(ChatGateway.name);
 
   @WebSocketServer()
@@ -41,7 +46,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly sesiones: SesionRepositoryPort,
     private readonly obtenerChat: ObtenerChatPedidoUseCase,
     private readonly enviarMensaje: EnviarMensajeChatUseCase,
-  ) {}
+  ) {
+    super();
+  }
 
   async handleConnection(socket: Socket): Promise<void> {
     const token = extraerToken(socket);
@@ -97,6 +104,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /** El broadcast del mensaje nuevo NO pasa por acá — lo hace
+   * `emitirNuevoMensaje()` (ver `ChatEventosPort`), llamado desde
+   * `EnviarMensajeChatUseCase` para cualquier envío, sea por WS o por
+   * REST (`ChatController.enviar`). Hacerlo acá además de ahí
+   * duplicaba el mensaje: el REST ya lo persistía y el cliente además
+   * emitía por WS, insertando una segunda fila. */
   @SubscribeMessage('chat:enviar_mensaje')
   async enviar(
     @ConnectedSocket() socket: Socket,
@@ -108,12 +121,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
     try {
-      const mensaje = await this.enviarMensaje.execute(
-        usuarioId,
-        data.chatId,
-        data.contenido,
-      );
-      this.server.to(data.chatId).emit('chat:nuevo_mensaje', mensaje);
+      await this.enviarMensaje.execute(usuarioId, data.chatId, data.contenido);
     } catch (error) {
       const nombre = (error as Error).name;
       if (nombre === 'ChatSoloLecturaError') {
@@ -126,6 +134,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       socket.emit('chat:error', { motivo: nombre });
     }
+  }
+
+  emitirNuevoMensaje(chatId: string, mensaje: MensajeChat): void {
+    if (!this.server) {
+      this.logger.warn('emitirNuevoMensaje() llamado sin servidor WS activo todavía.');
+      return;
+    }
+    this.server.to(chatId).emit('chat:nuevo_mensaje', mensaje);
   }
 }
 

@@ -132,7 +132,7 @@ describe('Chat en tiempo real — HU chat', () => {
       ).resolves.toEqual(mensaje);
     });
 
-    it('lanza ChatSoloLecturaError si ya pasaron los 30 minutos', async () => {
+    it('lanza ChatSoloLecturaError si ya pasaron los 30 minutos, sin notificar', async () => {
       (chats.enviarMensaje as jest.Mock).mockResolvedValue({ resultado: 'chat_solo_lectura' });
 
       await expect(

@@ -6,6 +6,7 @@ import { ListarMensajesChatAdminUseCase } from './application/use-cases/listar-m
 import { ListarMensajesChatUseCase } from './application/use-cases/listar-mensajes-chat.use-case';
 import { MarcarMensajesLeidosChatUseCase } from './application/use-cases/marcar-mensajes-leidos-chat.use-case';
 import { ObtenerChatPedidoUseCase } from './application/use-cases/obtener-chat-pedido.use-case';
+import { ChatEventosPort } from './domain/ports/chat-eventos.port';
 import { ChatRepositoryPort } from './domain/ports/chat.repository.port';
 import { PostgresChatRepository } from './infrastructure/adapters/postgres-chat.repository';
 import { ChatAdminController } from './infrastructure/controllers/chat-admin.controller';
@@ -34,6 +35,10 @@ import { ChatGateway } from './infrastructure/websockets/chat.gateway';
     {
       provide: ChatRepositoryPort,
       useClass: PostgresChatRepository,
+    },
+    {
+      provide: ChatEventosPort,
+      useExisting: ChatGateway,
     },
   ],
 })
