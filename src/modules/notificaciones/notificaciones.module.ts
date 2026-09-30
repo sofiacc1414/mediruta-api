@@ -31,6 +31,10 @@ import { NotificacionesController } from './infrastructure/controllers/notificac
       useClass: FcmPushAdapter,
     },
   ],
-  exports: [NotificarCambioPedidoUseCase, NotificarValidacionCuentaUseCase],
+  exports: [
+    NotificarCambioPedidoUseCase,
+    NotificarValidacionCuentaUseCase,
+    RegistrarNotificacionUseCase,
+  ],
 })
 export class NotificacionesModule {}

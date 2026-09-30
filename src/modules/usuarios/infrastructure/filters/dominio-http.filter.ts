@@ -5,6 +5,8 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { ChatSinDomiciliarioAsignadoError } from '../../../chat/domain/errors/chat-sin-domiciliario-asignado.error';
+import { ChatSoloLecturaError } from '../../../chat/domain/errors/chat-solo-lectura.error';
 import { DocumentacionIncompletaError } from '../../../domiciliarios/domain/errors/documentacion-incompleta.error';
 import { DomiciliarioNoEncontradoError } from '../../../domiciliarios/domain/errors/domiciliario-no-encontrado.error';
 import { NoHayBorradorDomiciliarioError } from '../../../domiciliarios/domain/errors/no-hay-borrador-domiciliario.error';
@@ -70,6 +72,8 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   NivelCopagoEnUsoError,
   PerfilDomiciliarioIncompletoParaDisponibilidadError,
   DireccionNoValidaError,
+  ChatSoloLecturaError,
+  ChatSinDomiciliarioAsignadoError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -81,7 +85,8 @@ export class DominioHttpFilter implements ExceptionFilter {
       exception instanceof DomiciliarioConPedidoActivoError ||
       exception instanceof DomiciliarioNoDisponibleParaAsignarError ||
       exception instanceof NoPuedeDesconectarseConPedidoActivoError ||
-      exception instanceof NivelCopagoEnUsoError
+      exception instanceof NivelCopagoEnUsoError ||
+      exception instanceof ChatSoloLecturaError
     ) {
       response.status(HttpStatus.CONFLICT).json({
         statusCode: HttpStatus.CONFLICT,
