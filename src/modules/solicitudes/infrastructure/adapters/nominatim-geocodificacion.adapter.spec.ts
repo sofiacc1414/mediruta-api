@@ -597,10 +597,10 @@ describe('NominatimGeocodificacionAdapter', () => {
       const [urlAcotada] = fetchMock.mock.calls[0] as [URL];
       const [urlAmplia] = fetchMock.mock.calls[1] as [URL];
       expect(urlAcotada.searchParams.get('q')).toBe(
-        'Carrera 43A #5A-113, Amagá, Antioquia, Colombia',
+        'Carrera 43A # 5A-113, Amagá, Antioquia, Colombia',
       );
       expect(urlAmplia.searchParams.get('q')).toBe(
-        'Carrera 43A #5A-113, Colombia',
+        'Carrera 43A # 5A-113, Colombia',
       );
       // Nunca "precisa" en este camino — aunque tenga house_number, no
       // se confirmó que esté en la ciudad que el Paciente tiene
