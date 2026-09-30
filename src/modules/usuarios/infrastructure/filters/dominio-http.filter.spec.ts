@@ -1,4 +1,6 @@
 import { ArgumentsHost, HttpStatus } from '@nestjs/common';
+import { ChatSinDomiciliarioAsignadoError } from '../../../chat/domain/errors/chat-sin-domiciliario-asignado.error';
+import { ChatSoloLecturaError } from '../../../chat/domain/errors/chat-solo-lectura.error';
 import { CambioContrasenaInvalidoError } from '../../domain/errors/cambio-contrasena-invalido.error';
 import { CorreoYaRegistradoError } from '../../domain/errors/correo-ya-registrado.error';
 import { CredencialesInvalidasError } from '../../domain/errors/credenciales-invalidas.error';
@@ -161,6 +163,30 @@ describe('DominioHttpFilter', () => {
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.BAD_REQUEST,
       message: 'El código de entrega no coincide.',
+    });
+  });
+
+  it('mapea ChatSoloLecturaError a HTTP 409', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new ChatSoloLecturaError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.CONFLICT,
+      message: 'Este chat ya no acepta mensajes nuevos.',
+    });
+  });
+
+  it('mapea ChatSinDomiciliarioAsignadoError a HTTP 400', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new ChatSinDomiciliarioAsignadoError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.BAD_REQUEST,
+      message: 'Todavía no hay un domiciliario asignado a este pedido.',
     });
   });
 });

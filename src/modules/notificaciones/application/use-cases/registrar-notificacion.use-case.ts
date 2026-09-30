@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { NotificacionRepositoryPort } from '../../domain/ports/notificacion.repository.port';
+import {
+  NotificacionRepositoryPort,
+  TipoNotificacion,
+} from '../../domain/ports/notificacion.repository.port';
 import {
   AvisoPush,
   PushNotificacionPort,
@@ -7,7 +10,7 @@ import {
 
 export type RegistrarNotificacionEntrada = {
   destinatarioId: string;
-  tipo: 'cambio_estado' | 'asignacion' | 'validacion_cuenta';
+  tipo: TipoNotificacion;
   titulo: string;
   mensaje: string;
   referenciaTipo: 'pedido' | 'cuenta';
