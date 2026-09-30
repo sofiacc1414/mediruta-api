@@ -50,7 +50,20 @@ export class ChatGateway
     super();
   }
 
+  /** `handleConnection` es async (verifica el JWT + la sesión contra la
+   * base) — el cliente emite `chat:join` apenas recibe el evento
+   * `connect` del transporte, que dispara ANTES de que termine este
+   * método. Sin guardar la promesa acá, `join()`/`enviar()` podían leer
+   * `socket.data.usuarioId` todavía `undefined` (carrera real, no
+   * intermitente: se reprodujo siempre en pruebas con dos clientes
+   * reales) y rechazaban con `solicitud_invalida` pese a que el token
+   * era válido. Ambos handlers ahora esperan esta promesa primero. */
   async handleConnection(socket: Socket): Promise<void> {
+    socket.data.autenticado = this.autenticar(socket);
+    await socket.data.autenticado;
+  }
+
+  private async autenticar(socket: Socket): Promise<void> {
     const token = extraerToken(socket);
     if (!token) {
       this.logger.warn(`${socket.id}: sin token en el handshake, se desconecta.`);
@@ -90,6 +103,7 @@ export class ChatGateway
     @ConnectedSocket() socket: Socket,
     @MessageBody() data: { solicitudId?: string },
   ): Promise<void> {
+    await (socket.data.autenticado as Promise<void> | undefined);
     const usuarioId = socket.data.usuarioId as string | undefined;
     if (!usuarioId || !data?.solicitudId) {
       socket.emit('chat:error', { motivo: 'solicitud_invalida' });
@@ -115,6 +129,7 @@ export class ChatGateway
     @ConnectedSocket() socket: Socket,
     @MessageBody() data: { chatId?: string; contenido?: string },
   ): Promise<void> {
+    await (socket.data.autenticado as Promise<void> | undefined);
     const usuarioId = socket.data.usuarioId as string | undefined;
     if (!usuarioId || !data?.chatId || !data?.contenido) {
       socket.emit('chat:error', { motivo: 'mensaje_invalido' });
