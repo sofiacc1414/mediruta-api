@@ -40,6 +40,7 @@ import {
   ResultadoEntregarPedido,
   ResultadoGuardarNivelCopagoAdmin,
   ResultadoRegenerarCodigoEntrega,
+  ResultadoReportarCodigoNoGenerado,
   ResultadoReportarNovedad,
   ResultadoResolverNovedad,
   ResultadoTransicionPedido,
@@ -1208,19 +1209,35 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     pacienteId: string,
     solicitudId: string,
     detalle: string | null,
-  ): Promise<ResultadoReportarNovedad> {
+  ): Promise<ResultadoReportarCodigoNoGenerado> {
     return this.db.withUserContext(pacienteId, async (client) => {
       const result = await client.query<{
         resultado: string;
         id: string | null;
+        codigo_entrega: string | null;
+        codigo_pedido: string | null;
+        paciente_correo: string | null;
+        paciente_nombre: string | null;
       }>('select * from app.reportar_codigo_no_generado($1, $2, $3)', [
         pacienteId,
         solicitudId,
         detalle,
       ]);
       const fila = result.rows[0];
-      if (fila.resultado === 'reportada' && fila.id) {
-        return { resultado: 'reportada', id: fila.id };
+      if (
+        fila.resultado === 'reportada' &&
+        fila.id &&
+        fila.codigo_entrega &&
+        fila.paciente_correo
+      ) {
+        return {
+          resultado: 'reportada',
+          id: fila.id,
+          codigoEntrega: fila.codigo_entrega,
+          codigoPedido: fila.codigo_pedido,
+          pacienteCorreo: fila.paciente_correo,
+          pacienteNombre: fila.paciente_nombre,
+        };
       }
       return { resultado: 'no_encontrado' };
     });

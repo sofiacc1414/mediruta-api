@@ -368,6 +368,22 @@ export type ResultadoEntregarPedido =
 export type ResultadoReportarNovedad =
   { resultado: 'reportada'; id: string } | { resultado: 'no_encontrado' };
 
+/** El reporte de "no veo mi código" regenera el código en el mismo
+ * paso (ver migración `20260930200000_...`) — por eso trae más datos
+ * que `ResultadoReportarNovedad`: todo lo que hace falta para
+ * reenviarlo por correo sin un segundo roundtrip ni depender del
+ * admin. */
+export type ResultadoReportarCodigoNoGenerado =
+  | {
+      resultado: 'reportada';
+      id: string;
+      codigoEntrega: string;
+      codigoPedido: string | null;
+      pacienteCorreo: string;
+      pacienteNombre: string | null;
+    }
+  | { resultado: 'no_encontrado' };
+
 export type ResultadoResolverNovedad = 'resuelta' | 'no_encontrado';
 
 /** HU-07 (ronda 3) — aprobar/rechazar una novedad de tipo 'edicion'.
@@ -555,7 +571,7 @@ export abstract class SolicitudRepositoryPort {
     pacienteId: string,
     solicitudId: string,
     detalle: string | null,
-  ): Promise<ResultadoReportarNovedad>;
+  ): Promise<ResultadoReportarCodigoNoGenerado>;
 
   // --- Domiciliario (HU-09/HU-07) ---
 
