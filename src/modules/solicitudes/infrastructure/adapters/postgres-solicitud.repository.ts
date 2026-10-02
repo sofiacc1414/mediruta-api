@@ -98,12 +98,12 @@ type FilaPedidoHistorialDomiciliario = {
   estado: EstadoSolicitud;
   direccion_entrega: string | null;
   creado_en: string;
-  copago: number | null;
+  copago: string | null;
   distancia_metros: number | null;
-  tarifa_base_domicilio: number;
-  tarifa_por_km: number;
-  distancia_incluida_km: number;
-  tarifa_por_km_excedente: number;
+  tarifa_base_domicilio: string;
+  tarifa_por_km: string;
+  distancia_incluida_km: string;
+  tarifa_por_km_excedente: string;
 };
 
 type FilaPedidoActivoDomiciliario = {
@@ -682,13 +682,23 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         // (`calcularPrecioDesdeParametros`) — una sola fuente de verdad
         // para la plata. `null` si falta el copago o la distancia (el
         // domiciliario ve el pedido igual, solo sin el dato del valor).
+        //
+        // Bug real reportado: montos absurdos como "$1.500.020.000.749"
+        // en este historial — `pg` devuelve las columnas `numeric`
+        // (copago, tarifa_*, distancia_incluida_km) como `string`, no
+        // `number` (a diferencia de `double precision`, que sí llega
+        // como number). Sin convertir, `calcularPrecioDesdeParametros`
+        // hacía `"15000" + 20749` → concatenación de texto en vez de
+        // suma. El path del Paciente (`obtenerDatosPrecioPedido`) ya
+        // hacía esta conversión vía `mapearParametrosPrecio`; a este le
+        // faltaba.
         const precio = calcularPrecioDesdeParametros({
-          copago: fila.copago,
+          copago: fila.copago !== null ? Number(fila.copago) : null,
           distanciaMetros: fila.distancia_metros,
-          tarifaBaseDomicilio: fila.tarifa_base_domicilio,
-          tarifaPorKm: fila.tarifa_por_km,
-          distanciaIncluidaKm: fila.distancia_incluida_km,
-          tarifaPorKmExcedente: fila.tarifa_por_km_excedente,
+          tarifaBaseDomicilio: Number(fila.tarifa_base_domicilio),
+          tarifaPorKm: Number(fila.tarifa_por_km),
+          distanciaIncluidaKm: Number(fila.distancia_incluida_km),
+          tarifaPorKmExcedente: Number(fila.tarifa_por_km_excedente),
         });
         return {
           id: fila.id,
