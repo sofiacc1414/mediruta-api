@@ -4,9 +4,10 @@ import { PedidoNoEnCaminoError } from '../../domain/errors/pedido-no-en-camino.e
 import { TrackingRepositoryPort } from '../../domain/ports/tracking.repository.port';
 
 /** Llamado desde `TrackingGateway` en cada ping del domiciliario
- * (`tracking:enviar_posicion`). Solo escribe mientras el pedido está
- * `en_camino_entrega` — la función SQL ya lo valida, acá solo se
- * traduce el resultado discriminado a excepciones de dominio. */
+ * (`tracking:enviar_posicion`). Solo escribe mientras el pedido está en
+ * un estado activo de la entrega (desde que acepta hasta `en_sitio`) —
+ * la función SQL ya lo valida, acá solo se traduce el resultado
+ * discriminado a excepciones de dominio. */
 @Injectable()
 export class ActualizarPosicionEnVivoUseCase {
   constructor(private readonly tracking: TrackingRepositoryPort) {}
