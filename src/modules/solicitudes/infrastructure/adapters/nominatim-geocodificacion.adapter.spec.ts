@@ -9,6 +9,17 @@ function respuestaJson(body: unknown, ok = true, status = 200): Response {
   } as Response;
 }
 
+// El adapter usa setTimeout reales (backoff entre reintentos + espera
+// de turno), no fake timers — el peor caso (3 intentos de Nominatim
+// con backoff creciente + 1 intento de respaldo en Photon) suma ~5.5-
+// 6s reales. El timeout por defecto de Jest (5000ms) se quedaba corto:
+// el test se marcaba como fallido pero el `setTimeout`/`fetch` seguía
+// corriendo en segundo plano y contaminaba el conteo de `fetchMock` del
+// siguiente test (bug real: un test de reintentos veía 5 llamadas en
+// vez de 2). Se sube el timeout del archivo entero para que ningún
+// test corte a mitad de su propio flujo real.
+jest.setTimeout(10000);
+
 describe('NominatimGeocodificacionAdapter', () => {
   let fetchMock: jest.Mock;
 
