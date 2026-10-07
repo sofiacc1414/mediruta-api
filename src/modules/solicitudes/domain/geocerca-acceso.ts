@@ -1,11 +1,18 @@
-/** Radio alrededor de la farmacia para ver documentos en la recogida. */
-export const RADIO_ACCESO_FARMACIA_METROS = 150;
+/** Radio alrededor de la farmacia para ver documentos en la recogida.
+ * Antes 150m — bug real reportado: muy bajo para espacios amplios
+ * (centros comerciales, clínicas con farmacia interna), donde el GPS
+ * del domiciliario cae fuera del radio aunque esté físicamente
+ * parado en el local. */
+export const RADIO_ACCESO_FARMACIA_METROS = 300;
 
 /** La URL firmada y la fila de acceso vencen juntas. */
 export const ACCESO_TEMPORAL_SEGUNDOS = 600;
 
+// Bug real reportado: el mensaje no explicaba la causa (no mencionaba
+// "fuera de la cerca/rango") — el domiciliario no entendía por qué se
+// le negaba el acceso estando en la farmacia.
 export const MENSAJE_FUERA_DE_UBICACION =
-  'No tienes acceso a los documentos porque no estás exactamente en la dirección autorizada de la farmacia.';
+  'No tienes acceso a los documentos porque tu ubicación actual está fuera del rango permitido alrededor de la farmacia (estás fuera de la cerca). Acércate más a la entrada y volvé a intentar.';
 
 const RADIO_TIERRA_METROS = 6_371_000;
 
