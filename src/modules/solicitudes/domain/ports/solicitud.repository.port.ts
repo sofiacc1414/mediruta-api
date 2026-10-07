@@ -65,6 +65,9 @@ export type PedidoDisponible = {
   direccionEntrega: string | null;
   distanciaMetros: number;
   creadoEn: string;
+  /** `null` si falta el copago del paciente o la distancia
+   * farmacia→entrega (pedido sin geocodificar todavía). */
+  total: number | null;
 };
 
 /** Una fila del historial de pedidos que el Domiciliario ya atendió

@@ -66,6 +66,7 @@ describe('ListarPedidosDisponiblesUseCase', () => {
         direccionEntrega: 'Calle 1 #2-3',
         distanciaMetros: 1800,
         creadoEn: '2026-08-24T10:00:00.000Z',
+        total: 35749,
       },
     ];
     (solicitudes.listarPedidosDisponibles as jest.Mock).mockResolvedValue(pool);

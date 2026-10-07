@@ -90,6 +90,12 @@ type FilaPedidoDisponible = {
   direccion_entrega: string | null;
   distancia_metros: number;
   creado_en: string;
+  copago: string | null;
+  distancia_entrega_metros: number | null;
+  tarifa_base_domicilio: string;
+  tarifa_por_km: string;
+  distancia_incluida_km: string;
+  tarifa_por_km_excedente: string;
 };
 
 type FilaPedidoHistorialDomiciliario = {
@@ -658,14 +664,29 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         'select * from app.listar_pedidos_disponibles($1)',
         [domiciliarioId],
       );
-      return result.rows.map((fila) => ({
-        id: fila.id,
-        codigoPedido: fila.codigo_pedido,
-        direccionFarmacia: fila.direccion_farmacia,
-        direccionEntrega: fila.direccion_entrega,
-        distanciaMetros: fila.distancia_metros,
-        creadoEn: fila.creado_en,
-      }));
+      return result.rows.map((fila) => {
+        // Mismo cálculo puro que el precio real/estimado del Paciente
+        // (`calcularPrecioDesdeParametros`) — ver el mismo patrón en
+        // `listarHistorialPedidos`. `null` si falta el copago o la
+        // distancia farmacia→entrega.
+        const precio = calcularPrecioDesdeParametros({
+          copago: fila.copago !== null ? Number(fila.copago) : null,
+          distanciaMetros: fila.distancia_entrega_metros,
+          tarifaBaseDomicilio: Number(fila.tarifa_base_domicilio),
+          tarifaPorKm: Number(fila.tarifa_por_km),
+          distanciaIncluidaKm: Number(fila.distancia_incluida_km),
+          tarifaPorKmExcedente: Number(fila.tarifa_por_km_excedente),
+        });
+        return {
+          id: fila.id,
+          codigoPedido: fila.codigo_pedido,
+          direccionFarmacia: fila.direccion_farmacia,
+          direccionEntrega: fila.direccion_entrega,
+          distanciaMetros: fila.distancia_metros,
+          creadoEn: fila.creado_en,
+          total: precio.disponible ? precio.total : null,
+        };
+      });
     });
   }
 
