@@ -48,7 +48,7 @@ describe('HU-16 acceso temporal a documentos (MED-144)', () => {
     expect(resultado).toEqual({
       cedulaFrenteUrl: 'https://firmada.test/doc',
       cedulaReversoUrl: 'https://firmada.test/doc',
-      recetaUrl: null,
+      recetaUrl: 'https://firmada.test/doc',
     });
     expect(accesos.registrar).toHaveBeenCalledWith(
       expect.objectContaining({ resultado: 'permitido', domiciliarioId: 'dom' }),
