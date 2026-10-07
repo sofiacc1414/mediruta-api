@@ -1,9 +1,9 @@
 /** Radio alrededor de la farmacia para ver documentos en la recogida.
- * Antes 150m — bug real reportado: muy bajo para espacios amplios
- * (centros comerciales, clínicas con farmacia interna), donde el GPS
- * del domiciliario cae fuera del radio aunque esté físicamente
- * parado en el local. */
-export const RADIO_ACCESO_FARMACIA_METROS = 300;
+ * Antes 150m, luego 300m — pedido explícito: ampliar más para espacios
+ * amplios (centros comerciales, clínicas con farmacia interna, campus
+ * universitarios), donde el GPS del domiciliario cae fuera del radio
+ * aunque esté físicamente parado en el local. */
+export const RADIO_ACCESO_FARMACIA_METROS = 500;
 
 /** La URL firmada y la fila de acceso vencen juntas. */
 export const ACCESO_TEMPORAL_SEGUNDOS = 600;
