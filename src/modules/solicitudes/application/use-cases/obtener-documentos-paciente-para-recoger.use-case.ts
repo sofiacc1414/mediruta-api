@@ -13,9 +13,11 @@ import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository
 export type ObtenerDocumentosPacienteParaRecogerResultado = {
   cedulaFrenteUrl: string | null;
   cedulaReversoUrl: string | null;
-  /** Ronda 10 — antes faltaba: el Domiciliario necesita ver la fórmula
-   * médica del pedido acá mismo, no solo la cédula, para retirar el
-   * medicamento correcto. */
+  /** Bug real reportado: nunca llegaba — `app.obtener_documentos_
+   * paciente_para_recoger` devolvía `null::text` para esta columna
+   * desde 20260924020000_estado_en_farmacia.sql (ver migración que lo
+   * corrige), y acá se devolvía `null` sin siquiera intentar firmar la
+   * URL aunque el dato existiera. */
   recetaUrl: string | null;
 };
 
@@ -24,8 +26,8 @@ export type ObtenerDocumentosPacienteParaRecogerResultado = {
  * médica del pedido, para que el Domiciliario las muestre en la
  * farmacia al retirar el medicamento a su nombre. Por seguridad/
  * privacidad, el repositorio solo devuelve algo mientras el pedido
- * está en `asignado_en_camino_farmacia` y dentro de la geocerca de
- * la farmacia. Antes o después, o lejos del punto, no hay documentos.
+ * está en `en_farmacia` y dentro de la geocerca de la farmacia. Antes
+ * o después, o lejos del punto, no hay documentos.
  */
 @Injectable()
 export class ObtenerDocumentosPacienteParaRecogerUseCase {
@@ -100,12 +102,13 @@ export class ObtenerDocumentosPacienteParaRecogerUseCase {
       expiraEn,
     });
 
-    const [cedulaFrenteUrl, cedulaReversoUrl] = await Promise.all([
+    const [cedulaFrenteUrl, cedulaReversoUrl, recetaUrl] = await Promise.all([
       this.urlFirmadaOpcional(documentos.cedulaFrentePath),
       this.urlFirmadaOpcional(documentos.cedulaReversoPath),
+      this.urlFirmadaOpcional(documentos.recetaPath),
     ]);
 
-    return { cedulaFrenteUrl, cedulaReversoUrl, recetaUrl: null };
+    return { cedulaFrenteUrl, cedulaReversoUrl, recetaUrl };
   }
 
   private async urlFirmadaOpcional(

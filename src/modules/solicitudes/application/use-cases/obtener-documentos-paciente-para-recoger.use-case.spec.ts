@@ -114,13 +114,20 @@ describe('ObtenerDocumentosPacienteParaRecogerUseCase', () => {
     expect(resultado.cedulaReversoUrl).toBe(
       'https://firmada.test/paciente/usuario-uuid/cedula_reverso.jpg',
     );
-    expect(resultado.recetaUrl).toBeNull();
+    expect(resultado.recetaUrl).toBe(
+      'https://firmada.test/solicitud/solicitud-uuid/receta.jpg',
+    );
     expect(
       solicitudes.obtenerDocumentosPacienteParaRecoger,
     ).toHaveBeenCalledWith('domiciliario-uuid', 'solicitud-uuid');
     expect(almacenamiento.obtenerUrlFirmada).toHaveBeenCalledWith(
       BUCKET_PERFILES,
       'paciente/usuario-uuid/cedula_frente.jpg',
+      ACCESO_TEMPORAL_SEGUNDOS,
+    );
+    expect(almacenamiento.obtenerUrlFirmada).toHaveBeenCalledWith(
+      BUCKET_PERFILES,
+      'solicitud/solicitud-uuid/receta.jpg',
       ACCESO_TEMPORAL_SEGUNDOS,
     );
   });
