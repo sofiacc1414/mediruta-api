@@ -10,6 +10,7 @@ import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-inva
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
 import { DomiciliarioConPedidoActivoError } from '../../../solicitudes/domain/errors/domiciliario-con-pedido-activo.error';
+import { FueraDeUbicacionAutorizadaError } from '../../../solicitudes/domain/errors/fuera-de-ubicacion-autorizada.error';
 import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
 import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { DominioHttpFilter } from './dominio-http.filter';
@@ -187,6 +188,22 @@ describe('DominioHttpFilter', () => {
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.BAD_REQUEST,
       message: 'Todavía no hay un domiciliario asignado a este pedido.',
+    });
+  });
+
+  // Bug real reportado: esta clase estaba importada en el filtro pero
+  // nunca se agregó ni al @Catch ni a ningún branch — sin este test,
+  // nada detectaba que caía a un 500 genérico de Nest en vez del 403
+  // que la App ya esperaba.
+  it('mapea FueraDeUbicacionAutorizadaError a HTTP 403', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new FueraDeUbicacionAutorizadaError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.FORBIDDEN,
+      message: expect.any(String),
     });
   });
 });

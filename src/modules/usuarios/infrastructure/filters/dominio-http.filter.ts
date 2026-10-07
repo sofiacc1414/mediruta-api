@@ -74,6 +74,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   DireccionNoValidaError,
   ChatSoloLecturaError,
   ChatSinDomiciliarioAsignadoError,
+  FueraDeUbicacionAutorizadaError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -122,7 +123,12 @@ export class DominioHttpFilter implements ExceptionFilter {
       exception instanceof RolNoAutorizadoError ||
       exception instanceof PerfilIncompletoError ||
       exception instanceof PerfilDomiciliarioIncompletoParaDisponibilidadError ||
-      exception instanceof AccionCuentaNoAutorizadaError
+      exception instanceof AccionCuentaNoAutorizadaError ||
+      // Bug real reportado: esta clase estaba importada pero nunca se
+      // agregó ni al @Catch ni a ningún branch de acá — caía a un 500
+      // genérico de Nest en vez del 403 que la App ya esperaba
+      // (`_mensajeDocumentos` ya comparaba contra statusCode == 403).
+      exception instanceof FueraDeUbicacionAutorizadaError
     ) {
       response.status(HttpStatus.FORBIDDEN).json({
         statusCode: HttpStatus.FORBIDDEN,
