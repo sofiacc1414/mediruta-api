@@ -3,13 +3,25 @@ import { IntencionChatbot, ResultadoClasificacion } from '../../domain/intencion
 import { IntencionMatcherPort } from '../../domain/ports/intencion-matcher.port';
 
 type Disparador = { frase: string; peso: number };
+type Raiz = { raiz: string; peso: number };
 
-/** Cada intención tiene frases disparadoras con un peso — frases de
- * 2-4 palabras (más específicas) pesan más que una sola palabra
- * genérica, para que "medicamentos" sola no empate "pedir
- * medicamentos" contra "reclamo de medicamentos". El score de una
- * intención es la suma de pesos de sus frases encontradas como
- * substring del mensaje normalizado, con tope en 1.0. */
+/** Dos capas de señal por intención:
+ *
+ * - `DISPARADORES` — frases de 2-5 palabras, exactas (substring) sobre
+ *   el mensaje normalizado. Alta precisión: cuando matchean, son
+ *   prácticamente inequívocas. Pero frágiles ante paráfrasis reales
+ *   ("cómo es el proceso para pedir medicamentos" no contiene ninguna
+ *   de las frases armadas a mano) — bug real reportado varias veces.
+ * - `RAICES` — una palabra significativa por prefijo (tolera plurales
+ *   y conjugaciones: "farmaci" matchea "farmacia"/"farmacias",
+ *   "registr" matchea "registro"/"registrarme"/"registrando"), peso
+ *   más bajo porque una sola palabra aislada es más ambigua. Dan
+ *   cobertura amplia donde las frases fallan, sin tener que adivinar
+ *   cada paráfrasis posible a mano.
+ *
+ * El score final de una intención es la suma de ambas capas, tope 1.0.
+ * Esto sigue siendo "sin microservicio nuevo" (pedido explícito) —
+ * solo mejor que coincidencia de substring puro. */
 const DISPARADORES: Record<Exclude<IntencionChatbot, 'desconocido'>, Disparador[]> = {
   registro_cuenta: [
     { frase: 'como me registro', peso: 1 },
@@ -48,6 +60,16 @@ const DISPARADORES: Record<Exclude<IntencionChatbot, 'desconocido'>, Disparador[
     { frase: 'no recuerdo mi clave', peso: 1 },
     { frase: 'como entro si olvide la clave', peso: 1 },
   ],
+  baja_cuenta: [
+    { frase: 'como me doy de baja', peso: 1 },
+    { frase: 'darme de baja', peso: 1 },
+    { frase: 'eliminar mi cuenta', peso: 1 },
+    { frase: 'borrar mi cuenta', peso: 1 },
+    { frase: 'cerrar mi cuenta', peso: 0.9 },
+    { frase: 'ya no quiero usar la app', peso: 0.8 },
+    { frase: 'como reactivo mi cuenta', peso: 1 },
+    { frase: 'reactivar mi cuenta', peso: 0.9 },
+  ],
   pedir_medicamentos: [
     { frase: 'como pido medicamentos', peso: 1 },
     { frase: 'como pido mis medicamentos', peso: 1 },
@@ -69,6 +91,8 @@ const DISPARADORES: Record<Exclude<IntencionChatbot, 'desconocido'>, Disparador[
     { frase: 'pedir mis medicinas', peso: 0.8 },
     { frase: 'traer mis medicamentos', peso: 0.8 },
     { frase: 'como funciona un pedido', peso: 0.9 },
+    { frase: 'proceso para pedir medicamentos', peso: 1 },
+    { frase: 'proceso para pedir mis medicamentos', peso: 1 },
   ],
   chat_domiciliario: [
     { frase: 'chatear con el domiciliario', peso: 1 },
@@ -161,6 +185,67 @@ const DISPARADORES: Record<Exclude<IntencionChatbot, 'desconocido'>, Disparador[
   ],
 };
 
+/** Una palabra por raíz (prefijo) — `token.startsWith(raiz)` sobre el
+ * mensaje tokenizado. Pesos moderados (ninguno llega solo al umbral
+ * de 0.7): necesitan sumar con otra raíz o con una frase para
+ * confirmar la intención, evitando que una palabra genérica aislada
+ * decida todo. */
+const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
+  registro_cuenta: [
+    { raiz: 'registr', peso: 0.6 },
+    { raiz: 'inscrib', peso: 0.6 },
+    { raiz: 'repartidor', peso: 0.5 },
+  ],
+  cambio_contrasena: [
+    { raiz: 'contrasen', peso: 0.6 },
+    { raiz: 'clave', peso: 0.4 },
+  ],
+  baja_cuenta: [
+    { raiz: 'desactiv', peso: 0.6 },
+    { raiz: 'reactiv', peso: 0.6 },
+  ],
+  pedir_medicamentos: [
+    { raiz: 'formula', peso: 0.4 },
+    { raiz: 'receta', peso: 0.3 },
+    { raiz: 'solicitud', peso: 0.3 },
+    // "pedir"+"medicamentos" (o "pedido") juntos son, en la práctica,
+    // tan inequívocos como una frase armada a mano — se suben los
+    // pesos para que esa combinación sola ya cruce el umbral sin
+    // depender de que el mensaje calce con una frase exacta.
+    { raiz: 'pedi', peso: 0.4 },
+    { raiz: 'medicament', peso: 0.4 },
+  ],
+  chat_domiciliario: [
+    { raiz: 'domiciliari', peso: 0.2 },
+  ],
+  reclamo_farmacia: [
+    { raiz: 'reclam', peso: 0.6 },
+    { raiz: 'recog', peso: 0.3 },
+    { raiz: 'farmaci', peso: 0.2 },
+  ],
+  copago_eps: [
+    { raiz: 'copago', peso: 0.6 },
+    { raiz: 'moderador', peso: 0.5 },
+  ],
+  farmacias_eps: [
+    { raiz: 'farmaci', peso: 0.4 },
+    { raiz: 'droguer', peso: 0.5 },
+    { raiz: 'aliad', peso: 0.6 },
+    { raiz: 'afiliad', peso: 0.6 },
+    { raiz: 'eps', peso: 0.3 },
+  ],
+  novedad_pedido: [
+    { raiz: 'novedad', peso: 0.6 },
+  ],
+  codigo_entrega: [
+    { raiz: 'codigo', peso: 0.3 },
+    { raiz: 'entreg', peso: 0.2 },
+  ],
+  pos_no_pos: [
+    { raiz: 'mipres', peso: 0.8 },
+  ],
+};
+
 function normalizar(texto: string): string {
   return texto
     .toLowerCase()
@@ -175,16 +260,18 @@ function normalizar(texto: string): string {
 export class KeywordIntencionMatcherAdapter extends IntencionMatcherPort {
   clasificar(mensaje: string): ResultadoClasificacion {
     const normalizado = normalizar(mensaje);
+    const tokens = normalizado.split(' ').filter(Boolean);
 
     let mejorIntencion: IntencionChatbot = 'desconocido';
     let mejorScore = 0;
 
-    for (const [intencion, disparadores] of Object.entries(DISPARADORES) as [
-      Exclude<IntencionChatbot, 'desconocido'>,
-      Disparador[],
-    ][]) {
+    for (const intencion of Object.keys(DISPARADORES) as Exclude<
+      IntencionChatbot,
+      'desconocido'
+    >[]) {
       let score = 0;
-      for (const { frase, peso } of disparadores) {
+
+      for (const { frase, peso } of DISPARADORES[intencion]) {
         // Bug real: las frases disparadoras con tildes/"ñ" (ej.
         // "contraseña") nunca matcheaban contra el mensaje ya
         // normalizado (que SÍ les quita la tilde) — se normaliza la
@@ -193,6 +280,13 @@ export class KeywordIntencionMatcherAdapter extends IntencionMatcherPort {
           score += peso;
         }
       }
+
+      for (const { raiz, peso } of RAICES[intencion]) {
+        if (tokens.some((token) => token.startsWith(raiz))) {
+          score += peso;
+        }
+      }
+
       score = Math.min(1, score);
 
       if (score > mejorScore) {

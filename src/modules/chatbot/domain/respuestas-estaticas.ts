@@ -20,6 +20,10 @@ export const RESPUESTAS_ESTATICAS: Partial<Record<IntencionChatbot, string>> = {
     'Si olvidaste tu contraseña, tocá "¿Olvidaste tu contraseña?" en la pantalla de inicio de ' +
     'sesión e ingresá tu correo — te llega un código para crear una nueva. Si ya iniciaste ' +
     'sesión y solo querés cambiarla, lo hacés desde tu perfil.',
+  baja_cuenta:
+    'Para desactivar tu cuenta, andá a tu Perfil y tocá "Desactivar cuenta". Si cambiás de ' +
+    'opinión, podés reactivarla cuando quieras: intentá iniciar sesión de nuevo con tu correo ' +
+    'y contraseña de siempre, y la app te va a ofrecer reactivarla ahí mismo.',
   pedir_medicamentos:
     'Desde "Nueva solicitud" elegís la dirección de la farmacia y de entrega, subís la foto ' +
     'o PDF de tu fórmula médica (el sistema intenta leerla automáticamente y precargar los ' +

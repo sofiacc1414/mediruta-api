@@ -60,6 +60,7 @@ describe('ProcesarMensajeChatbotUseCase', () => {
   it.each([
     'registro_cuenta',
     'cambio_contrasena',
+    'baja_cuenta',
     'pedir_medicamentos',
     'chat_domiciliario',
     'reclamo_farmacia',

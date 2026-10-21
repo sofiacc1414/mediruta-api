@@ -16,7 +16,15 @@ const CASOS: { mensaje: string; esperado: IntencionChatbot }[] = [
   { mensaje: 'como recupero mi contraseña', esperado: 'cambio_contrasena' },
   { mensaje: 'no recuerdo mi clave', esperado: 'cambio_contrasena' },
 
+  { mensaje: '¿Cómo me doy de baja?', esperado: 'baja_cuenta' },
+  { mensaje: 'quiero eliminar mi cuenta', esperado: 'baja_cuenta' },
+  { mensaje: 'como reactivo mi cuenta desactivada', esperado: 'baja_cuenta' },
+
   { mensaje: '¿Cómo pido mis medicamentos?', esperado: 'pedir_medicamentos' },
+  // Casos reales reportados: fallaban antes de agregar la capa de
+  // raíces (ninguna frase armada a mano los cubría).
+  { mensaje: '¿Cómo es el proceso para pedir medicamentos?', esperado: 'pedir_medicamentos' },
+  { mensaje: 'necesito saber cómo pedir medicamentos en la app', esperado: 'pedir_medicamentos' },
   { mensaje: 'como hago un pedido nuevo', esperado: 'pedir_medicamentos' },
   { mensaje: 'quiero subir la foto de mi formula', esperado: 'pedir_medicamentos' },
   { mensaje: 'como envio la receta medica', esperado: 'pedir_medicamentos' },
@@ -55,8 +63,25 @@ const CASOS: { mensaje: string; esperado: IntencionChatbot }[] = [
   { mensaje: 'al paciente no le llego el codigo de entrega', esperado: 'codigo_entrega' },
 ];
 
+// Frases reales, tal cual las escribió el usuario probando la app —
+// las 3 fallaban ("desconocido") antes de este fix.
+const CASOS_REALES_REPORTADOS: { mensaje: string; esperado: IntencionChatbot }[] = [
+  { mensaje: 'hola como se que farmacias tiene mi eps?', esperado: 'farmacias_eps' },
+  { mensaje: 'como es el proceso para pedir medicamentos?', esperado: 'pedir_medicamentos' },
+  { mensaje: 'como me doy de baja?', esperado: 'baja_cuenta' },
+];
+
 describe('KeywordIntencionMatcherAdapter', () => {
   const adapter = new KeywordIntencionMatcherAdapter();
+
+  it.each(CASOS_REALES_REPORTADOS)(
+    'caso real reportado: "$mensaje" -> $esperado',
+    ({ mensaje, esperado }) => {
+      const resultado = adapter.clasificar(mensaje);
+      expect(resultado.intencion).toBe(esperado);
+      expect(resultado.score).toBeGreaterThanOrEqual(UMBRAL_CONFIANZA_MINIMO);
+    },
+  );
 
   it.each(CASOS)('clasifica "$mensaje" como $esperado', ({ mensaje, esperado }) => {
     const resultado = adapter.clasificar(mensaje);
