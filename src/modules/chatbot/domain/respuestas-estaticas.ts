@@ -1,0 +1,37 @@
+import { IntencionChatbot } from './intencion-chatbot';
+
+export const MENSAJE_NO_ENTENDIDO =
+  'No estoy seguro de haber entendido tu pregunta. ¿Podés reformularla?';
+
+export const MENSAJE_SOPORTE_HUMANO =
+  'Parece que no estoy logrando ayudarte con esto. Escribinos directo a ' +
+  'soporte@mediruta.com y te responde una persona del equipo.';
+
+/** Contenido fijo de las preguntas frecuentes operativas de la app —
+ * construido a partir de cómo funciona MediRuta realmente, no datos
+ * externos que cambien. */
+export const RESPUESTAS_ESTATICAS: Partial<Record<IntencionChatbot, string>> = {
+  registro_cuenta:
+    'Para registrarte, tocá "Crear cuenta" en la pantalla de inicio y elegí tu rol: ' +
+    'Paciente o Domiciliario. Como Paciente necesitás tu cédula (frente y reverso) y tu ' +
+    'dirección. Como Domiciliario necesitás además tus documentos de vehículo. Tu cuenta ' +
+    'queda activa apenas te registrás — no hace falta un paso de verificación aparte.',
+  pedir_medicamentos:
+    'Desde "Nueva solicitud" elegís la dirección de la farmacia y de entrega, subís la foto ' +
+    'o PDF de tu fórmula médica (el sistema intenta leerla automáticamente y precargar los ' +
+    'medicamentos — siempre podés corregir lo que falte), y confirmás el pedido. Un ' +
+    'domiciliario lo acepta y te lo trae.',
+  chat_domiciliario:
+    'El chat con tu domiciliario se habilita apenas alguien acepta tu pedido, y queda ' +
+    'disponible mientras el pedido está en curso. Es solo para coordinar esa entrega puntual ' +
+    '(ej. indicaciones de dónde recibir) — no es un canal de soporte de la plataforma.',
+  reclamo_farmacia:
+    'El domiciliario reclama tus medicamentos en la farmacia mostrando tu cédula (frente y ' +
+    'reverso) y, si tu fórmula la trae, la foto de la receta — eso lo ve directamente en la ' +
+    'app, estando físicamente en la farmacia. Vos no tenés que hacer nada en ese momento.',
+  pos_no_pos:
+    'Si tu medicamento es No POS (no está en el plan de beneficios básico), tu médico debe ' +
+    'tramitarlo ante la Junta Médica de tu EPS o por MIPRES (Mi Prescripción) — es un trámite ' +
+    'que hace la IPS/EPS, no algo que se gestione desde MediRuta. Una vez aprobado, tu fórmula ' +
+    'queda igual de válida para pedir el domicilio acá.',
+};
