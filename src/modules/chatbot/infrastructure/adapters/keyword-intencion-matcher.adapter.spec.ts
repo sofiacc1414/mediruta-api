@@ -36,6 +36,15 @@ const CASOS: { mensaje: string; esperado: IntencionChatbot }[] = [
   { mensaje: '¿Qué es un medicamento No POS?', esperado: 'pos_no_pos' },
   { mensaje: 'como tramito un mipres', esperado: 'pos_no_pos' },
   { mensaje: 'necesito pasar por junta medica', esperado: 'pos_no_pos' },
+
+  { mensaje: '¿Cómo reporto una novedad del pedido?', esperado: 'novedad_pedido' },
+  { mensaje: 'no encuentro la direccion del paciente', esperado: 'novedad_pedido' },
+  { mensaje: 'el paciente no contesta el telefono', esperado: 'novedad_pedido' },
+  { mensaje: 'la farmacia esta cerrada que hago', esperado: 'novedad_pedido' },
+
+  { mensaje: '¿Qué hago si el código de entrega no funciona?', esperado: 'codigo_entrega' },
+  { mensaje: 'el codigo no coincide con el del paciente', esperado: 'codigo_entrega' },
+  { mensaje: 'al paciente no le llego el codigo de entrega', esperado: 'codigo_entrega' },
 ];
 
 describe('KeywordIntencionMatcherAdapter', () => {

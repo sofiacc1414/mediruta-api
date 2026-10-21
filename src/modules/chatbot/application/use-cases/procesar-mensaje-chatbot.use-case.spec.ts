@@ -29,7 +29,15 @@ describe('ProcesarMensajeChatbotUseCase', () => {
     expect(farmacias.listarPorEps).not.toHaveBeenCalled();
   });
 
-  it.each(['registro_cuenta', 'pedir_medicamentos', 'chat_domiciliario', 'reclamo_farmacia', 'pos_no_pos'] as const)(
+  it.each([
+    'registro_cuenta',
+    'pedir_medicamentos',
+    'chat_domiciliario',
+    'reclamo_farmacia',
+    'pos_no_pos',
+    'novedad_pedido',
+    'codigo_entrega',
+  ] as const)(
     'responde la FAQ estática para %s',
     async (intencion) => {
       const matcher = matcherQueDevuelve(intencion, 0.9);

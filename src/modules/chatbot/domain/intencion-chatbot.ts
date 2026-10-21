@@ -6,6 +6,8 @@ export const INTENCIONES_CHATBOT = [
   'copago_eps',
   'farmacias_eps',
   'pos_no_pos',
+  'novedad_pedido',
+  'codigo_entrega',
   'desconocido',
 ] as const;
 

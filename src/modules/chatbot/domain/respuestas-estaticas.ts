@@ -29,6 +29,16 @@ export const RESPUESTAS_ESTATICAS: Partial<Record<IntencionChatbot, string>> = {
     'El domiciliario reclama tus medicamentos en la farmacia mostrando tu cédula (frente y ' +
     'reverso) y, si tu fórmula la trae, la foto de la receta — eso lo ve directamente en la ' +
     'app, estando físicamente en la farmacia. Vos no tenés que hacer nada en ese momento.',
+  novedad_pedido:
+    'Si hay un problema con el pedido (dirección difícil de encontrar, el paciente no ' +
+    'contesta, la farmacia está cerrada, etc.), usá "Reportar novedad" desde el detalle del ' +
+    'pedido — tanto Paciente como Domiciliario pueden hacerlo. Queda registrada y un ' +
+    'administrador la revisa; no hace falta cancelar el pedido para reportarla.',
+  codigo_entrega:
+    'Si el código de entrega que te dio el paciente no coincide, primero confirmá que lo ' +
+    'estés escribiendo tal cual (no distingue mayúsculas/minúsculas). Si igual no funciona o ' +
+    'el paciente dice que nunca le llegó, usá la opción "El código no se generó" en el pedido ' +
+    '— un administrador lo regenera o se lo reenvía por correo.',
   pos_no_pos:
     'Si tu medicamento es No POS (no está en el plan de beneficios básico), tu médico debe ' +
     'tramitarlo ante la Junta Médica de tu EPS o por MIPRES (Mi Prescripción) — es un trámite ' +
