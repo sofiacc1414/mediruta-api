@@ -11,6 +11,7 @@ import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-inv
 import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
 import { DomiciliarioConPedidoActivoError } from '../../../solicitudes/domain/errors/domiciliario-con-pedido-activo.error';
 import { ArchivoFormulaInvalidoError } from '../../../solicitudes/domain/errors/archivo-formula-invalido.error';
+import { FarmaciaAliadaNoEncontradaError } from '../../../chatbot/domain/errors/farmacia-aliada-no-encontrada.error';
 import { FueraDeUbicacionAutorizadaError } from '../../../solicitudes/domain/errors/fuera-de-ubicacion-autorizada.error';
 import { ImagenFormulaIlegibleError } from '../../../solicitudes/domain/errors/imagen-formula-ilegible.error';
 import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
@@ -221,6 +222,18 @@ describe('DominioHttpFilter', () => {
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
       message: 'mensaje de prueba',
+    });
+  });
+
+  it('mapea FarmaciaAliadaNoEncontradaError a HTTP 404', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(new FarmaciaAliadaNoEncontradaError(), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.NOT_FOUND,
+      message: 'La farmacia aliada elegida ya no existe.',
     });
   });
 

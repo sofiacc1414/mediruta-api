@@ -33,6 +33,7 @@ import { CuentaDesactivadaError } from '../../domain/errors/cuenta-desactivada.e
 import { DireccionNoValidaError } from '../../domain/errors/direccion-no-valida.error';
 import { NivelCopagoEnUsoError } from '../../domain/errors/nivel-copago-en-uso.error';
 import { NivelCopagoNoEncontradoError } from '../../domain/errors/nivel-copago-no-encontrado.error';
+import { FarmaciaAliadaNoEncontradaError } from '../../../chatbot/domain/errors/farmacia-aliada-no-encontrada.error';
 import { NoAutorizadoError } from '../../domain/errors/no-autorizado.error';
 import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
 import { NuevaContrasenaIgualError } from '../../domain/errors/nueva-contrasena-igual.error';
@@ -71,6 +72,7 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   SolicitudEdicionSinCambiosError,
   CuentaDesactivadaError,
   NivelCopagoNoEncontradoError,
+  FarmaciaAliadaNoEncontradaError,
   NivelCopagoEnUsoError,
   PerfilDomiciliarioIncompletoParaDisponibilidadError,
   DireccionNoValidaError,
@@ -157,7 +159,8 @@ export class DominioHttpFilter implements ExceptionFilter {
       exception instanceof DocumentosPacienteNoDisponiblesError ||
       exception instanceof AdministradorNoEncontradoError ||
       exception instanceof CuentaNoEncontradaError ||
-      exception instanceof NivelCopagoNoEncontradoError
+      exception instanceof NivelCopagoNoEncontradoError ||
+      exception instanceof FarmaciaAliadaNoEncontradaError
     ) {
       response.status(HttpStatus.NOT_FOUND).json({
         statusCode: HttpStatus.NOT_FOUND,
