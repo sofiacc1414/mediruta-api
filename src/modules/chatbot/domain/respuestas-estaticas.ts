@@ -24,6 +24,17 @@ export const RESPUESTAS_ESTATICAS: Partial<Record<IntencionChatbot, string>> = {
     'Para desactivar tu cuenta, andá a tu Perfil y tocá "Desactivar cuenta". Si cambiás de ' +
     'opinión, podés reactivarla cuando quieras: intentá iniciar sesión de nuevo con tu correo ' +
     'y contraseña de siempre, y la app te va a ofrecer reactivarla ahí mismo.',
+  cobros_tarifas:
+    'El precio de tu pedido se arma con dos partes: el copago que elegiste en tu perfil (un ' +
+    'valor fijo que vos mismo declarás — ojo, NO es la cuota moderadora real de tu EPS, es un ' +
+    'catálogo propio de MediRuta) + el costo del domicilio (una tarifa base más un valor por ' +
+    'cada kilómetro entre la farmacia y tu dirección de entrega). Lo ves completo ANTES de ' +
+    'confirmar el pedido, y no cambia después — no depende de cuánto tarde el domiciliario, ' +
+    'solo de la distancia real entre las dos direcciones. Si querés el valor de la cuota ' +
+    'moderadora real de tu EPS, preguntame por "copago" aparte.',
+  cancelacion_costo:
+    'Podés cancelar tu pedido en cualquier momento antes de que te lo entreguen, sin ningún ' +
+    'costo — hoy no hay cargo por cancelar ni restricción según en qué etapa esté.',
   pedir_medicamentos:
     'Desde "Nueva solicitud" elegís la dirección de la farmacia y de entrega, subís la foto ' +
     'o PDF de tu fórmula médica (el sistema intenta leerla automáticamente y precargar los ' +

@@ -20,6 +20,14 @@ const CASOS: { mensaje: string; esperado: IntencionChatbot }[] = [
   { mensaje: 'quiero eliminar mi cuenta', esperado: 'baja_cuenta' },
   { mensaje: 'como reactivo mi cuenta desactivada', esperado: 'baja_cuenta' },
 
+  { mensaje: '¿Cuánto cuesta el domicilio?', esperado: 'cobros_tarifas' },
+  { mensaje: '¿Cómo se calcula el precio del pedido?', esperado: 'cobros_tarifas' },
+  { mensaje: 'por que me cobran esto', esperado: 'cobros_tarifas' },
+  { mensaje: '¿cobran tarifa de servicio como en otras apps?', esperado: 'cobros_tarifas' },
+
+  { mensaje: '¿Cancelar tiene algún costo?', esperado: 'cancelacion_costo' },
+  { mensaje: 'hay multa por cancelar mi pedido', esperado: 'cancelacion_costo' },
+
   { mensaje: '¿Cómo pido mis medicamentos?', esperado: 'pedir_medicamentos' },
   // Casos reales reportados: fallaban antes de agregar la capa de
   // raíces (ninguna frase armada a mano los cubría).

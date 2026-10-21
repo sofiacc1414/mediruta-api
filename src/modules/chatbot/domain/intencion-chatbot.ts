@@ -2,6 +2,8 @@ export const INTENCIONES_CHATBOT = [
   'registro_cuenta',
   'cambio_contrasena',
   'baja_cuenta',
+  'cobros_tarifas',
+  'cancelacion_costo',
   'pedir_medicamentos',
   'chat_domiciliario',
   'reclamo_farmacia',
