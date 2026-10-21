@@ -48,8 +48,18 @@ describe('ProcesarMensajeChatbotUseCase', () => {
     expect(resultado.ofrecerSoporte).toBe(true);
   });
 
+  it('funciona sin sesión (usuarioId null) para intenciones que no la necesitan', async () => {
+    const matcher = matcherQueDevuelve('registro_cuenta', 0.9);
+    const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
+
+    const resultado = await useCase.execute({ usuarioId: null, mensaje: 'como me registro' });
+
+    expect(resultado.respuesta).toBe(RESPUESTAS_ESTATICAS.registro_cuenta);
+  });
+
   it.each([
     'registro_cuenta',
+    'cambio_contrasena',
     'pedir_medicamentos',
     'chat_domiciliario',
     'reclamo_farmacia',
@@ -110,6 +120,16 @@ describe('ProcesarMensajeChatbotUseCase', () => {
   });
 
   describe('farmacias_eps', () => {
+    it('sin sesión, pide iniciar sesión en vez de consultar el catálogo', async () => {
+      const matcher = matcherQueDevuelve('farmacias_eps', 0.9);
+      const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
+
+      const resultado = await useCase.execute({ usuarioId: null, mensaje: 'farmacias de mi eps' });
+
+      expect(resultado.respuesta).toContain('iniciar sesión');
+      expect(farmacias.listarPorEps).not.toHaveBeenCalled();
+    });
+
     it('pide la EPS si no vino en la entrada', async () => {
       const matcher = matcherQueDevuelve('farmacias_eps', 0.9);
       const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);

@@ -16,6 +16,10 @@ export const RESPUESTAS_ESTATICAS: Partial<Record<IntencionChatbot, string>> = {
     'Paciente o Domiciliario. Como Paciente necesitás tu cédula (frente y reverso) y tu ' +
     'dirección. Como Domiciliario necesitás además tus documentos de vehículo. Tu cuenta ' +
     'queda activa apenas te registrás — no hace falta un paso de verificación aparte.',
+  cambio_contrasena:
+    'Si olvidaste tu contraseña, tocá "¿Olvidaste tu contraseña?" en la pantalla de inicio de ' +
+    'sesión e ingresá tu correo — te llega un código para crear una nueva. Si ya iniciaste ' +
+    'sesión y solo querés cambiarla, lo hacés desde tu perfil.',
   pedir_medicamentos:
     'Desde "Nueva solicitud" elegís la dirección de la farmacia y de entrega, subís la foto ' +
     'o PDF de tu fórmula médica (el sistema intenta leerla automáticamente y precargar los ' +

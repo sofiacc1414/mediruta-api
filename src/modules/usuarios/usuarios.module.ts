@@ -60,6 +60,7 @@ import { CuentasAdminController } from './infrastructure/controllers/cuentas-adm
 import { PerfilController } from './infrastructure/controllers/perfil.controller';
 import { UsuariosAdminController } from './infrastructure/controllers/usuarios-admin.controller';
 import { AccessAuthGuard } from './infrastructure/guards/access-auth.guard';
+import { OptionalAuthGuard } from './infrastructure/guards/optional-auth.guard';
 import { RolesGuard } from './infrastructure/guards/roles.guard';
 
 @Module({
@@ -126,6 +127,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
     SolicitarRolDomiciliarioUseCase,
     EnviarSolicitudDomiciliarioUseCase,
     AccessAuthGuard,
+    OptionalAuthGuard,
     RolesGuard,
     {
       provide: PasswordHasherPort,
@@ -174,6 +176,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
   ],
   exports: [
     AccessAuthGuard,
+    OptionalAuthGuard,
     RolesGuard,
     UsuarioRepositoryPort,
     AlmacenamientoArchivosPort,

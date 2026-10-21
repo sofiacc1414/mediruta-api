@@ -34,6 +34,20 @@ const DISPARADORES: Record<Exclude<IntencionChatbot, 'desconocido'>, Disparador[
     { frase: 'ser repartidor', peso: 0.7 },
     { frase: 'ser domiciliario', peso: 0.8 },
   ],
+  cambio_contrasena: [
+    { frase: 'olvide mi contraseña', peso: 1 },
+    { frase: 'olvide mi clave', peso: 1 },
+    { frase: 'como cambio mi contraseña', peso: 1 },
+    { frase: 'como cambio la contraseña', peso: 1 },
+    { frase: 'recuperar mi contraseña', peso: 1 },
+    { frase: 'recupero mi contraseña', peso: 1 },
+    { frase: 'recuperar contraseña', peso: 0.9 },
+    { frase: 'restablecer contraseña', peso: 1 },
+    { frase: 'no me acuerdo la contraseña', peso: 1 },
+    { frase: 'no recuerdo mi contraseña', peso: 1 },
+    { frase: 'no recuerdo mi clave', peso: 1 },
+    { frase: 'como entro si olvide la clave', peso: 1 },
+  ],
   pedir_medicamentos: [
     { frase: 'como pido medicamentos', peso: 1 },
     { frase: 'como pido mis medicamentos', peso: 1 },
@@ -98,6 +112,16 @@ const DISPARADORES: Record<Exclude<IntencionChatbot, 'desconocido'>, Disparador[
     { frase: 'en que droguerias puedo reclamar', peso: 1 },
     { frase: 'farmacias afiliadas a mi eps', peso: 1 },
     { frase: 'cual es la farmacia de mi eps', peso: 1 },
+    { frase: 'cual es mi farmacia', peso: 1 },
+    { frase: 'cual es mi droguería', peso: 1 },
+    { frase: 'como se cual es mi farmacia', peso: 1 },
+    { frase: 'donde queda mi farmacia', peso: 1 },
+    { frase: 'mi farmacia de la eps', peso: 1 },
+    { frase: 'la farmacia de mi eps', peso: 1 },
+    { frase: 'direccion de la farmacia de mi eps', peso: 1 },
+    { frase: 'direccion de mi farmacia', peso: 0.9 },
+    { frase: 'no se cual es mi farmacia', peso: 1 },
+    { frase: 'no se la direccion de la farmacia', peso: 1 },
   ],
   novedad_pedido: [
     { frase: 'reportar novedad', peso: 1 },
@@ -161,7 +185,11 @@ export class KeywordIntencionMatcherAdapter extends IntencionMatcherPort {
     ][]) {
       let score = 0;
       for (const { frase, peso } of disparadores) {
-        if (normalizado.includes(frase)) {
+        // Bug real: las frases disparadoras con tildes/"ñ" (ej.
+        // "contraseña") nunca matcheaban contra el mensaje ya
+        // normalizado (que SÍ les quita la tilde) — se normaliza la
+        // frase disparadora también, no solo el mensaje de entrada.
+        if (normalizado.includes(normalizar(frase))) {
           score += peso;
         }
       }

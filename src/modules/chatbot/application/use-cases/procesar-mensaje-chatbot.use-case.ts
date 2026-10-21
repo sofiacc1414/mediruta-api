@@ -14,7 +14,9 @@ import {
 } from '../../domain/respuestas-estaticas';
 
 export type EntradaMensajeChatbot = {
-  usuarioId: string;
+  /** `null` si pregunta sin haber iniciado sesión (ej. dudas de
+   * registro) — ver `OptionalAuthGuard`. */
+  usuarioId: string | null;
   mensaje: string;
   eps?: string;
   regimen?: 'contributivo' | 'subsidiado';
@@ -100,6 +102,16 @@ export class ProcesarMensajeChatbotUseCase {
     score: number,
     entrada: EntradaMensajeChatbot,
   ): Promise<RespuestaChatbot> {
+    if (!entrada.usuarioId) {
+      return {
+        intencion: 'farmacias_eps',
+        score,
+        respuesta: 'Para esto necesitás iniciar sesión — una vez adentro, preguntame de nuevo.',
+        requiereDatos: null,
+        ofrecerSoporte: false,
+      };
+    }
+
     if (!entrada.eps) {
       return {
         intencion: 'farmacias_eps',

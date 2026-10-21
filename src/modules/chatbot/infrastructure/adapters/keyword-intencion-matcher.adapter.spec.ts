@@ -12,6 +12,10 @@ const CASOS: { mensaje: string; esperado: IntencionChatbot }[] = [
   { mensaje: 'Necesito verificar mi cuenta, ¿cómo lo hago?', esperado: 'registro_cuenta' },
   { mensaje: 'soy nuevo aca, como empiezo', esperado: 'registro_cuenta' },
 
+  { mensaje: 'Olvidé mi contraseña, ¿qué hago?', esperado: 'cambio_contrasena' },
+  { mensaje: 'como recupero mi contraseña', esperado: 'cambio_contrasena' },
+  { mensaje: 'no recuerdo mi clave', esperado: 'cambio_contrasena' },
+
   { mensaje: '¿Cómo pido mis medicamentos?', esperado: 'pedir_medicamentos' },
   { mensaje: 'como hago un pedido nuevo', esperado: 'pedir_medicamentos' },
   { mensaje: 'quiero subir la foto de mi formula', esperado: 'pedir_medicamentos' },
@@ -32,6 +36,10 @@ const CASOS: { mensaje: string; esperado: IntencionChatbot }[] = [
   { mensaje: '¿Cuáles son las farmacias de mi EPS?', esperado: 'farmacias_eps' },
   { mensaje: 'que farmacias aliadas tengo', esperado: 'farmacias_eps' },
   { mensaje: 'en que droguerias puedo reclamar con mi eps', esperado: 'farmacias_eps' },
+  // Caso real reportado: esta paráfrasis fallaba (daba "desconocido")
+  // antes de ampliar los disparadores.
+  { mensaje: '¿Ok y cómo sé cuál es mi farmacia?', esperado: 'farmacias_eps' },
+  { mensaje: 'no se la direccion de la farmacia de mi eps', esperado: 'farmacias_eps' },
 
   { mensaje: '¿Qué es un medicamento No POS?', esperado: 'pos_no_pos' },
   { mensaje: 'como tramito un mipres', esperado: 'pos_no_pos' },
