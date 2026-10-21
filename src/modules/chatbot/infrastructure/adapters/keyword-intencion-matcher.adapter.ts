@@ -211,15 +211,19 @@ const DISPARADORES: Record<Exclude<IntencionChatbot, 'desconocido'>, Disparador[
 };
 
 /** Una palabra por raíz (prefijo) — `token.startsWith(raiz)` sobre el
- * mensaje tokenizado. Pesos moderados (ninguno llega solo al umbral
- * de 0.7): necesitan sumar con otra raíz o con una frase para
- * confirmar la intención, evitando que una palabra genérica aislada
- * decida todo. */
+ * mensaje tokenizado. Dos niveles de peso, no uno: una palabra
+ * genuinamente inequívoca en este dominio ("precio", "copago",
+ * "mipres") pesa >= 0.7 y alcanza sola — bug real repetido varias
+ * veces: pesos moderados obligaban a que aparecieran dos raíces
+ * juntas, pero una pregunta corta real trae una sola palabra clara.
+ * Las raíces genuinamente ambiguas (comparten palabra con otra
+ * intención, ej. "farmacia") se quedan en peso moderado a propósito,
+ * necesitan otra señal para confirmar. */
 const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
   registro_cuenta: [
-    { raiz: 'registr', peso: 0.6 },
-    { raiz: 'inscrib', peso: 0.6 },
-    { raiz: 'repartidor', peso: 0.5 },
+    { raiz: 'registr', peso: 0.75 },
+    { raiz: 'inscrib', peso: 0.75 },
+    { raiz: 'repartidor', peso: 0.6 },
     // Pregunta de seguimiento real reportada ("¿se activa mi cuenta
     // automáticamente?") sobre lo que el bot ya había contestado —
     // "activ" + "cuenta" juntos alcanzan el umbral solos.
@@ -227,28 +231,35 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     { raiz: 'cuenta', peso: 0.3 },
   ],
   cambio_contrasena: [
-    { raiz: 'contrasen', peso: 0.6 },
+    { raiz: 'contrasen', peso: 0.75 },
+    // "clave" sola queda moderada: también se usa genéricamente
+    // ("es clave que...", nada que ver con contraseñas).
     { raiz: 'clave', peso: 0.4 },
   ],
   baja_cuenta: [
-    { raiz: 'desactiv', peso: 0.6 },
-    { raiz: 'reactiv', peso: 0.6 },
+    { raiz: 'desactiv', peso: 0.75 },
+    { raiz: 'reactiv', peso: 0.75 },
   ],
   cobros_tarifas: [
-    { raiz: 'tarifa', peso: 0.5 },
-    { raiz: 'cobr', peso: 0.4 },
-    { raiz: 'precio', peso: 0.4 },
-    { raiz: 'propina', peso: 0.6 },
+    // "precio"/"tarifa" son inequívocas en este dominio — no hace
+    // falta que aparezcan combinadas con otra palabra para confirmar
+    // la intención (bug real: pesos bajos exigían 2 señales juntas,
+    // pero una pregunta corta real suele traer solo una).
+    { raiz: 'tarifa', peso: 0.75 },
+    { raiz: 'precio', peso: 0.75 },
+    { raiz: 'cobr', peso: 0.6 },
+    { raiz: 'propina', peso: 0.75 },
+    { raiz: 'servicio', peso: 0.3 },
   ],
   cancelacion_costo: [
-    { raiz: 'cancel', peso: 0.5 },
-    { raiz: 'multa', peso: 0.5 },
+    { raiz: 'cancel', peso: 0.75 },
+    { raiz: 'multa', peso: 0.7 },
     { raiz: 'costo', peso: 0.3 },
   ],
   pedir_medicamentos: [
-    { raiz: 'formula', peso: 0.4 },
-    { raiz: 'receta', peso: 0.3 },
-    { raiz: 'solicitud', peso: 0.3 },
+    { raiz: 'formula', peso: 0.75 },
+    { raiz: 'receta', peso: 0.7 },
+    { raiz: 'solicitud', peso: 0.5 },
     // "pedir"+"medicamentos" (o "pedido") juntos son, en la práctica,
     // tan inequívocos como una frase armada a mano — se suben los
     // pesos para que esa combinación sola ya cruce el umbral sin
@@ -260,26 +271,28 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     { raiz: 'domiciliari', peso: 0.2 },
   ],
   reclamo_farmacia: [
-    { raiz: 'reclam', peso: 0.6 },
-    { raiz: 'recog', peso: 0.3 },
+    { raiz: 'reclam', peso: 0.75 },
+    { raiz: 'recog', peso: 0.4 },
+    // "farmacia" sola es ambigua a propósito (comparte con
+    // farmacias_eps) — no decide nada por sí sola.
     { raiz: 'farmaci', peso: 0.2 },
   ],
   copago_eps: [
-    { raiz: 'copago', peso: 0.6 },
-    { raiz: 'moderador', peso: 0.5 },
+    { raiz: 'copago', peso: 0.75 },
+    { raiz: 'moderador', peso: 0.6 },
   ],
   farmacias_eps: [
     { raiz: 'farmaci', peso: 0.4 },
-    { raiz: 'droguer', peso: 0.5 },
-    { raiz: 'aliad', peso: 0.6 },
-    { raiz: 'afiliad', peso: 0.6 },
+    { raiz: 'droguer', peso: 0.7 },
+    { raiz: 'aliad', peso: 0.7 },
+    { raiz: 'afiliad', peso: 0.7 },
     { raiz: 'eps', peso: 0.3 },
   ],
   novedad_pedido: [
-    { raiz: 'novedad', peso: 0.6 },
+    { raiz: 'novedad', peso: 0.75 },
   ],
   codigo_entrega: [
-    { raiz: 'codigo', peso: 0.3 },
+    { raiz: 'codigo', peso: 0.75 },
     { raiz: 'entreg', peso: 0.2 },
   ],
   pos_no_pos: [

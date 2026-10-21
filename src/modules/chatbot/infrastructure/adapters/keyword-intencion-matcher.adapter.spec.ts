@@ -78,6 +78,7 @@ const CASOS_REALES_REPORTADOS: { mensaje: string; esperado: IntencionChatbot }[]
   { mensaje: 'como es el proceso para pedir medicamentos?', esperado: 'pedir_medicamentos' },
   { mensaje: 'como me doy de baja?', esperado: 'baja_cuenta' },
   { mensaje: 'se activa mi cuenta automaticamente?', esperado: 'registro_cuenta' },
+  { mensaje: 'cual es el precio del servicio?', esperado: 'cobros_tarifas' },
 ];
 
 describe('KeywordIntencionMatcherAdapter', () => {
