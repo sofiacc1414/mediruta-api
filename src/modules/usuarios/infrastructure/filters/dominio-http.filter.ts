@@ -10,11 +10,13 @@ import { ChatSoloLecturaError } from '../../../chat/domain/errors/chat-solo-lect
 import { DocumentacionIncompletaError } from '../../../domiciliarios/domain/errors/documentacion-incompleta.error';
 import { DomiciliarioNoEncontradoError } from '../../../domiciliarios/domain/errors/domiciliario-no-encontrado.error';
 import { NoHayBorradorDomiciliarioError } from '../../../domiciliarios/domain/errors/no-hay-borrador-domiciliario.error';
+import { ArchivoFormulaInvalidoError } from '../../../solicitudes/domain/errors/archivo-formula-invalido.error';
 import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
 import { DomiciliarioConPedidoActivoError } from '../../../solicitudes/domain/errors/domiciliario-con-pedido-activo.error';
 import { DomiciliarioNoDisponibleParaAsignarError } from '../../../solicitudes/domain/errors/domiciliario-no-disponible-para-asignar.error';
 import { DocumentosPacienteNoDisponiblesError } from '../../../solicitudes/domain/errors/documentos-paciente-no-disponibles.error';
 import { FueraDeUbicacionAutorizadaError } from '../../../solicitudes/domain/errors/fuera-de-ubicacion-autorizada.error';
+import { ImagenFormulaIlegibleError } from '../../../solicitudes/domain/errors/imagen-formula-ilegible.error';
 import { NovedadNoEncontradaError } from '../../../solicitudes/domain/errors/novedad-no-encontrada.error';
 import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { PerfilIncompletoError } from '../../../solicitudes/domain/errors/perfil-incompleto.error';
@@ -75,6 +77,8 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   ChatSoloLecturaError,
   ChatSinDomiciliarioAsignadoError,
   FueraDeUbicacionAutorizadaError,
+  ArchivoFormulaInvalidoError,
+  ImagenFormulaIlegibleError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -174,6 +178,17 @@ export class DominioHttpFilter implements ExceptionFilter {
       return;
     }
 
+    if (exception instanceof ImagenFormulaIlegibleError) {
+      response.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
+        statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+        message: exception.message,
+      });
+      return;
+    }
+
+    // ArchivoFormulaInvalidoError cae al 400 genérico de abajo —
+    // mismo registro en @Catch, sin branch propio porque no necesita
+    // nada extra además de `message`.
     response.status(HttpStatus.BAD_REQUEST).json({
       statusCode: HttpStatus.BAD_REQUEST,
       message: exception.message,

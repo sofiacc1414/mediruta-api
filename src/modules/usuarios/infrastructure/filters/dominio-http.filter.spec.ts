@@ -10,7 +10,9 @@ import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-inva
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
 import { DomiciliarioConPedidoActivoError } from '../../../solicitudes/domain/errors/domiciliario-con-pedido-activo.error';
+import { ArchivoFormulaInvalidoError } from '../../../solicitudes/domain/errors/archivo-formula-invalido.error';
 import { FueraDeUbicacionAutorizadaError } from '../../../solicitudes/domain/errors/fuera-de-ubicacion-autorizada.error';
+import { ImagenFormulaIlegibleError } from '../../../solicitudes/domain/errors/imagen-formula-ilegible.error';
 import { NoPuedeDesconectarseConPedidoActivoError } from '../../domain/errors/no-puede-desconectarse-con-pedido-activo.error';
 import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { DominioHttpFilter } from './dominio-http.filter';
@@ -204,6 +206,36 @@ describe('DominioHttpFilter', () => {
     expect(json).toHaveBeenCalledWith({
       statusCode: HttpStatus.FORBIDDEN,
       message: expect.any(String),
+    });
+  });
+
+  it('mapea ImagenFormulaIlegibleError a HTTP 422', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(
+      new ImagenFormulaIlegibleError('mensaje de prueba'),
+      host,
+    );
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.UNPROCESSABLE_ENTITY);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+      message: 'mensaje de prueba',
+    });
+  });
+
+  it('mapea ArchivoFormulaInvalidoError a HTTP 400', () => {
+    const { host, json, status } = hostConRespuesta();
+
+    new DominioHttpFilter().catch(
+      new ArchivoFormulaInvalidoError('formato no soportado'),
+      host,
+    );
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+    expect(json).toHaveBeenCalledWith({
+      statusCode: HttpStatus.BAD_REQUEST,
+      message: 'formato no soportado',
     });
   });
 });

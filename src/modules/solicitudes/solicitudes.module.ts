@@ -15,6 +15,7 @@ import { CancelarSolicitudUseCase } from './application/use-cases/cancelar-solic
 import { CrearSolicitudUseCase } from './application/use-cases/crear-solicitud.use-case';
 import { EntregarPedidoUseCase } from './application/use-cases/entregar-pedido.use-case';
 import { EnviarSolicitudUseCase } from './application/use-cases/enviar-solicitud.use-case';
+import { ExtraerDatosFormulaUseCase } from './application/use-cases/extraer-datos-formula.use-case';
 import { IniciarEntregaUseCase } from './application/use-cases/iniciar-entrega.use-case';
 import { ListarDomiciliariosCercanosAdminUseCase } from './application/use-cases/listar-domiciliarios-cercanos-admin.use-case';
 import { ListarHistorialPedidosUseCase } from './application/use-cases/listar-historial-pedidos.use-case';
@@ -48,13 +49,16 @@ import { AccesoTemporalRepositoryPort } from './domain/ports/acceso-temporal.rep
 import { CorreoCodigoEntregaPort } from './domain/ports/correo-codigo-entrega.port';
 import { EventosTiempoRealPort } from './domain/ports/eventos-tiempo-real.port';
 import { NotificacionesPedidoPort } from './domain/ports/notificaciones-pedido.port';
+import { OcrFormulaPort } from './domain/ports/ocr-formula.port';
 import { SolicitudRepositoryPort } from './domain/ports/solicitud.repository.port';
 import { PostgresAccesoTemporalRepository } from './infrastructure/adapters/postgres-acceso-temporal.repository';
+import { HttpOcrFormulaAdapter } from './infrastructure/adapters/http-ocr-formula.adapter';
 import { NotificacionesPedidoAdapter } from './infrastructure/adapters/notificaciones-pedido.adapter';
 import { PostgresSolicitudRepository } from './infrastructure/adapters/postgres-solicitud.repository';
 import { CorreoRelayCodigoEntregaAdapter } from './infrastructure/adapters/correo-relay-codigo-entrega.adapter';
 import { EventosGateway } from './infrastructure/websockets/eventos.gateway';
 import { ConfiguracionAdminController } from './infrastructure/controllers/configuracion-admin.controller';
+import { FormulasController } from './infrastructure/controllers/formulas.controller';
 import { NovedadesAdminController } from './infrastructure/controllers/novedades-admin.controller';
 import { PedidosAdminController } from './infrastructure/controllers/pedidos-admin.controller';
 import { PedidosDomiciliarioController } from './infrastructure/controllers/pedidos-domiciliario.controller';
@@ -73,9 +77,11 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     NovedadesAdminController,
     PedidosAdminController,
     ConfiguracionAdminController,
+    FormulasController,
   ],
   providers: [
     CrearSolicitudUseCase,
+    ExtraerDatosFormulaUseCase,
     ListarSolicitudesUseCase,
     CalcularPrecioPedidoUseCase,
     EstimarPrecioPedidoUseCase,
@@ -142,6 +148,10 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     {
       provide: CorreoCodigoEntregaPort,
       useClass: CorreoRelayCodigoEntregaAdapter,
+    },
+    {
+      provide: OcrFormulaPort,
+      useClass: HttpOcrFormulaAdapter,
     },
   ],
 })
