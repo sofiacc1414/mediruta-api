@@ -69,6 +69,7 @@ const CASOS_REALES_REPORTADOS: { mensaje: string; esperado: IntencionChatbot }[]
   { mensaje: 'hola como se que farmacias tiene mi eps?', esperado: 'farmacias_eps' },
   { mensaje: 'como es el proceso para pedir medicamentos?', esperado: 'pedir_medicamentos' },
   { mensaje: 'como me doy de baja?', esperado: 'baja_cuenta' },
+  { mensaje: 'se activa mi cuenta automaticamente?', esperado: 'registro_cuenta' },
 ];
 
 describe('KeywordIntencionMatcherAdapter', () => {

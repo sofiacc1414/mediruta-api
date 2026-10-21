@@ -195,6 +195,11 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     { raiz: 'registr', peso: 0.6 },
     { raiz: 'inscrib', peso: 0.6 },
     { raiz: 'repartidor', peso: 0.5 },
+    // Pregunta de seguimiento real reportada ("¿se activa mi cuenta
+    // automáticamente?") sobre lo que el bot ya había contestado —
+    // "activ" + "cuenta" juntos alcanzan el umbral solos.
+    { raiz: 'activ', peso: 0.5 },
+    { raiz: 'cuenta', peso: 0.3 },
   ],
   cambio_contrasena: [
     { raiz: 'contrasen', peso: 0.6 },
