@@ -31,6 +31,7 @@ export class ChatbotController {
       eps: dto.eps,
       regimen: dto.regimen,
       rangoIngresos: dto.rangoIngresos,
+      intentosSinExitoSeguidos: dto.intentosSinExitoSeguidos,
     });
   }
 }

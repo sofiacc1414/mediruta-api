@@ -10,4 +10,8 @@ export type RespuestaChatbot = {
   score: number;
   respuesta: string;
   requiereDatos: 'eps' | 'datos_copago' | null;
+  /** CA3: tras 2 preguntas sin entender seguidas, además del mensaje
+   * se le ofrece a la app un botón directo a soporte humano (no solo
+   * texto) — la app decide cómo mostrarlo. */
+  ofrecerSoporte: boolean;
 };

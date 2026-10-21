@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator';
 
 export class MensajeChatbotDto {
   @IsString()
@@ -16,4 +16,9 @@ export class MensajeChatbotDto {
   @IsOptional()
   @IsIn(['menos_2_smlv', 'entre_2_y_5_smlv', 'mas_5_smlv'])
   rangoIngresos?: 'menos_2_smlv' | 'entre_2_y_5_smlv' | 'mas_5_smlv';
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  intentosSinExitoSeguidos?: number;
 }

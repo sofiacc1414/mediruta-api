@@ -1,6 +1,10 @@
 import { FarmaciaAliadaRepositoryPort } from '../../domain/ports/farmacia-aliada.repository.port';
 import { IntencionMatcherPort } from '../../domain/ports/intencion-matcher.port';
-import { MENSAJE_NO_ENTENDIDO, RESPUESTAS_ESTATICAS } from '../../domain/respuestas-estaticas';
+import {
+  MENSAJE_NO_ENTENDIDO,
+  MENSAJE_SOPORTE_HUMANO,
+  RESPUESTAS_ESTATICAS,
+} from '../../domain/respuestas-estaticas';
 import { ProcesarMensajeChatbotUseCase } from './procesar-mensaje-chatbot.use-case';
 
 function matcherQueDevuelve(intencion: string, score: number): IntencionMatcherPort {
@@ -25,8 +29,23 @@ describe('ProcesarMensajeChatbotUseCase', () => {
       score: 0.5,
       respuesta: MENSAJE_NO_ENTENDIDO,
       requiereDatos: null,
+      ofrecerSoporte: false,
     });
     expect(farmacias.listarPorEps).not.toHaveBeenCalled();
+  });
+
+  it('CA3: 2do fallo seguido ofrece soporte humano en vez de repetir "no entendí"', async () => {
+    const matcher = matcherQueDevuelve('copago_eps', 0.5);
+    const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
+
+    const resultado = await useCase.execute({
+      usuarioId: 'u1',
+      mensaje: 'algo raro de nuevo',
+      intentosSinExitoSeguidos: 1,
+    });
+
+    expect(resultado.respuesta).toBe(MENSAJE_SOPORTE_HUMANO);
+    expect(resultado.ofrecerSoporte).toBe(true);
   });
 
   it.each([

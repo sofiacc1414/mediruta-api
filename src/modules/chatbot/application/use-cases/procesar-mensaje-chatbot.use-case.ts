@@ -9,6 +9,7 @@ import { FarmaciaAliadaRepositoryPort } from '../../domain/ports/farmacia-aliada
 import { RespuestaChatbot } from '../../domain/respuesta-chatbot';
 import {
   MENSAJE_NO_ENTENDIDO,
+  MENSAJE_SOPORTE_HUMANO,
   RESPUESTAS_ESTATICAS,
 } from '../../domain/respuestas-estaticas';
 
@@ -18,6 +19,10 @@ export type EntradaMensajeChatbot = {
   eps?: string;
   regimen?: 'contributivo' | 'subsidiado';
   rangoIngresos?: RangoIngresos;
+  /** La app lleva la cuenta (el backend queda sin estado de
+   * conversación) — cuántas respuestas "no entendí" seguidas lleva
+   * ANTES de este mensaje. CA3: en la 2da seguida, se ofrece soporte. */
+  intentosSinExitoSeguidos?: number;
 };
 
 /** Orquesta: clasificar intención -> si hace falta EPS/datos de
@@ -35,7 +40,14 @@ export class ProcesarMensajeChatbotUseCase {
     const { intencion, score } = this.matcher.clasificar(entrada.mensaje);
 
     if (score < UMBRAL_CONFIANZA_MINIMO) {
-      return { intencion: 'desconocido', score, respuesta: MENSAJE_NO_ENTENDIDO, requiereDatos: null };
+      const yaFalloAntes = (entrada.intentosSinExitoSeguidos ?? 0) >= 1;
+      return {
+        intencion: 'desconocido',
+        score,
+        respuesta: yaFalloAntes ? MENSAJE_SOPORTE_HUMANO : MENSAJE_NO_ENTENDIDO,
+        requiereDatos: null,
+        ofrecerSoporte: yaFalloAntes,
+      };
     }
 
     if (intencion === 'copago_eps') {
@@ -52,6 +64,7 @@ export class ProcesarMensajeChatbotUseCase {
       score,
       respuesta: respuestaEstatica ?? MENSAJE_NO_ENTENDIDO,
       requiereDatos: null,
+      ofrecerSoporte: false,
     };
   }
 
@@ -65,6 +78,7 @@ export class ProcesarMensajeChatbotUseCase {
           'tu rango de ingresos (menos de 2 SMLV, entre 2 y 5, o más de 5) — el copago lo fija ' +
           'el Gobierno según eso, no según tu EPS.',
         requiereDatos: 'datos_copago',
+        ofrecerSoporte: false,
       };
     }
 
@@ -73,7 +87,13 @@ export class ProcesarMensajeChatbotUseCase {
         ? describirCopagoSubsidiado()
         : describirCopagoContributivo(entrada.rangoIngresos!);
 
-    return { intencion: 'copago_eps', score, respuesta, requiereDatos: null };
+    return {
+      intencion: 'copago_eps',
+      score,
+      respuesta,
+      requiereDatos: null,
+      ofrecerSoporte: false,
+    };
   }
 
   private async responderFarmacias(
@@ -86,6 +106,7 @@ export class ProcesarMensajeChatbotUseCase {
         score,
         respuesta: '¿Cuál es tu EPS? Así te digo qué farmacias trabajan con ella.',
         requiereDatos: 'eps',
+        ofrecerSoporte: false,
       };
     }
 
@@ -98,6 +119,7 @@ export class ProcesarMensajeChatbotUseCase {
           `No tengo farmacias registradas para "${entrada.eps}" todavía. Te recomiendo ` +
           'confirmar directamente con tu EPS cuál te queda más cerca.',
         requiereDatos: null,
+        ofrecerSoporte: false,
       };
     }
 
@@ -109,6 +131,7 @@ export class ProcesarMensajeChatbotUseCase {
       score,
       respuesta: `Farmacias que trabajan con ${entrada.eps}:\n${listado}`,
       requiereDatos: null,
+      ofrecerSoporte: false,
     };
   }
 }
