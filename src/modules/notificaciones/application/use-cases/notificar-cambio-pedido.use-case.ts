@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   contenidoAsignacion,
+  contenidoCalificacion,
   contenidoCambioEstado,
   etiquetaDeEstado,
 } from '../../domain/contenido-notificacion';
@@ -48,6 +49,19 @@ export class NotificarCambioPedidoUseCase {
         referenciaId: solicitudId,
         claveEvento: `${solicitudId}:${datos.estado}`,
       });
+
+      if (datos.estado === 'entregado') {
+        const calificacion = contenidoCalificacion();
+        await this.registrar.execute({
+          destinatarioId: datos.pacienteId,
+          tipo: 'calificacion',
+          titulo: calificacion.titulo,
+          mensaje: calificacion.mensaje,
+          referenciaTipo: 'pedido',
+          referenciaId: solicitudId,
+          claveEvento: `${solicitudId}:calificacion`,
+        });
+      }
 
       if (
         datos.estado === 'asignado_en_camino_farmacia' &&

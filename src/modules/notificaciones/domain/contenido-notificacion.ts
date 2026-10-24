@@ -105,6 +105,13 @@ export function contenidoAsignacion(): BorradorNotificacion {
   });
 }
 
+export function contenidoCalificacion(): BorradorNotificacion {
+  return sellar({
+    titulo: '¿Cómo te fue?',
+    mensaje: 'Contanos cómo fue tu entrega — calificarla toma un minuto.',
+  });
+}
+
 export function contenidoCuentaAprobada(): BorradorNotificacion {
   return sellar({
     titulo: 'Cuenta aprobada',

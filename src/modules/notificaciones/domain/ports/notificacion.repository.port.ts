@@ -1,5 +1,9 @@
 export type TipoNotificacion =
-  'cambio_estado' | 'asignacion' | 'validacion_cuenta' | 'mensaje_chat';
+  | 'cambio_estado'
+  | 'asignacion'
+  | 'validacion_cuenta'
+  | 'mensaje_chat'
+  | 'calificacion';
 export type ReferenciaNotificacion = 'pedido' | 'cuenta';
 
 export type NotificacionGuardada = {

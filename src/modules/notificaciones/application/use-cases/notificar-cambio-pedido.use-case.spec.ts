@@ -73,6 +73,34 @@ describe('NotificarCambioPedidoUseCase (MED-110)', () => {
     );
   });
 
+  it('3. al entregarse, el paciente también recibe el aviso de calificación', async () => {
+    (notificaciones.datosPedido as jest.Mock).mockResolvedValue({
+      pacienteId: 'pac-1',
+      domiciliarioId: 'dom-1',
+      estado: 'entregado',
+      codigoPedido: 'MR-12',
+    });
+
+    await useCase.execute('sol-4');
+
+    expect(registrar.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        destinatarioId: 'pac-1',
+        tipo: 'cambio_estado',
+        referenciaId: 'sol-4',
+        claveEvento: 'sol-4:entregado',
+      }),
+    );
+    expect(registrar.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        destinatarioId: 'pac-1',
+        tipo: 'calificacion',
+        referenciaId: 'sol-4',
+        claveEvento: 'sol-4:calificacion',
+      }),
+    );
+  });
+
   it('5. un estado que no es relevante no genera aviso', async () => {
     (notificaciones.datosPedido as jest.Mock).mockResolvedValue({
       pacienteId: 'pac-1',
