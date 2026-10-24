@@ -58,6 +58,8 @@ const CASOS: { mensaje: string; esperado: IntencionChatbot }[] = [
     esperado: 'pedir_medicamentos',
   },
   { mensaje: 'como hago un pedido nuevo', esperado: 'pedir_medicamentos' },
+  { mensaje: '¿cómo género un pedido?', esperado: 'pedir_medicamentos' },
+  { mensaje: 'como genero un pedido', esperado: 'pedir_medicamentos' },
   {
     mensaje: 'quiero subir la foto de mi formula',
     esperado: 'pedir_medicamentos',

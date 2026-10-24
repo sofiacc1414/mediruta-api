@@ -272,6 +272,13 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     // depender de que el mensaje calce con una frase exacta.
     { raiz: 'pedi', peso: 0.4 },
     { raiz: 'medicament', peso: 0.4 },
+    // Bug real reportado: "¿cómo género un pedido?" (con tilde, typo
+    // frecuente de "genero") no matcheaba ninguna frase armada a mano
+    // ("como monto/hago un pedido" exigen esa palabra exacta) y la
+    // única raíz que prendía era "pedi" (0.4), por debajo del umbral.
+    // "gener" + "pedi"/"medicament" juntos ya son inequívocos acá
+    // (generar/genero/género/generación un pedido/solicitud).
+    { raiz: 'gener', peso: 0.3 },
   ],
   chat_domiciliario: [{ raiz: 'domiciliari', peso: 0.2 }],
   reclamo_farmacia: [
