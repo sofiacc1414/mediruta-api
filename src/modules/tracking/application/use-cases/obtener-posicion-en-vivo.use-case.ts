@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { SolicitudNoEncontradaError } from '../../../solicitudes/domain/errors/solicitud-no-encontrada.error';
 import { NoAutorizadoError } from '../../../usuarios/domain/errors/no-autorizado.error';
 import { TrackingNoDisponibleError } from '../../domain/errors/tracking-no-disponible.error';
-import { PosicionEnVivo, TrackingRepositoryPort } from '../../domain/ports/tracking.repository.port';
+import {
+  PosicionEnVivo,
+  TrackingRepositoryPort,
+} from '../../domain/ports/tracking.repository.port';
 
 /** Llamado al abrir el mapa (`tracking:suscribir`) — Paciente,
  * Domiciliario del pedido, o Admin/Root (único caso de este proyecto
@@ -12,8 +15,14 @@ import { PosicionEnVivo, TrackingRepositoryPort } from '../../domain/ports/track
 export class ObtenerPosicionEnVivoUseCase {
   constructor(private readonly tracking: TrackingRepositoryPort) {}
 
-  async execute(usuarioId: string, solicitudId: string): Promise<PosicionEnVivo> {
-    const resultado = await this.tracking.obtenerPosicion(usuarioId, solicitudId);
+  async execute(
+    usuarioId: string,
+    solicitudId: string,
+  ): Promise<PosicionEnVivo> {
+    const resultado = await this.tracking.obtenerPosicion(
+      usuarioId,
+      solicitudId,
+    );
     switch (resultado.resultado) {
       case 'ok':
         return resultado.posicion;

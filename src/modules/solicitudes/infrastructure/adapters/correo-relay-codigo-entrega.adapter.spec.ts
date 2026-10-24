@@ -22,8 +22,12 @@ const configValida = {
 describe('CorreoRelayCodigoEntregaAdapter', () => {
   beforeEach(() => {
     fetchMock.mockReset();
-    fetchMock.mockResolvedValue({ ok: true, status: 200, text: async () => '' });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '',
+    });
+    global.fetch = fetchMock;
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
   });
 
@@ -32,9 +36,16 @@ describe('CorreoRelayCodigoEntregaAdapter', () => {
   });
 
   it('llama al relay con la URL, el secreto y el correo armado', async () => {
-    const adapter = new CorreoRelayCodigoEntregaAdapter(configCon(configValida));
+    const adapter = new CorreoRelayCodigoEntregaAdapter(
+      configCon(configValida),
+    );
 
-    await adapter.enviarCodigoEntrega('persona@mail.com', 'Sofía', 'MR-000123', 'ABC123');
+    await adapter.enviarCodigoEntrega(
+      'persona@mail.com',
+      'Sofía',
+      'MR-000123',
+      'ABC123',
+    );
 
     expect(fetchMock).toHaveBeenCalledWith(
       configValida.CORREO_RELAY_URL,
@@ -55,9 +66,16 @@ describe('CorreoRelayCodigoEntregaAdapter', () => {
   });
 
   it('incluye nombre, código de pedido y código de entrega en HTML y texto', async () => {
-    const adapter = new CorreoRelayCodigoEntregaAdapter(configCon(configValida));
+    const adapter = new CorreoRelayCodigoEntregaAdapter(
+      configCon(configValida),
+    );
 
-    await adapter.enviarCodigoEntrega('persona@mail.com', 'Sofía', 'MR-000123', 'ABC123');
+    await adapter.enviarCodigoEntrega(
+      'persona@mail.com',
+      'Sofía',
+      'MR-000123',
+      'ABC123',
+    );
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string) as {
       html: string;
@@ -71,8 +89,14 @@ describe('CorreoRelayCodigoEntregaAdapter', () => {
   });
 
   it('si el relay responde con error, el error propagado es genérico', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 502, text: async () => 'ETIMEDOUT' });
-    const adapter = new CorreoRelayCodigoEntregaAdapter(configCon(configValida));
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 502,
+      text: async () => 'ETIMEDOUT',
+    });
+    const adapter = new CorreoRelayCodigoEntregaAdapter(
+      configCon(configValida),
+    );
 
     await expect(
       adapter.enviarCodigoEntrega('persona@mail.com', null, null, 'ABC123'),

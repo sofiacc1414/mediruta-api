@@ -18,7 +18,12 @@ export class ActualizarPosicionEnVivoUseCase {
     lat: number,
     lng: number,
   ): Promise<void> {
-    const resultado = await this.tracking.actualizarUbicacion(domiciliarioId, solicitudId, lat, lng);
+    const resultado = await this.tracking.actualizarUbicacion(
+      domiciliarioId,
+      solicitudId,
+      lat,
+      lng,
+    );
     switch (resultado) {
       case 'ok':
         return;

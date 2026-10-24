@@ -95,7 +95,9 @@ describe('ActualizarDisponibilidadDomiciliarioUseCase', () => {
         lat: 4.65,
         lng: -74.06,
       }),
-    ).rejects.toBeInstanceOf(PerfilDomiciliarioIncompletoParaDisponibilidadError);
+    ).rejects.toBeInstanceOf(
+      PerfilDomiciliarioIncompletoParaDisponibilidadError,
+    );
   });
 
   it('lanza NoPuedeDesconectarseConPedidoActivoError si intenta desactivar con un pedido en curso', async () => {

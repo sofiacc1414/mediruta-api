@@ -40,7 +40,11 @@ export class EnviarMensajeChatUseCase {
     chatId: string,
     contenido: string,
   ): Promise<MensajeChat> {
-    const resultado = await this.chats.enviarMensaje(usuarioId, chatId, contenido);
+    const resultado = await this.chats.enviarMensaje(
+      usuarioId,
+      chatId,
+      contenido,
+    );
     switch (resultado.resultado) {
       case 'ok':
         await this.notificar(

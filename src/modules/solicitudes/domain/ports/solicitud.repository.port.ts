@@ -9,6 +9,8 @@ export type EstadoSolicitud =
   | 'entregado'
   | 'cancelada';
 
+export type MetodoPago = 'efectivo' | 'tarjeta' | 'transferencia';
+
 export type Medicamento = {
   nombre: string | null;
   concentracion: string | null;
@@ -100,6 +102,14 @@ export type PedidoActivoDomiciliario = {
   direccionEntrega: string | null;
   direccionFarmacia: string | null;
   creadoEn: string;
+  /** Módulo 4 — decide el flujo al entregar: si ya está pagado
+   * (tarjeta/transferencia) el código de entrega finaliza directo; si
+   * es efectivo, abre la pantalla de cobro antes de finalizar. */
+  metodoPago: MetodoPago;
+  /** Módulo 4 — cuánto cobrar en la pantalla de cobro (solo relevante
+   * si `metodoPago === 'efectivo'`): foto del precio persistida al
+   * enviar (`copago_cobrado + domicilio_cobrado`), no la tarifa actual. */
+  montoACobrar: number;
 };
 
 /** HU-07/HU-09 — ver comentario de `obtenerDocumentosPacienteParaRecoger`. */
@@ -198,6 +208,21 @@ export type ParametrosPrecioDomicilio = {
 
 export type ConfiguracionAdmin = ParametrosPrecioDomicilio & {
   umbralDemoraAsignacionMinutos: number;
+  /** Módulo 4 — % del costo del domicilio que la empresa retiene como
+   * comisión (0-1). El resto queda para el Domiciliario. */
+  comisionAppPorcentaje: number;
+  /** Módulo 3 — deuda de efectivo a partir de la cual se bloquea al
+   * Domiciliario para nuevos pedidos (CA2). */
+  topeRecaudoEfectivo: number;
+  pagoEfectivoHabilitado: boolean;
+  pagoTarjetaHabilitado: boolean;
+  pagoTransferenciaHabilitado: boolean;
+};
+
+export type MediosPagoHabilitados = {
+  pagoEfectivoHabilitado: boolean;
+  pagoTarjetaHabilitado: boolean;
+  pagoTransferenciaHabilitado: boolean;
 };
 
 export type ResultadoActualizarConfiguracionAdmin =
@@ -212,6 +237,9 @@ export type ResultadoActualizarConfiguracionAdmin =
 export type DatosPrecioPedido = ParametrosPrecioDomicilio & {
   copago: number | null;
   distanciaMetros: number | null;
+  /** Módulo 4 — para armar la foto del precio que se persiste al
+   * enviar (ver `EnviarSolicitudUseCase`). */
+  comisionAppPorcentaje: number;
 };
 
 export type NivelCopagoAdmin = {
@@ -359,7 +387,11 @@ export type ResultadoCancelar = 'cancelada' | 'no_encontrada';
  * vez, no un error — el guard atómico de `app.aceptar_pedido` decide
  * quién gana. */
 export type ResultadoAceptarPedido =
-  'aceptado' | 'ya_asignado' | 'ya_tiene_pedido_activo' | 'no_encontrado';
+  | 'aceptado'
+  | 'ya_asignado'
+  | 'ya_tiene_pedido_activo'
+  | 'no_encontrado'
+  | 'bloqueado_por_tope';
 
 /** HU-07 — resultado común de las transiciones manuales del
  * Domiciliario (recogido, iniciar entrega, en sitio). */
@@ -485,7 +517,16 @@ export abstract class SolicitudRepositoryPort {
    * antes) — si la geocodificación falló, se mandan `null` y el pedido
    * se envía igual, sin esa ubicación (HU-09, no bloquea el envío; sin
    * ambas ubicaciones, el precio del domicilio no se puede calcular
-   * hasta que se resuelvan). */
+   * hasta que se resuelvan).
+   *
+   * Módulo 4 — `metodoPago` decide el flujo: los 3 medios (efectivo,
+   * tarjeta y transferencia, ambas ya resueltas/cobradas en TS antes de
+   * llamar acá) publican de inmediato. `copagoCobrado`/
+   * `domicilioCobrado`/`comisionAppPorcentaje` son la foto del precio
+   * al momento de enviar — la billetera del Domiciliario se liquida
+   * con esos valores al entregar, no con lo que diga la tarifa en ese
+   * momento. `comprobantePagoPath` siempre llega `null` — ya no hay
+   * comprobante que subir (ver `app.enviar_solicitud`). */
   abstract enviar(
     pacienteId: string,
     solicitudId: string,
@@ -493,6 +534,11 @@ export abstract class SolicitudRepositoryPort {
     farmaciaLng: number | null,
     entregaLat: number | null,
     entregaLng: number | null,
+    metodoPago: MetodoPago,
+    copagoCobrado: number | null,
+    domicilioCobrado: number | null,
+    comisionAppPorcentaje: number | null,
+    comprobantePagoPath: string | null,
   ): Promise<ResultadoEnviar>;
 
   /** G06. */
@@ -806,7 +852,18 @@ export abstract class SolicitudRepositoryPort {
     adminId: string,
     umbralMinutos: number,
     parametrosPrecio: ParametrosPrecioDomicilio,
+    comisionAppPorcentaje: number,
+    topeRecaudoEfectivo: number,
+    pagoEfectivoHabilitado: boolean,
+    pagoTarjetaHabilitado: boolean,
+    pagoTransferenciaHabilitado: boolean,
   ): Promise<ResultadoActualizarConfiguracionAdmin>;
+
+  /** Módulo 4 — lectura pública (cualquier usuario autenticado) para el
+   * checkout del Paciente: qué medios de pago están habilitados hoy. */
+  abstract obtenerMediosPagoHabilitados(
+    usuarioId: string,
+  ): Promise<MediosPagoHabilitados>;
 
   /** Precio del pedido (copago + domicilio) — ver `DatosPrecioPedido`. */
   abstract obtenerDatosPrecioPedido(

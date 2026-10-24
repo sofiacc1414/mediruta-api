@@ -13,6 +13,7 @@ describe('CalcularPrecioPedidoUseCase', () => {
     listarHistorial: jest.fn(),
     actualizar: jest.fn(),
     actualizarReceta: jest.fn(),
+    obtenerMediosPagoHabilitados: jest.fn(),
     enviar: jest.fn(),
     cancelar: jest.fn(),
     obtenerDatosGeocodificacionFarmacia: jest.fn(),
@@ -21,6 +22,7 @@ describe('CalcularPrecioPedidoUseCase', () => {
     listarNovedadesSolicitudDomiciliario: jest.fn(),
     listarPedidosDisponibles: jest.fn(),
     aceptarPedido: jest.fn(),
+    marcarEnFarmacia: jest.fn(),
     marcarMedicamentosRecogidos: jest.fn(),
     iniciarEntrega: jest.fn(),
     marcarEnSitio: jest.fn(),
@@ -53,6 +55,7 @@ describe('CalcularPrecioPedidoUseCase', () => {
     obtenerConfiguracionAdmin: jest.fn(),
     actualizarConfiguracionAdmin: jest.fn(),
     obtenerDatosPrecioPedido: jest.fn(),
+    obtenerParametrosEstimacionPrecio: jest.fn(),
     listarNivelesCopagoAdmin: jest.fn(),
     guardarNivelCopagoAdmin: jest.fn(),
     eliminarNivelCopagoAdmin: jest.fn(),
@@ -71,6 +74,7 @@ describe('CalcularPrecioPedidoUseCase', () => {
     velocidadPromedioKmh: 20,
     distanciaIncluidaKm: 15,
     tarifaPorKmExcedente: 1600,
+    comisionAppPorcentaje: 0.2,
   };
 
   it('null si la solicitud no existe o no es del dueño', async () => {
@@ -87,11 +91,16 @@ describe('CalcularPrecioPedidoUseCase', () => {
       distanciaMetros: 3000,
       ...parametros,
     };
-    (solicitudes.obtenerDatosPrecioPedido as jest.Mock).mockResolvedValue(datos);
+    (solicitudes.obtenerDatosPrecioPedido as jest.Mock).mockResolvedValue(
+      datos,
+    );
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
-    expect(resultado).toEqual({ disponible: false, motivo: 'sin_nivel_copago' });
+    expect(resultado).toEqual({
+      disponible: false,
+      motivo: 'sin_nivel_copago',
+    });
   });
 
   it('no disponible si falta geocodificar farmacia y/o entrega', async () => {
@@ -100,7 +109,9 @@ describe('CalcularPrecioPedidoUseCase', () => {
       distanciaMetros: null,
       ...parametros,
     };
-    (solicitudes.obtenerDatosPrecioPedido as jest.Mock).mockResolvedValue(datos);
+    (solicitudes.obtenerDatosPrecioPedido as jest.Mock).mockResolvedValue(
+      datos,
+    );
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
@@ -113,7 +124,9 @@ describe('CalcularPrecioPedidoUseCase', () => {
       distanciaMetros: 3000,
       ...parametros,
     };
-    (solicitudes.obtenerDatosPrecioPedido as jest.Mock).mockResolvedValue(datos);
+    (solicitudes.obtenerDatosPrecioPedido as jest.Mock).mockResolvedValue(
+      datos,
+    );
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
@@ -134,7 +147,9 @@ describe('CalcularPrecioPedidoUseCase', () => {
       distanciaMetros: 20000,
       ...parametros,
     };
-    (solicitudes.obtenerDatosPrecioPedido as jest.Mock).mockResolvedValue(datos);
+    (solicitudes.obtenerDatosPrecioPedido as jest.Mock).mockResolvedValue(
+      datos,
+    );
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 
@@ -155,7 +170,9 @@ describe('CalcularPrecioPedidoUseCase', () => {
       distanciaMetros: 5000,
       ...parametros,
     };
-    (solicitudes.obtenerDatosPrecioPedido as jest.Mock).mockResolvedValue(datos);
+    (solicitudes.obtenerDatosPrecioPedido as jest.Mock).mockResolvedValue(
+      datos,
+    );
 
     const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid');
 

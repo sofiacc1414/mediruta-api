@@ -9,6 +9,7 @@ import { NotificacionesModule } from './modules/notificaciones/notificaciones.mo
 import { SolicitudesModule } from './modules/solicitudes/solicitudes.module';
 import { TrackingModule } from './modules/tracking/tracking.module';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
+import { WalletModule } from './modules/wallet/wallet.module';
 import { DatabaseModule } from './shared/infrastructure/database/database.module';
 import { GeocodificacionModule } from './shared/infrastructure/geocodificacion/geocodificacion.module';
 
@@ -25,6 +26,7 @@ import { GeocodificacionModule } from './shared/infrastructure/geocodificacion/g
     ChatModule,
     ChatbotModule,
     TrackingModule,
+    WalletModule,
   ],
   controllers: [AppController],
   providers: [],

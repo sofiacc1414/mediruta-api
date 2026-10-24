@@ -35,11 +35,15 @@ const VALIDADOR_ARCHIVO_FORMULA = new ParseFilePipeBuilder()
 @UseGuards(AccessAuthGuard, RolesGuard)
 @Roles('PACIENTE')
 export class FormulasController {
-  constructor(private readonly extraerDatosFormula: ExtraerDatosFormulaUseCase) {}
+  constructor(
+    private readonly extraerDatosFormula: ExtraerDatosFormulaUseCase,
+  ) {}
 
   @Post('extraer')
   @UseInterceptors(FileInterceptor('archivo'))
-  extraer(@UploadedFile(VALIDADOR_ARCHIVO_FORMULA) archivo: Express.Multer.File) {
+  extraer(
+    @UploadedFile(VALIDADOR_ARCHIVO_FORMULA) archivo: Express.Multer.File,
+  ) {
     return this.extraerDatosFormula.execute(archivo.buffer, archivo.mimetype);
   }
 }

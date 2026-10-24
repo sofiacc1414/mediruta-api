@@ -7,7 +7,10 @@ import {
 } from '../../domain/respuestas-estaticas';
 import { ProcesarMensajeChatbotUseCase } from './procesar-mensaje-chatbot.use-case';
 
-function matcherQueDevuelve(intencion: string, score: number): IntencionMatcherPort {
+function matcherQueDevuelve(
+  intencion: string,
+  score: number,
+): IntencionMatcherPort {
   return { clasificar: jest.fn().mockReturnValue({ intencion, score }) };
 }
 
@@ -22,7 +25,10 @@ describe('ProcesarMensajeChatbotUseCase', () => {
     const matcher = matcherQueDevuelve('copago_eps', 0.5);
     const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
 
-    const resultado = await useCase.execute({ usuarioId: 'u1', mensaje: 'algo raro' });
+    const resultado = await useCase.execute({
+      usuarioId: 'u1',
+      mensaje: 'algo raro',
+    });
 
     expect(resultado).toEqual({
       intencion: 'desconocido',
@@ -52,7 +58,10 @@ describe('ProcesarMensajeChatbotUseCase', () => {
     const matcher = matcherQueDevuelve('registro_cuenta', 0.9);
     const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
 
-    const resultado = await useCase.execute({ usuarioId: null, mensaje: 'como me registro' });
+    const resultado = await useCase.execute({
+      usuarioId: null,
+      mensaje: 'como me registro',
+    });
 
     expect(resultado.respuesta).toBe(RESPUESTAS_ESTATICAS.registro_cuenta);
   });
@@ -69,25 +78,25 @@ describe('ProcesarMensajeChatbotUseCase', () => {
     'pos_no_pos',
     'novedad_pedido',
     'codigo_entrega',
-  ] as const)(
-    'responde la FAQ estática para %s',
-    async (intencion) => {
-      const matcher = matcherQueDevuelve(intencion, 0.9);
-      const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
+  ] as const)('responde la FAQ estática para %s', async (intencion) => {
+    const matcher = matcherQueDevuelve(intencion, 0.9);
+    const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
 
-      const resultado = await useCase.execute({ usuarioId: 'u1', mensaje: 'x' });
+    const resultado = await useCase.execute({ usuarioId: 'u1', mensaje: 'x' });
 
-      expect(resultado.respuesta).toBe(RESPUESTAS_ESTATICAS[intencion]);
-      expect(resultado.requiereDatos).toBeNull();
-    },
-  );
+    expect(resultado.respuesta).toBe(RESPUESTAS_ESTATICAS[intencion]);
+    expect(resultado.requiereDatos).toBeNull();
+  });
 
   describe('copago_eps', () => {
     it('pide régimen/rango de ingresos si faltan', async () => {
       const matcher = matcherQueDevuelve('copago_eps', 0.9);
       const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
 
-      const resultado = await useCase.execute({ usuarioId: 'u1', mensaje: 'cuanto es el copago' });
+      const resultado = await useCase.execute({
+        usuarioId: 'u1',
+        mensaje: 'cuanto es el copago',
+      });
 
       expect(resultado.requiereDatos).toBe('datos_copago');
     });
@@ -127,7 +136,10 @@ describe('ProcesarMensajeChatbotUseCase', () => {
       const matcher = matcherQueDevuelve('farmacias_eps', 0.9);
       const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
 
-      const resultado = await useCase.execute({ usuarioId: null, mensaje: 'farmacias de mi eps' });
+      const resultado = await useCase.execute({
+        usuarioId: null,
+        mensaje: 'farmacias de mi eps',
+      });
 
       expect(resultado.respuesta).toContain('iniciar sesión');
       expect(farmacias.listarPorEps).not.toHaveBeenCalled();
@@ -137,7 +149,10 @@ describe('ProcesarMensajeChatbotUseCase', () => {
       const matcher = matcherQueDevuelve('farmacias_eps', 0.9);
       const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
 
-      const resultado = await useCase.execute({ usuarioId: 'u1', mensaje: 'farmacias de mi eps' });
+      const resultado = await useCase.execute({
+        usuarioId: 'u1',
+        mensaje: 'farmacias de mi eps',
+      });
 
       expect(resultado.requiereDatos).toBe('eps');
       expect(farmacias.listarPorEps).not.toHaveBeenCalled();

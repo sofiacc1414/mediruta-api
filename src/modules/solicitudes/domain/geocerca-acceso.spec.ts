@@ -1,4 +1,8 @@
-import { accesoExpirado, dentroDeGeocerca, distanciaMetros } from './geocerca-acceso';
+import {
+  accesoExpirado,
+  dentroDeGeocerca,
+  distanciaMetros,
+} from './geocerca-acceso';
 
 describe('geocerca de acceso (MED-137 / MED-144)', () => {
   it('la misma coordenada está dentro del radio', () => {
@@ -17,7 +21,9 @@ describe('geocerca de acceso (MED-137 / MED-144)', () => {
 
   it('3. el acceso expira cuando pasa la fecha', () => {
     const expira = new Date('2026-09-24T12:10:00Z');
-    expect(accesoExpirado(expira, new Date('2026-09-24T12:09:00Z'))).toBe(false);
+    expect(accesoExpirado(expira, new Date('2026-09-24T12:09:00Z'))).toBe(
+      false,
+    );
     expect(accesoExpirado(expira, new Date('2026-09-24T12:10:00Z'))).toBe(true);
   });
 });

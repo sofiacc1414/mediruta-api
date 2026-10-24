@@ -65,7 +65,10 @@ export class PostgresCalificacionRepository extends CalificacionRepositoryPort {
     });
   }
 
-  async obtener(usuarioId: string, solicitudId: string): Promise<ResultadoMutacion> {
+  async obtener(
+    usuarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoMutacion> {
     return this.db.withUserContext(usuarioId, async (client) => {
       const result = await client.query<FilaCalificacion>(
         'select * from app.obtener_calificacion($1, $2)',
@@ -108,7 +111,12 @@ export class PostgresCalificacionRepository extends CalificacionRepositoryPort {
     return this.db.withUserContext(datos.usuarioId, async (client) => {
       const result = await client.query<FilaCalificacion>(
         `select * from ${funcion}($1, $2, $3, $4)`,
-        [datos.usuarioId, datos.solicitudId, datos.puntuacion, datos.comentario],
+        [
+          datos.usuarioId,
+          datos.solicitudId,
+          datos.puntuacion,
+          datos.comentario,
+        ],
       );
       const fila = result.rows[0];
       if (!fila) {

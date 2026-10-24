@@ -24,14 +24,16 @@ describe('NotificarValidacionCuentaUseCase (MED-110)', () => {
         referenciaId: 'dom-1',
       }),
     );
-    const mensaje = (registrar.execute as jest.Mock).mock.calls[0][0].mensaje as string;
+    const mensaje = (registrar.execute as jest.Mock).mock.calls[0][0]
+      .mensaje as string;
     expect(mensaje).toContain('Ya puedes comenzar a recibir pedidos');
     expect(mensaje.toLowerCase()).not.toContain('cédula');
   });
 
   it('el rechazo no incluye el motivo interno', async () => {
     await useCase.execute('dom-1', 'rechazada');
-    const mensaje = (registrar.execute as jest.Mock).mock.calls[0][0].mensaje as string;
+    const mensaje = (registrar.execute as jest.Mock).mock.calls[0][0]
+      .mensaje as string;
     expect(mensaje).toBe('Tu solicitud de registro no fue aprobada.');
   });
 });

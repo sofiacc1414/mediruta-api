@@ -1,8 +1,5 @@
 export type TipoNotificacion =
-  | 'cambio_estado'
-  | 'asignacion'
-  | 'validacion_cuenta'
-  | 'mensaje_chat';
+  'cambio_estado' | 'asignacion' | 'validacion_cuenta' | 'mensaje_chat';
 export type ReferenciaNotificacion = 'pedido' | 'cuenta';
 
 export type NotificacionGuardada = {
@@ -36,8 +33,13 @@ export type DatosPedidoNotificacion = {
 export abstract class NotificacionRepositoryPort {
   abstract guardar(datos: NuevaNotificacion): Promise<string | null>;
   abstract listar(usuarioId: string): Promise<NotificacionGuardada[]>;
-  abstract marcarLeida(usuarioId: string, notificacionId: string): Promise<boolean>;
-  abstract datosPedido(solicitudId: string): Promise<DatosPedidoNotificacion | null>;
+  abstract marcarLeida(
+    usuarioId: string,
+    notificacionId: string,
+  ): Promise<boolean>;
+  abstract datosPedido(
+    solicitudId: string,
+  ): Promise<DatosPedidoNotificacion | null>;
   abstract tokensPush(usuarioId: string): Promise<string[]>;
   abstract registrarDispositivo(
     usuarioId: string,

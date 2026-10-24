@@ -17,7 +17,7 @@ const RADIO_TIERRA_METROS = 6371000;
  * porque estos dos puntos no salen de una fila de `solicitudes`: son
  * el resultado de geocodificar en vivo lo que el Paciente va
  * escribiendo, antes de que exista ninguna solicitud guardada. */
-function distanciaMetrosEntre(
+export function distanciaMetrosEntre(
   a: { lat: number; lng: number },
   b: { lat: number; lng: number },
 ): number {

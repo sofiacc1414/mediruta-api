@@ -21,11 +21,21 @@ export class ActualizarConfiguracionAdminUseCase {
     adminId: string,
     umbralMinutos: number,
     parametrosPrecio: ParametrosPrecioDomicilio,
+    comisionAppPorcentaje: number,
+    topeRecaudoEfectivo: number,
+    pagoEfectivoHabilitado: boolean,
+    pagoTarjetaHabilitado: boolean,
+    pagoTransferenciaHabilitado: boolean,
   ): Promise<ActualizarConfiguracionAdminResultado> {
     const resultado = await this.solicitudes.actualizarConfiguracionAdmin(
       adminId,
       umbralMinutos,
       parametrosPrecio,
+      comisionAppPorcentaje,
+      topeRecaudoEfectivo,
+      pagoEfectivoHabilitado,
+      pagoTarjetaHabilitado,
+      pagoTransferenciaHabilitado,
     );
 
     switch (resultado) {

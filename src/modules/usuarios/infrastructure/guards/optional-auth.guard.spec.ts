@@ -37,7 +37,10 @@ describe('OptionalAuthGuard', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    (accessTokens.verify as jest.Mock).mockResolvedValue({ sub: SUB, sid: SID });
+    (accessTokens.verify as jest.Mock).mockResolvedValue({
+      sub: SUB,
+      sid: SID,
+    });
     (sesiones.validar as jest.Mock).mockResolvedValue(true);
   });
 
@@ -69,6 +72,9 @@ describe('OptionalAuthGuard', () => {
     const { context, request } = contextoCon('Bearer token-firmado');
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
-    expect(request[IDENTIDAD_REQUEST_KEY]).toEqual({ usuarioId: SUB, sid: SID });
+    expect(request[IDENTIDAD_REQUEST_KEY]).toEqual({
+      usuarioId: SUB,
+      sid: SID,
+    });
   });
 });

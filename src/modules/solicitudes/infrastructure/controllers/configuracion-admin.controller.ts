@@ -69,6 +69,11 @@ export class ConfiguracionAdminController {
         distanciaIncluidaKm: dto.distanciaIncluidaKm,
         tarifaPorKmExcedente: dto.tarifaPorKmExcedente,
       },
+      dto.comisionAppPorcentaje,
+      dto.topeRecaudoEfectivo,
+      dto.pagoEfectivoHabilitado,
+      dto.pagoTarjetaHabilitado,
+      dto.pagoTransferenciaHabilitado,
     );
   }
 

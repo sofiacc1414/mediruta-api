@@ -1,4 +1,4 @@
-import { IsInt, IsNumber, Max, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, Max, Min } from 'class-validator';
 
 export class ActualizarConfiguracionAdminDto {
   @IsInt()
@@ -33,4 +33,25 @@ export class ActualizarConfiguracionAdminDto {
   @IsNumber()
   @Min(0)
   tarifaPorKmExcedente: number;
+
+  /** Módulo 4 — % (0-1) del costo del domicilio que retiene la app. */
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  comisionAppPorcentaje: number;
+
+  /** Módulo 3 — deuda de efectivo a partir de la cual se bloquea al
+   * Domiciliario para nuevos pedidos. */
+  @IsNumber()
+  @Min(0.01)
+  topeRecaudoEfectivo: number;
+
+  @IsBoolean()
+  pagoEfectivoHabilitado: boolean;
+
+  @IsBoolean()
+  pagoTarjetaHabilitado: boolean;
+
+  @IsBoolean()
+  pagoTransferenciaHabilitado: boolean;
 }

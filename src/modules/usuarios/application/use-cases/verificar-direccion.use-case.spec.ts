@@ -17,7 +17,12 @@ describe('VerificarDireccionUseCase', () => {
       direccionResuelta: 'Carrera 43A, El Poblado',
       precisa: false,
       candidatos: [
-        { lat: 6.1, lng: -75.5, direccionResuelta: 'otra calle', precisa: true },
+        {
+          lat: 6.1,
+          lng: -75.5,
+          direccionResuelta: 'otra calle',
+          precisa: true,
+        },
       ],
     });
 
@@ -33,7 +38,12 @@ describe('VerificarDireccionUseCase', () => {
       lng: -75.6,
       precisa: false,
       candidatos: [
-        { lat: 6.1, lng: -75.5, direccionResuelta: 'otra calle', precisa: true },
+        {
+          lat: 6.1,
+          lng: -75.5,
+          direccionResuelta: 'otra calle',
+          precisa: true,
+        },
       ],
     });
     expect(geocodificacion.geocodificar).toHaveBeenCalledWith(

@@ -18,13 +18,22 @@ function instanteONull(valor: string | Date | null): string | null {
 }
 
 type FilaObtenerChat = {
-  resultado: 'ok' | 'no_autorizado' | 'pedido_no_encontrado' | 'sin_domiciliario_asignado';
+  resultado:
+    | 'ok'
+    | 'no_autorizado'
+    | 'pedido_no_encontrado'
+    | 'sin_domiciliario_asignado';
   chat_id: string | null;
   solo_lectura: boolean | null;
 };
 
 type FilaEnviarMensaje = {
-  resultado: 'ok' | 'no_autorizado' | 'chat_no_encontrado' | 'chat_solo_lectura' | 'contenido_vacio';
+  resultado:
+    | 'ok'
+    | 'no_autorizado'
+    | 'chat_no_encontrado'
+    | 'chat_solo_lectura'
+    | 'contenido_vacio';
   id: string | null;
   chat_id: string | null;
   remitente_id: string | null;
@@ -129,12 +138,18 @@ export class PostgresChatRepository extends ChatRepositoryPort {
     // dos por `EnviarMensajeChatUseCase`, que pasa por acá, así que
     // nunca se duplica (antes cada canal emitía por su cuenta).
     if (resultado.resultado === 'ok') {
-      this.eventos.emitirNuevoMensaje(resultado.mensaje.chatId, resultado.mensaje);
+      this.eventos.emitirNuevoMensaje(
+        resultado.mensaje.chatId,
+        resultado.mensaje,
+      );
     }
     return resultado;
   }
 
-  async listarMensajes(usuarioId: string, chatId: string): Promise<MensajeChat[]> {
+  async listarMensajes(
+    usuarioId: string,
+    chatId: string,
+  ): Promise<MensajeChat[]> {
     return this.db.withUserContext(usuarioId, async (client) => {
       const result = await client.query<FilaMensaje>(
         'select * from app.listar_mensajes_chat($1, $2)',

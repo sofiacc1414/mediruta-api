@@ -2,7 +2,10 @@ import { SolicitudNoEncontradaError } from '../../../solicitudes/domain/errors/s
 import { NoAutorizadoError } from '../../../usuarios/domain/errors/no-autorizado.error';
 import { PedidoNoEnCaminoError } from '../../domain/errors/pedido-no-en-camino.error';
 import { TrackingNoDisponibleError } from '../../domain/errors/tracking-no-disponible.error';
-import { PosicionEnVivo, TrackingRepositoryPort } from '../../domain/ports/tracking.repository.port';
+import {
+  PosicionEnVivo,
+  TrackingRepositoryPort,
+} from '../../domain/ports/tracking.repository.port';
 import { ActualizarPosicionEnVivoUseCase } from './actualizar-posicion-en-vivo.use-case';
 import { ObtenerPosicionEnVivoUseCase } from './obtener-posicion-en-vivo.use-case';
 
@@ -40,7 +43,9 @@ describe('Seguimiento GPS en vivo — HU tracking', () => {
     });
 
     it('lanza PedidoNoEnCaminoError si el pedido no está en_camino_entrega', async () => {
-      (tracking.actualizarUbicacion as jest.Mock).mockResolvedValue('pedido_no_en_camino');
+      (tracking.actualizarUbicacion as jest.Mock).mockResolvedValue(
+        'pedido_no_en_camino',
+      );
 
       await expect(
         actualizar.execute('domiciliario-1', 'sol-1', 6.24, -75.57),
@@ -48,7 +53,9 @@ describe('Seguimiento GPS en vivo — HU tracking', () => {
     });
 
     it('lanza NoAutorizadoError si no es el domiciliario del pedido', async () => {
-      (tracking.actualizarUbicacion as jest.Mock).mockResolvedValue('no_autorizado');
+      (tracking.actualizarUbicacion as jest.Mock).mockResolvedValue(
+        'no_autorizado',
+      );
 
       await expect(
         actualizar.execute('intruso', 'sol-1', 6.24, -75.57),
@@ -58,31 +65,44 @@ describe('Seguimiento GPS en vivo — HU tracking', () => {
 
   describe('ObtenerPosicionEnVivoUseCase', () => {
     it('devuelve la posición cuando el resultado es ok', async () => {
-      (tracking.obtenerPosicion as jest.Mock).mockResolvedValue({ resultado: 'ok', posicion });
+      (tracking.obtenerPosicion as jest.Mock).mockResolvedValue({
+        resultado: 'ok',
+        posicion,
+      });
 
-      await expect(obtener.execute('paciente-1', 'sol-1')).resolves.toEqual(posicion);
+      await expect(obtener.execute('paciente-1', 'sol-1')).resolves.toEqual(
+        posicion,
+      );
     });
 
     it('lanza SolicitudNoEncontradaError si el pedido no existe', async () => {
-      (tracking.obtenerPosicion as jest.Mock).mockResolvedValue({ resultado: 'pedido_no_encontrado' });
+      (tracking.obtenerPosicion as jest.Mock).mockResolvedValue({
+        resultado: 'pedido_no_encontrado',
+      });
 
-      await expect(obtener.execute('paciente-1', 'sol-1')).rejects.toBeInstanceOf(
-        SolicitudNoEncontradaError,
-      );
+      await expect(
+        obtener.execute('paciente-1', 'sol-1'),
+      ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
     });
 
     it('lanza TrackingNoDisponibleError fuera de la ventana de tracking', async () => {
-      (tracking.obtenerPosicion as jest.Mock).mockResolvedValue({ resultado: 'sin_tracking_disponible' });
+      (tracking.obtenerPosicion as jest.Mock).mockResolvedValue({
+        resultado: 'sin_tracking_disponible',
+      });
 
-      await expect(obtener.execute('paciente-1', 'sol-1')).rejects.toBeInstanceOf(
-        TrackingNoDisponibleError,
-      );
+      await expect(
+        obtener.execute('paciente-1', 'sol-1'),
+      ).rejects.toBeInstanceOf(TrackingNoDisponibleError);
     });
 
     it('lanza NoAutorizadoError si no es paciente/domiciliario/admin del pedido', async () => {
-      (tracking.obtenerPosicion as jest.Mock).mockResolvedValue({ resultado: 'no_autorizado' });
+      (tracking.obtenerPosicion as jest.Mock).mockResolvedValue({
+        resultado: 'no_autorizado',
+      });
 
-      await expect(obtener.execute('intruso', 'sol-1')).rejects.toBeInstanceOf(NoAutorizadoError);
+      await expect(obtener.execute('intruso', 'sol-1')).rejects.toBeInstanceOf(
+        NoAutorizadoError,
+      );
     });
   });
 });

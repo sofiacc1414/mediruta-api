@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { ChatRepositoryPort, MensajeChat } from '../../domain/ports/chat.repository.port';
+import {
+  ChatRepositoryPort,
+  MensajeChat,
+} from '../../domain/ports/chat.repository.port';
 
 /** Auditoría del Admin — solo lectura, sin restricción de ownership
  * (el controller ya exige rol admin vía `@Roles`). */

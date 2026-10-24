@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { ChatRepositoryPort, MensajeChat } from '../../domain/ports/chat.repository.port';
+import {
+  ChatRepositoryPort,
+  MensajeChat,
+} from '../../domain/ports/chat.repository.port';
 
 /** El controller/gateway llama primero a `ObtenerChatPedidoUseCase`
  * (valida ownership y arma el `chatId`) — este caso de uso solo lista,

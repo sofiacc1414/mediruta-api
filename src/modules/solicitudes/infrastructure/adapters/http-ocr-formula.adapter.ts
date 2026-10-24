@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ArchivoFormulaInvalidoError } from '../../domain/errors/archivo-formula-invalido.error';
 import { ImagenFormulaIlegibleError } from '../../domain/errors/imagen-formula-ilegible.error';
-import { FormulaMedicaExtraida, OcrFormulaPort } from '../../domain/ports/ocr-formula.port';
+import {
+  FormulaMedicaExtraida,
+  OcrFormulaPort,
+} from '../../domain/ports/ocr-formula.port';
 import { Medicamento } from '../../domain/ports/solicitud.repository.port';
 
 type MedicamentoOcr = {

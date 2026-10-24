@@ -24,9 +24,9 @@ describe('EliminarFarmaciaAliadaAdminUseCase', () => {
     } as unknown as FarmaciaAliadaRepositoryPort;
     const useCase = new EliminarFarmaciaAliadaAdminUseCase(farmacias);
 
-    await expect(useCase.execute('admin-1', 'farmacia-1')).rejects.toBeInstanceOf(
-      RolNoAutorizadoError,
-    );
+    await expect(
+      useCase.execute('admin-1', 'farmacia-1'),
+    ).rejects.toBeInstanceOf(RolNoAutorizadoError);
   });
 
   it('lanza FarmaciaAliadaNoEncontradaError si el repositorio dice no_encontrado', async () => {
@@ -35,8 +35,8 @@ describe('EliminarFarmaciaAliadaAdminUseCase', () => {
     } as unknown as FarmaciaAliadaRepositoryPort;
     const useCase = new EliminarFarmaciaAliadaAdminUseCase(farmacias);
 
-    await expect(useCase.execute('admin-1', 'farmacia-1')).rejects.toBeInstanceOf(
-      FarmaciaAliadaNoEncontradaError,
-    );
+    await expect(
+      useCase.execute('admin-1', 'farmacia-1'),
+    ).rejects.toBeInstanceOf(FarmaciaAliadaNoEncontradaError);
   });
 });

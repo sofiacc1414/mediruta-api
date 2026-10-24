@@ -12,12 +12,15 @@ import { DomiciliarioNoEncontradoError } from '../../../domiciliarios/domain/err
 import { NoHayBorradorDomiciliarioError } from '../../../domiciliarios/domain/errors/no-hay-borrador-domiciliario.error';
 import { ArchivoFormulaInvalidoError } from '../../../solicitudes/domain/errors/archivo-formula-invalido.error';
 import { CodigoEntregaIncorrectoError } from '../../../solicitudes/domain/errors/codigo-entrega-incorrecto.error';
+import { DomiciliarioBloqueadoPorTopeError } from '../../../solicitudes/domain/errors/domiciliario-bloqueado-por-tope.error';
 import { DomiciliarioConPedidoActivoError } from '../../../solicitudes/domain/errors/domiciliario-con-pedido-activo.error';
 import { DomiciliarioNoDisponibleParaAsignarError } from '../../../solicitudes/domain/errors/domiciliario-no-disponible-para-asignar.error';
 import { DocumentosPacienteNoDisponiblesError } from '../../../solicitudes/domain/errors/documentos-paciente-no-disponibles.error';
 import { FueraDeUbicacionAutorizadaError } from '../../../solicitudes/domain/errors/fuera-de-ubicacion-autorizada.error';
 import { ImagenFormulaIlegibleError } from '../../../solicitudes/domain/errors/imagen-formula-ilegible.error';
+import { MedioPagoNoHabilitadoError } from '../../../solicitudes/domain/errors/medio-pago-no-habilitado.error';
 import { NovedadNoEncontradaError } from '../../../solicitudes/domain/errors/novedad-no-encontrada.error';
+import { PagoTarjetaRechazadoError } from '../../../solicitudes/domain/errors/pago-tarjeta-rechazado.error';
 import { PedidoYaAsignadoError } from '../../../solicitudes/domain/errors/pedido-ya-asignado.error';
 import { PerfilIncompletoError } from '../../../solicitudes/domain/errors/perfil-incompleto.error';
 import { SolicitudEdicionSinCambiosError } from '../../../solicitudes/domain/errors/solicitud-edicion-sin-cambios.error';
@@ -42,6 +45,9 @@ import { RecuperacionInvalidaError } from '../../domain/errors/recuperacion-inva
 import { RefreshTokenInvalidoError } from '../../domain/errors/refresh-token-invalido.error';
 import { RolNoAutorizadoError } from '../../domain/errors/rol-no-autorizado.error';
 import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-invalido.error';
+import { WalletNoEncontradaError } from '../../../wallet/domain/errors/wallet-no-encontrada.error';
+import { WalletSinDeudaError } from '../../../wallet/domain/errors/wallet-sin-deuda.error';
+import { WalletSinSaldoError } from '../../../wallet/domain/errors/wallet-sin-saldo.error';
 
 @Catch(
   CorreoYaRegistradoError,
@@ -81,6 +87,12 @@ import { TipoRegistroInvalidoError } from '../../domain/errors/tipo-registro-inv
   FueraDeUbicacionAutorizadaError,
   ArchivoFormulaInvalidoError,
   ImagenFormulaIlegibleError,
+  DomiciliarioBloqueadoPorTopeError,
+  MedioPagoNoHabilitadoError,
+  PagoTarjetaRechazadoError,
+  WalletNoEncontradaError,
+  WalletSinDeudaError,
+  WalletSinSaldoError,
 )
 export class DominioHttpFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -128,13 +140,15 @@ export class DominioHttpFilter implements ExceptionFilter {
     if (
       exception instanceof RolNoAutorizadoError ||
       exception instanceof PerfilIncompletoError ||
-      exception instanceof PerfilDomiciliarioIncompletoParaDisponibilidadError ||
+      exception instanceof
+        PerfilDomiciliarioIncompletoParaDisponibilidadError ||
       exception instanceof AccionCuentaNoAutorizadaError ||
       // Bug real reportado: esta clase estaba importada pero nunca se
       // agregó ni al @Catch ni a ningún branch de acá — caía a un 500
       // genérico de Nest en vez del 403 que la App ya esperaba
       // (`_mensajeDocumentos` ya comparaba contra statusCode == 403).
-      exception instanceof FueraDeUbicacionAutorizadaError
+      exception instanceof FueraDeUbicacionAutorizadaError ||
+      exception instanceof DomiciliarioBloqueadoPorTopeError
     ) {
       response.status(HttpStatus.FORBIDDEN).json({
         statusCode: HttpStatus.FORBIDDEN,
@@ -160,7 +174,8 @@ export class DominioHttpFilter implements ExceptionFilter {
       exception instanceof AdministradorNoEncontradoError ||
       exception instanceof CuentaNoEncontradaError ||
       exception instanceof NivelCopagoNoEncontradoError ||
-      exception instanceof FarmaciaAliadaNoEncontradaError
+      exception instanceof FarmaciaAliadaNoEncontradaError ||
+      exception instanceof WalletNoEncontradaError
     ) {
       response.status(HttpStatus.NOT_FOUND).json({
         statusCode: HttpStatus.NOT_FOUND,
@@ -181,7 +196,10 @@ export class DominioHttpFilter implements ExceptionFilter {
       return;
     }
 
-    if (exception instanceof ImagenFormulaIlegibleError) {
+    if (
+      exception instanceof ImagenFormulaIlegibleError ||
+      exception instanceof PagoTarjetaRechazadoError
+    ) {
       response.status(HttpStatus.UNPROCESSABLE_ENTITY).json({
         statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
         message: exception.message,
@@ -189,7 +207,8 @@ export class DominioHttpFilter implements ExceptionFilter {
       return;
     }
 
-    // ArchivoFormulaInvalidoError cae al 400 genérico de abajo —
+    // ArchivoFormulaInvalidoError y MedioPagoNoHabilitadoError caen al
+    // 400 genérico de abajo —
     // mismo registro en @Catch, sin branch propio porque no necesita
     // nada extra además de `message`.
     response.status(HttpStatus.BAD_REQUEST).json({

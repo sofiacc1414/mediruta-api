@@ -1,4 +1,5 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
+import type { MetodoPago } from '../../domain/ports/solicitud.repository.port';
 
 /** Ver `VerificacionDireccionPrevia` en `EnviarSolicitudUseCase` —
  * opcional a propósito: si la App no la manda (o no coincide con el
@@ -7,6 +8,17 @@ export class EnviarSolicitudDto {
   @IsOptional()
   @IsString()
   direccionFarmaciaVerificadaPara?: string;
+
+  /** Módulo 4 — App-anteriores no mandan esto: por defecto `efectivo`
+   * (comportamiento idéntico al de antes de este módulo). */
+  @IsOptional()
+  @IsIn(['efectivo', 'tarjeta', 'transferencia'])
+  metodoPago?: MetodoPago;
+
+  /** Módulo 4 — solo si `metodoPago === 'tarjeta'`, simulado. */
+  @IsOptional()
+  @IsString()
+  numeroTarjeta?: string;
 
   @IsOptional()
   @IsNumber()

@@ -1,3 +1,4 @@
+import { DomiciliarioBloqueadoPorTopeError } from '../../domain/errors/domiciliario-bloqueado-por-tope.error';
 import { DomiciliarioConPedidoActivoError } from '../../domain/errors/domiciliario-con-pedido-activo.error';
 import { PedidoYaAsignadoError } from '../../domain/errors/pedido-ya-asignado.error';
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
@@ -16,6 +17,7 @@ describe('AceptarPedidoUseCase', () => {
     listarHistorial: jest.fn(),
     actualizar: jest.fn(),
     actualizarReceta: jest.fn(),
+    obtenerMediosPagoHabilitados: jest.fn(),
     enviar: jest.fn(),
     cancelar: jest.fn(),
     obtenerDatosGeocodificacionFarmacia: jest.fn(),
@@ -24,6 +26,7 @@ describe('AceptarPedidoUseCase', () => {
     listarNovedadesSolicitudDomiciliario: jest.fn(),
     listarPedidosDisponibles: jest.fn(),
     aceptarPedido: jest.fn(),
+    marcarEnFarmacia: jest.fn(),
     marcarMedicamentosRecogidos: jest.fn(),
     iniciarEntrega: jest.fn(),
     marcarEnSitio: jest.fn(),
@@ -44,6 +47,7 @@ describe('AceptarPedidoUseCase', () => {
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
     reportarNovedadPaciente: jest.fn(),
     solicitarEdicionPedido: jest.fn(),
+    adjuntarRecetaPropuestaEdicion: jest.fn(),
     reportarCodigoNoGenerado: jest.fn(),
     aprobarEdicionPedidoAdmin: jest.fn(),
     obtenerDatosGeocodificacionNovedadAdmin: jest.fn(),
@@ -55,6 +59,7 @@ describe('AceptarPedidoUseCase', () => {
     obtenerConfiguracionAdmin: jest.fn(),
     actualizarConfiguracionAdmin: jest.fn(),
     obtenerDatosPrecioPedido: jest.fn(),
+    obtenerParametrosEstimacionPrecio: jest.fn(),
     listarNivelesCopagoAdmin: jest.fn(),
     guardarNivelCopagoAdmin: jest.fn(),
     eliminarNivelCopagoAdmin: jest.fn(),
@@ -102,5 +107,15 @@ describe('AceptarPedidoUseCase', () => {
     await expect(
       useCase.execute('domiciliario-uuid', 'solicitud-uuid'),
     ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
+  });
+
+  it('Módulo 3 — lanza DomiciliarioBloqueadoPorTopeError si la deuda de efectivo alcanzó el tope', async () => {
+    (solicitudes.aceptarPedido as jest.Mock).mockResolvedValue(
+      'bloqueado_por_tope',
+    );
+
+    await expect(
+      useCase.execute('domiciliario-uuid', 'solicitud-uuid'),
+    ).rejects.toBeInstanceOf(DomiciliarioBloqueadoPorTopeError);
   });
 });

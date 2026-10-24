@@ -24,7 +24,9 @@ import { ListarMensajesChatAdminUseCase } from '../../application/use-cases/list
 @UseGuards(AccessAuthGuard, RolesGuard)
 @Roles('ADMINISTRADOR', 'ROOT')
 export class ChatAdminController {
-  constructor(private readonly listarMensajesAdmin: ListarMensajesChatAdminUseCase) {}
+  constructor(
+    private readonly listarMensajesAdmin: ListarMensajesChatAdminUseCase,
+  ) {}
 
   @Get('pedido/:solicitudId')
   @HttpCode(HttpStatus.OK)

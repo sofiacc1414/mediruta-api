@@ -25,7 +25,11 @@ describe('ReportarCodigoNoGeneradoUseCase', () => {
       pacienteNombre: 'Juan',
     });
 
-    const resultado = await useCase.execute('paciente-uuid', 'solicitud-uuid', null);
+    const resultado = await useCase.execute(
+      'paciente-uuid',
+      'solicitud-uuid',
+      null,
+    );
 
     expect(resultado).toEqual({
       message: MENSAJE_CODIGO_NO_GENERADO_REPORTADO,
@@ -53,11 +57,16 @@ describe('ReportarCodigoNoGeneradoUseCase', () => {
       pacienteCorreo: 'paciente@paciente.com',
       pacienteNombre: 'Juan',
     });
-    (correo.enviarCodigoEntrega as jest.Mock).mockRejectedValue(new Error('smtp caído'));
+    (correo.enviarCodigoEntrega as jest.Mock).mockRejectedValue(
+      new Error('smtp caído'),
+    );
 
     await expect(
       useCase.execute('paciente-uuid', 'solicitud-uuid', null),
-    ).resolves.toEqual({ message: MENSAJE_CODIGO_NO_GENERADO_REPORTADO, id: 'novedad-uuid' });
+    ).resolves.toEqual({
+      message: MENSAJE_CODIGO_NO_GENERADO_REPORTADO,
+      id: 'novedad-uuid',
+    });
   });
 
   it('lanza SolicitudNoEncontradaError si el pedido no es del paciente o ya terminó', async () => {

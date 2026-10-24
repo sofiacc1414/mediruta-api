@@ -5,7 +5,10 @@ import { SolicitudNoEncontradaError } from '../../../solicitudes/domain/errors/s
 import { NoAutorizadoError } from '../../../usuarios/domain/errors/no-autorizado.error';
 import { ChatSinDomiciliarioAsignadoError } from '../../domain/errors/chat-sin-domiciliario-asignado.error';
 import { ChatSoloLecturaError } from '../../domain/errors/chat-solo-lectura.error';
-import { ChatRepositoryPort, MensajeChat } from '../../domain/ports/chat.repository.port';
+import {
+  ChatRepositoryPort,
+  MensajeChat,
+} from '../../domain/ports/chat.repository.port';
 import { EnviarMensajeChatUseCase } from './enviar-mensaje-chat.use-case';
 import { ListarMensajesChatAdminUseCase } from './listar-mensajes-chat-admin.use-case';
 import { ListarMensajesChatUseCase } from './listar-mensajes-chat.use-case';
@@ -39,10 +42,16 @@ describe('Chat en tiempo real — HU chat', () => {
     registrarDispositivo: jest.fn(),
   };
   const push: PushNotificacionPort = { enviar: jest.fn() };
-  const registrarNotificacion = new RegistrarNotificacionUseCase(notificaciones, push);
+  const registrarNotificacion = new RegistrarNotificacionUseCase(
+    notificaciones,
+    push,
+  );
 
   const obtenerChat = new ObtenerChatPedidoUseCase(chats);
-  const enviarMensaje = new EnviarMensajeChatUseCase(chats, registrarNotificacion);
+  const enviarMensaje = new EnviarMensajeChatUseCase(
+    chats,
+    registrarNotificacion,
+  );
   const listarMensajes = new ListarMensajesChatUseCase(chats);
   const marcarLeidos = new MarcarMensajesLeidosChatUseCase(chats);
   const listarMensajesAdmin = new ListarMensajesChatAdminUseCase(chats);
@@ -63,7 +72,10 @@ describe('Chat en tiempo real — HU chat', () => {
       const resultado = await obtenerChat.execute('paciente-1', 'sol-1');
 
       expect(resultado).toEqual({ chatId: 'chat-1', soloLectura: false });
-      expect(chats.obtenerOCrearChat).toHaveBeenCalledWith('paciente-1', 'sol-1');
+      expect(chats.obtenerOCrearChat).toHaveBeenCalledWith(
+        'paciente-1',
+        'sol-1',
+      );
     });
 
     it('lanza SolicitudNoEncontradaError si el pedido no existe/no es propio', async () => {
@@ -71,9 +83,9 @@ describe('Chat en tiempo real — HU chat', () => {
         resultado: 'pedido_no_encontrado',
       });
 
-      await expect(obtenerChat.execute('paciente-1', 'sol-1')).rejects.toBeInstanceOf(
-        SolicitudNoEncontradaError,
-      );
+      await expect(
+        obtenerChat.execute('paciente-1', 'sol-1'),
+      ).rejects.toBeInstanceOf(SolicitudNoEncontradaError);
     });
 
     it('lanza ChatSinDomiciliarioAsignadoError si el pedido todavía no tiene domiciliario', async () => {
@@ -81,17 +93,19 @@ describe('Chat en tiempo real — HU chat', () => {
         resultado: 'sin_domiciliario_asignado',
       });
 
-      await expect(obtenerChat.execute('paciente-1', 'sol-1')).rejects.toBeInstanceOf(
-        ChatSinDomiciliarioAsignadoError,
-      );
+      await expect(
+        obtenerChat.execute('paciente-1', 'sol-1'),
+      ).rejects.toBeInstanceOf(ChatSinDomiciliarioAsignadoError);
     });
 
     it('lanza NoAutorizadoError si el usuario no es paciente ni domiciliario de ese pedido', async () => {
-      (chats.obtenerOCrearChat as jest.Mock).mockResolvedValue({ resultado: 'no_autorizado' });
+      (chats.obtenerOCrearChat as jest.Mock).mockResolvedValue({
+        resultado: 'no_autorizado',
+      });
 
-      await expect(obtenerChat.execute('otro-usuario', 'sol-1')).rejects.toBeInstanceOf(
-        NoAutorizadoError,
-      );
+      await expect(
+        obtenerChat.execute('otro-usuario', 'sol-1'),
+      ).rejects.toBeInstanceOf(NoAutorizadoError);
     });
   });
 
@@ -104,7 +118,11 @@ describe('Chat en tiempo real — HU chat', () => {
         solicitudId: 'sol-1',
       });
 
-      const resultado = await enviarMensaje.execute('paciente-1', 'chat-1', 'Ya salgo');
+      const resultado = await enviarMensaje.execute(
+        'paciente-1',
+        'chat-1',
+        'Ya salgo',
+      );
 
       expect(resultado).toEqual(mensaje);
       expect(notificaciones.guardar).toHaveBeenCalledWith(
@@ -125,7 +143,9 @@ describe('Chat en tiempo real — HU chat', () => {
         destinatarioId: 'domiciliario-1',
         solicitudId: 'sol-1',
       });
-      (notificaciones.guardar as jest.Mock).mockRejectedValue(new Error('db caída'));
+      (notificaciones.guardar as jest.Mock).mockRejectedValue(
+        new Error('db caída'),
+      );
 
       await expect(
         enviarMensaje.execute('paciente-1', 'chat-1', 'Ya salgo'),
@@ -133,7 +153,9 @@ describe('Chat en tiempo real — HU chat', () => {
     });
 
     it('lanza ChatSoloLecturaError si ya pasaron los 30 minutos, sin notificar', async () => {
-      (chats.enviarMensaje as jest.Mock).mockResolvedValue({ resultado: 'chat_solo_lectura' });
+      (chats.enviarMensaje as jest.Mock).mockResolvedValue({
+        resultado: 'chat_solo_lectura',
+      });
 
       await expect(
         enviarMensaje.execute('paciente-1', 'chat-1', 'Hola'),
@@ -142,7 +164,9 @@ describe('Chat en tiempo real — HU chat', () => {
     });
 
     it('lanza SolicitudNoEncontradaError si el chat no existe', async () => {
-      (chats.enviarMensaje as jest.Mock).mockResolvedValue({ resultado: 'chat_no_encontrado' });
+      (chats.enviarMensaje as jest.Mock).mockResolvedValue({
+        resultado: 'chat_no_encontrado',
+      });
 
       await expect(
         enviarMensaje.execute('paciente-1', 'chat-inexistente', 'Hola'),
@@ -150,7 +174,9 @@ describe('Chat en tiempo real — HU chat', () => {
     });
 
     it('lanza NoAutorizadoError si el usuario no es parte de ese chat', async () => {
-      (chats.enviarMensaje as jest.Mock).mockResolvedValue({ resultado: 'no_autorizado' });
+      (chats.enviarMensaje as jest.Mock).mockResolvedValue({
+        resultado: 'no_autorizado',
+      });
 
       await expect(
         enviarMensaje.execute('intruso', 'chat-1', 'Hola'),
@@ -171,7 +197,10 @@ describe('Chat en tiempo real — HU chat', () => {
     it('delega marcar como leídos en el repositorio', async () => {
       await marcarLeidos.execute('paciente-1', 'chat-1');
 
-      expect(chats.marcarMensajesLeidos).toHaveBeenCalledWith('paciente-1', 'chat-1');
+      expect(chats.marcarMensajesLeidos).toHaveBeenCalledWith(
+        'paciente-1',
+        'chat-1',
+      );
     });
 
     it('delega la auditoría del admin en el repositorio', async () => {
@@ -180,7 +209,10 @@ describe('Chat en tiempo real — HU chat', () => {
       const resultado = await listarMensajesAdmin.execute('admin-1', 'sol-1');
 
       expect(resultado).toEqual([mensaje]);
-      expect(chats.listarMensajesAdmin).toHaveBeenCalledWith('admin-1', 'sol-1');
+      expect(chats.listarMensajesAdmin).toHaveBeenCalledWith(
+        'admin-1',
+        'sol-1',
+      );
     });
   });
 });

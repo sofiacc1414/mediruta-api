@@ -3,7 +3,10 @@ import {
   describirCopagoContributivo,
   describirCopagoSubsidiado,
 } from '../../domain/copago-regulado';
-import { RangoIngresos, UMBRAL_CONFIANZA_MINIMO } from '../../domain/intencion-chatbot';
+import {
+  RangoIngresos,
+  UMBRAL_CONFIANZA_MINIMO,
+} from '../../domain/intencion-chatbot';
 import { IntencionMatcherPort } from '../../domain/ports/intencion-matcher.port';
 import { FarmaciaAliadaRepositoryPort } from '../../domain/ports/farmacia-aliada.repository.port';
 import { RespuestaChatbot } from '../../domain/respuesta-chatbot';
@@ -70,8 +73,14 @@ export class ProcesarMensajeChatbotUseCase {
     };
   }
 
-  private responderCopago(score: number, entrada: EntradaMensajeChatbot): RespuestaChatbot {
-    if (!entrada.regimen || (entrada.regimen === 'contributivo' && !entrada.rangoIngresos)) {
+  private responderCopago(
+    score: number,
+    entrada: EntradaMensajeChatbot,
+  ): RespuestaChatbot {
+    if (
+      !entrada.regimen ||
+      (entrada.regimen === 'contributivo' && !entrada.rangoIngresos)
+    ) {
       return {
         intencion: 'copago_eps',
         score,
@@ -106,7 +115,8 @@ export class ProcesarMensajeChatbotUseCase {
       return {
         intencion: 'farmacias_eps',
         score,
-        respuesta: 'Para esto necesitás iniciar sesión — una vez adentro, preguntame de nuevo.',
+        respuesta:
+          'Para esto necesitás iniciar sesión — una vez adentro, preguntame de nuevo.',
         requiereDatos: null,
         ofrecerSoporte: false,
       };
@@ -116,13 +126,17 @@ export class ProcesarMensajeChatbotUseCase {
       return {
         intencion: 'farmacias_eps',
         score,
-        respuesta: '¿Cuál es tu EPS? Así te digo qué farmacias trabajan con ella.',
+        respuesta:
+          '¿Cuál es tu EPS? Así te digo qué farmacias trabajan con ella.',
         requiereDatos: 'eps',
         ofrecerSoporte: false,
       };
     }
 
-    const farmacias = await this.farmacias.listarPorEps(entrada.usuarioId, entrada.eps);
+    const farmacias = await this.farmacias.listarPorEps(
+      entrada.usuarioId,
+      entrada.eps,
+    );
     if (farmacias.length === 0) {
       return {
         intencion: 'farmacias_eps',
@@ -136,7 +150,10 @@ export class ProcesarMensajeChatbotUseCase {
     }
 
     const listado = farmacias
-      .map((f) => `• ${f.nombreFarmacia} — ${f.ciudad}${f.direccion ? `, ${f.direccion}` : ''}`)
+      .map(
+        (f) =>
+          `• ${f.nombreFarmacia} — ${f.ciudad}${f.direccion ? `, ${f.direccion}` : ''}`,
+      )
       .join('\n');
     return {
       intencion: 'farmacias_eps',

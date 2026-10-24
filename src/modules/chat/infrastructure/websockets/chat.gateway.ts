@@ -66,7 +66,9 @@ export class ChatGateway
   private async autenticar(socket: Socket): Promise<void> {
     const token = extraerToken(socket);
     if (!token) {
-      this.logger.warn(`${socket.id}: sin token en el handshake, se desconecta.`);
+      this.logger.warn(
+        `${socket.id}: sin token en el handshake, se desconecta.`,
+      );
       socket.disconnect(true);
       return;
     }
@@ -77,14 +79,18 @@ export class ChatGateway
         sid: payload.sid,
       });
       if (!sesionValida) {
-        this.logger.warn(`${socket.id}: sesión inválida (usuario ${payload.sub}), se desconecta.`);
+        this.logger.warn(
+          `${socket.id}: sesión inválida (usuario ${payload.sub}), se desconecta.`,
+        );
         socket.disconnect(true);
         return;
       }
       socket.data.usuarioId = payload.sub;
       this.logger.log(`${socket.id}: autenticado (usuario ${payload.sub}).`);
     } catch (error) {
-      this.logger.warn(`${socket.id}: token inválido (${(error as Error).message}), se desconecta.`);
+      this.logger.warn(
+        `${socket.id}: token inválido (${(error as Error).message}), se desconecta.`,
+      );
       socket.disconnect(true);
     }
   }
@@ -112,7 +118,10 @@ export class ChatGateway
     try {
       const chat = await this.obtenerChat.execute(usuarioId, data.solicitudId);
       await socket.join(chat.chatId);
-      socket.emit('chat:unido', { chatId: chat.chatId, soloLectura: chat.soloLectura });
+      socket.emit('chat:unido', {
+        chatId: chat.chatId,
+        soloLectura: chat.soloLectura,
+      });
     } catch (error) {
       socket.emit('chat:error', { motivo: (error as Error).name });
     }
@@ -153,7 +162,9 @@ export class ChatGateway
 
   emitirNuevoMensaje(chatId: string, mensaje: MensajeChat): void {
     if (!this.server) {
-      this.logger.warn('emitirNuevoMensaje() llamado sin servidor WS activo todavía.');
+      this.logger.warn(
+        'emitirNuevoMensaje() llamado sin servidor WS activo todavía.',
+      );
       return;
     }
     this.server.to(chatId).emit('chat:nuevo_mensaje', mensaje);

@@ -19,7 +19,10 @@ describe('RechazarDomiciliarioUseCase', () => {
   const notificarCuenta = {
     execute: jest.fn().mockResolvedValue(undefined),
   } as unknown as NotificarValidacionCuentaUseCase;
-  const useCase = new RechazarDomiciliarioUseCase(validaciones, notificarCuenta);
+  const useCase = new RechazarDomiciliarioUseCase(
+    validaciones,
+    notificarCuenta,
+  );
 
   beforeEach(() => {
     jest.resetAllMocks();

@@ -4,26 +4,32 @@ import { FarmaciaAliadaRepositoryPort } from '../../domain/ports/farmacia-aliada
 import { GuardarFarmaciaAliadaAdminUseCase } from './guardar-farmacia-aliada-admin.use-case';
 
 describe('GuardarFarmaciaAliadaAdminUseCase', () => {
-  const args: [string, string, string, string | null, string | null, string | null, boolean] = [
-    'Sura',
-    'Droguerías Sura',
-    'Medellín',
-    'Antioquia',
-    null,
-    null,
-    true,
-  ];
+  const args: [
+    string,
+    string,
+    string,
+    string | null,
+    string | null,
+    string | null,
+    boolean,
+  ] = ['Sura', 'Droguerías Sura', 'Medellín', 'Antioquia', null, null, true];
 
   it('devuelve el id cuando el repositorio guarda OK', async () => {
     const farmacias = {
-      guardarAdmin: jest.fn().mockResolvedValue({ resultado: 'guardado', id: 'farmacia-1' }),
+      guardarAdmin: jest
+        .fn()
+        .mockResolvedValue({ resultado: 'guardado', id: 'farmacia-1' }),
     } as unknown as FarmaciaAliadaRepositoryPort;
     const useCase = new GuardarFarmaciaAliadaAdminUseCase(farmacias);
 
     const resultado = await useCase.execute('admin-1', null, ...args);
 
     expect(resultado).toEqual({ id: 'farmacia-1' });
-    expect(farmacias.guardarAdmin).toHaveBeenCalledWith('admin-1', null, ...args);
+    expect(farmacias.guardarAdmin).toHaveBeenCalledWith(
+      'admin-1',
+      null,
+      ...args,
+    );
   });
 
   it('lanza RolNoAutorizadoError si el repositorio dice no_autorizado', async () => {
@@ -32,9 +38,9 @@ describe('GuardarFarmaciaAliadaAdminUseCase', () => {
     } as unknown as FarmaciaAliadaRepositoryPort;
     const useCase = new GuardarFarmaciaAliadaAdminUseCase(farmacias);
 
-    await expect(useCase.execute('admin-1', null, ...args)).rejects.toBeInstanceOf(
-      RolNoAutorizadoError,
-    );
+    await expect(
+      useCase.execute('admin-1', null, ...args),
+    ).rejects.toBeInstanceOf(RolNoAutorizadoError);
   });
 
   it('lanza FarmaciaAliadaNoEncontradaError si el repositorio dice no_encontrado', async () => {
@@ -43,9 +49,9 @@ describe('GuardarFarmaciaAliadaAdminUseCase', () => {
     } as unknown as FarmaciaAliadaRepositoryPort;
     const useCase = new GuardarFarmaciaAliadaAdminUseCase(farmacias);
 
-    await expect(useCase.execute('admin-1', 'farmacia-1', ...args)).rejects.toBeInstanceOf(
-      FarmaciaAliadaNoEncontradaError,
-    );
+    await expect(
+      useCase.execute('admin-1', 'farmacia-1', ...args),
+    ).rejects.toBeInstanceOf(FarmaciaAliadaNoEncontradaError);
   });
 
   it('lanza error genérico si el repositorio dice invalido', async () => {

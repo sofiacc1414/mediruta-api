@@ -6,7 +6,10 @@ import {
 import { AutocompletarDireccionUseCase } from './autocompletar-direccion.use-case';
 
 describe('AutocompletarDireccionUseCase', () => {
-  const solicitudes: Pick<SolicitudRepositoryPort, 'obtenerParametrosEstimacionPrecio'> = {
+  const solicitudes: Pick<
+    SolicitudRepositoryPort,
+    'obtenerParametrosEstimacionPrecio'
+  > = {
     obtenerParametrosEstimacionPrecio: jest.fn(),
   };
   const geocodificacion: GeocodificacionPort = {
@@ -34,10 +37,15 @@ describe('AutocompletarDireccionUseCase', () => {
   };
 
   it('geocodifica con la ciudad/departamento del perfil del Paciente', async () => {
-    (solicitudes.obtenerParametrosEstimacionPrecio as jest.Mock).mockResolvedValue(parametros);
+    (
+      solicitudes.obtenerParametrosEstimacionPrecio as jest.Mock
+    ).mockResolvedValue(parametros);
     (geocodificacion.autocompletar as jest.Mock).mockResolvedValue([]);
 
-    await useCase.execute({ pacienteId: 'paciente-uuid', texto: 'universidad de medellin' });
+    await useCase.execute({
+      pacienteId: 'paciente-uuid',
+      texto: 'universidad de medellin',
+    });
 
     expect(geocodificacion.autocompletar).toHaveBeenCalledWith(
       'universidad de medellin',
@@ -47,18 +55,31 @@ describe('AutocompletarDireccionUseCase', () => {
   });
 
   it('geocodifica sin ciudad/departamento si el Paciente no tiene perfil (nunca debería pasar, pero no explota)', async () => {
-    (solicitudes.obtenerParametrosEstimacionPrecio as jest.Mock).mockResolvedValue(null);
+    (
+      solicitudes.obtenerParametrosEstimacionPrecio as jest.Mock
+    ).mockResolvedValue(null);
     (geocodificacion.autocompletar as jest.Mock).mockResolvedValue([]);
 
     await useCase.execute({ pacienteId: 'paciente-uuid', texto: 'calle 27' });
 
-    expect(geocodificacion.autocompletar).toHaveBeenCalledWith('calle 27', null, null);
+    expect(geocodificacion.autocompletar).toHaveBeenCalledWith(
+      'calle 27',
+      null,
+      null,
+    );
   });
 
   it('devuelve la lista de candidatos tal cual la resuelve el puerto', async () => {
-    (solicitudes.obtenerParametrosEstimacionPrecio as jest.Mock).mockResolvedValue(parametros);
+    (
+      solicitudes.obtenerParametrosEstimacionPrecio as jest.Mock
+    ).mockResolvedValue(parametros);
     const candidatos = [
-      { lat: 6.2, lng: -75.5, direccionResuelta: 'Universidad de Medellín, Medellín', precisa: false },
+      {
+        lat: 6.2,
+        lng: -75.5,
+        direccionResuelta: 'Universidad de Medellín, Medellín',
+        precisa: false,
+      },
     ];
     (geocodificacion.autocompletar as jest.Mock).mockResolvedValue(candidatos);
 

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   EstadoSolicitud,
   EventoHistorial,
+  MetodoPago,
   NovedadDelPaciente,
   SolicitudRepositoryPort,
 } from '../../domain/ports/solicitud.repository.port';
@@ -13,6 +14,8 @@ export type ObtenerPedidoActivoResultado = {
   direccionEntrega: string | null;
   direccionFarmacia: string | null;
   creadoEn: string;
+  metodoPago: MetodoPago;
+  montoACobrar: number;
   historial: EventoHistorial[];
   /** Si el propio Domiciliario ya reportó una novedad sobre este pedido
    * y sigue sin resolver — `null` si no hay ninguna. */

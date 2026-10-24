@@ -36,7 +36,9 @@ export class CalificacionHttpFilter implements ExceptionFilter {
         statusCode: HttpStatus.FORBIDDEN,
         message: exception.message,
         codigo:
-          exception instanceof PedidoAjenoError ? 'pedido_ajeno' : 'no_autorizado',
+          exception instanceof PedidoAjenoError
+            ? 'pedido_ajeno'
+            : 'no_autorizado',
       });
       return;
     }

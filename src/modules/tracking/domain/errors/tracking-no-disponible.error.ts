@@ -4,7 +4,9 @@
  * ya no. */
 export class TrackingNoDisponibleError extends Error {
   constructor() {
-    super('El seguimiento en vivo no está disponible para este pedido en este momento.');
+    super(
+      'El seguimiento en vivo no está disponible para este pedido en este momento.',
+    );
     this.name = 'TrackingNoDisponibleError';
   }
 }

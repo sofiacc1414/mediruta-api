@@ -40,7 +40,8 @@ describe('NotificarCambioPedidoUseCase (MED-110)', () => {
         claveEvento: 'sol-1:en_camino_entrega',
       }),
     );
-    const mensaje = (registrar.execute as jest.Mock).mock.calls[0][0].mensaje as string;
+    const mensaje = (registrar.execute as jest.Mock).mock.calls[0][0]
+      .mensaje as string;
     expect(mensaje).toBe('Tu pedido está en camino.');
     expect(mensaje.toLowerCase()).not.toContain('medicamento');
   });

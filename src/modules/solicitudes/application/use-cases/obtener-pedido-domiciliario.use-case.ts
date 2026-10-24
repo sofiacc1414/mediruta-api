@@ -3,6 +3,7 @@ import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-enc
 import {
   EstadoSolicitud,
   EventoHistorial,
+  MetodoPago,
   NovedadDelPaciente,
   SolicitudRepositoryPort,
 } from '../../domain/ports/solicitud.repository.port';
@@ -14,6 +15,8 @@ export type ObtenerPedidoDomiciliarioResultado = {
   direccionEntrega: string | null;
   direccionFarmacia: string | null;
   creadoEn: string;
+  metodoPago: MetodoPago;
+  montoACobrar: number;
   historial: EventoHistorial[];
   novedadPropiaAbierta: NovedadDelPaciente | null;
 };

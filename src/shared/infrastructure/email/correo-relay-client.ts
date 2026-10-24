@@ -60,6 +60,8 @@ export async function enviarCorreoViaRelay(
 
   if (!respuesta.ok) {
     const cuerpo = await respuesta.text().catch(() => '');
-    throw new Error(`El relay de correo respondió ${respuesta.status}: ${cuerpo}`);
+    throw new Error(
+      `El relay de correo respondió ${respuesta.status}: ${cuerpo}`,
+    );
   }
 }

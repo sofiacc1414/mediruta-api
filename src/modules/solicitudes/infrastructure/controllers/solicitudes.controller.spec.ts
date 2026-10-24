@@ -5,6 +5,7 @@ import { RolesGuard } from '../../../usuarios/infrastructure/guards/roles.guard'
 import { ActualizarSolicitudUseCase } from '../../application/use-cases/actualizar-solicitud.use-case';
 import { AdjuntarRecetaPropuestaEdicionUseCase } from '../../application/use-cases/adjuntar-receta-propuesta-edicion.use-case';
 import { AutocompletarDireccionUseCase } from '../../application/use-cases/autocompletar-direccion.use-case';
+import { ObtenerMediosPagoHabilitadosUseCase } from '../../application/use-cases/obtener-medios-pago-habilitados.use-case';
 import { CancelarSolicitudUseCase } from '../../application/use-cases/cancelar-solicitud.use-case';
 import { CrearSolicitudUseCase } from '../../application/use-cases/crear-solicitud.use-case';
 import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solicitud.use-case';
@@ -52,6 +53,7 @@ function crearController(overrides?: {
   listarNovedadesSolicitud?: { execute: jest.Mock };
   estimarPrecioPedido?: { execute: jest.Mock };
   autocompletarDireccion?: { execute: jest.Mock };
+  obtenerMediosPagoHabilitados?: { execute: jest.Mock };
 }) {
   return new SolicitudesController(
     (overrides?.crearSolicitud ?? {
@@ -96,6 +98,9 @@ function crearController(overrides?: {
     (overrides?.autocompletarDireccion ?? {
       execute: jest.fn(),
     }) as unknown as AutocompletarDireccionUseCase,
+    (overrides?.obtenerMediosPagoHabilitados ?? {
+      execute: jest.fn(),
+    }) as unknown as ObtenerMediosPagoHabilitadosUseCase,
   );
 }
 
@@ -219,6 +224,8 @@ describe('SolicitudesController', () => {
       'solicitud-uuid',
       undefined,
       undefined,
+      undefined,
+      undefined,
     );
   });
 
@@ -241,6 +248,8 @@ describe('SolicitudesController', () => {
       'paciente-desde-guard',
       'solicitud-uuid',
       { direccionVerificadaPara: 'Calle 80', lat: 6.2, lng: -75.6 },
+      undefined,
+      undefined,
       undefined,
     );
   });

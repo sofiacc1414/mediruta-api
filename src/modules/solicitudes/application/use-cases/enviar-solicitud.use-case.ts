@@ -1,8 +1,18 @@
 import { Injectable } from '@nestjs/common';
+import { MedioPagoNoHabilitadoError } from '../../domain/errors/medio-pago-no-habilitado.error';
+import { PagoTarjetaRechazadoError } from '../../domain/errors/pago-tarjeta-rechazado.error';
+import { PagoTransferenciaRechazadoError } from '../../domain/errors/pago-transferencia-rechazado.error';
 import { SolicitudIncompletaError } from '../../domain/errors/solicitud-incompleta.error';
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
 import { GeocodificacionPort } from '../../domain/ports/geocodificacion.port';
-import { SolicitudRepositoryPort } from '../../domain/ports/solicitud.repository.port';
+import { PagoTarjetaPort } from '../../domain/ports/pago-tarjeta.port';
+import { PagoTransferenciaPort } from '../../domain/ports/pago-transferencia.port';
+import {
+  MetodoPago,
+  SolicitudRepositoryPort,
+} from '../../domain/ports/solicitud.repository.port';
+import { calcularPrecioDesdeParametros } from './calcular-precio-pedido.use-case';
+import { distanciaMetrosEntre } from './estimar-precio-pedido.use-case';
 
 export const MENSAJE_SOLICITUD_ENVIADA = 'Tu solicitud fue enviada a revisión.';
 
@@ -47,6 +57,8 @@ export class EnviarSolicitudUseCase {
   constructor(
     private readonly solicitudes: SolicitudRepositoryPort,
     private readonly geocodificacion: GeocodificacionPort,
+    private readonly pagoTarjeta: PagoTarjetaPort,
+    private readonly pagoTransferencia: PagoTransferenciaPort,
   ) {}
 
   async execute(
@@ -54,11 +66,27 @@ export class EnviarSolicitudUseCase {
     solicitudId: string,
     farmaciaVerificada?: VerificacionDireccionPrevia,
     entregaVerificada?: VerificacionDireccionPrevia,
+    metodoPago: MetodoPago = 'efectivo',
+    numeroTarjeta?: string,
   ): Promise<{ message: string; codigoPedido: string }> {
-    const datos = await this.solicitudes.obtenerDatosGeocodificacionFarmacia(
-      pacienteId,
-      solicitudId,
-    );
+    const [datos, mediosHabilitados, precio] = await Promise.all([
+      this.solicitudes.obtenerDatosGeocodificacionFarmacia(
+        pacienteId,
+        solicitudId,
+      ),
+      this.solicitudes.obtenerMediosPagoHabilitados(pacienteId),
+      this.solicitudes.obtenerDatosPrecioPedido(pacienteId, solicitudId),
+    ]);
+
+    if (
+      (metodoPago === 'efectivo' &&
+        !mediosHabilitados.pagoEfectivoHabilitado) ||
+      (metodoPago === 'tarjeta' && !mediosHabilitados.pagoTarjetaHabilitado) ||
+      (metodoPago === 'transferencia' &&
+        !mediosHabilitados.pagoTransferenciaHabilitado)
+    ) {
+      throw new MedioPagoNoHabilitadoError();
+    }
 
     const [farmacia, entrega] = await Promise.all([
       this.resolverUbicacion(
@@ -75,6 +103,68 @@ export class EnviarSolicitudUseCase {
       ),
     ]);
 
+    // Foto del precio al momento de enviar — la billetera del
+    // Domiciliario se liquida con estos valores al entregar (ver
+    // `app.entregar_pedido`), no con lo que diga la tarifa en ese
+    // momento. La distancia se calcula acá en vivo (no viene de
+    // `obtenerDatosPrecioPedido`, que solo refleja la ubicación ya
+    // persistida — antes de enviar todavía no existe).
+    const distanciaMetros =
+      farmacia.lat != null &&
+      farmacia.lng != null &&
+      entrega.lat != null &&
+      entrega.lng != null
+        ? distanciaMetrosEntre(
+            { lat: farmacia.lat, lng: farmacia.lng },
+            { lat: entrega.lat, lng: entrega.lng },
+          )
+        : null;
+
+    const precioCalculado = precio
+      ? calcularPrecioDesdeParametros({ ...precio, distanciaMetros })
+      : null;
+
+    const copagoCobrado =
+      precioCalculado?.disponible === true ? precioCalculado.copago : null;
+    const domicilioCobrado =
+      precioCalculado?.disponible === true ? precioCalculado.domicilio : null;
+    const comisionAppPorcentaje = precio?.comisionAppPorcentaje ?? null;
+
+    // Tarjeta se resuelve ACÁ, antes de tocar la base — si se rechaza,
+    // la solicitud ni siquiera llega a `app.enviar_solicitud` (sigue en
+    // `borrador`, el Paciente reintenta sin perder nada).
+    if (metodoPago === 'tarjeta') {
+      if (!numeroTarjeta) {
+        throw new PagoTarjetaRechazadoError();
+      }
+      const monto =
+        copagoCobrado != null && domicilioCobrado != null
+          ? copagoCobrado + domicilioCobrado
+          : 0;
+      const resultadoPago = await this.pagoTarjeta.procesar(
+        numeroTarjeta,
+        monto,
+      );
+      if (resultadoPago === 'rechazado') {
+        throw new PagoTarjetaRechazadoError();
+      }
+    }
+
+    // Transferencia se resuelve ACÁ, igual que tarjeta — pasarela
+    // simulada que aprueba el pago en TS, sin subir ningún comprobante.
+    // Si se rechaza, la solicitud ni siquiera llega a
+    // `app.enviar_solicitud` (sigue en `borrador`).
+    if (metodoPago === 'transferencia') {
+      const monto =
+        copagoCobrado != null && domicilioCobrado != null
+          ? copagoCobrado + domicilioCobrado
+          : 0;
+      const resultadoPago = await this.pagoTransferencia.procesar(monto);
+      if (resultadoPago === 'rechazado') {
+        throw new PagoTransferenciaRechazadoError();
+      }
+    }
+
     const resultado = await this.solicitudes.enviar(
       pacienteId,
       solicitudId,
@@ -82,6 +172,11 @@ export class EnviarSolicitudUseCase {
       farmacia.lng,
       entrega.lat,
       entrega.lng,
+      metodoPago,
+      copagoCobrado,
+      domicilioCobrado,
+      comisionAppPorcentaje,
+      null,
     );
 
     switch (resultado.resultado) {

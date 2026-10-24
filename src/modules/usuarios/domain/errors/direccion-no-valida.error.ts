@@ -7,9 +7,7 @@
  * dirección que después va a fallar igual al armar un pedido. */
 export class DireccionNoValidaError extends Error {
   constructor() {
-    super(
-      'No pudimos ubicar esa dirección. Revisala e intentá de nuevo.',
-    );
+    super('No pudimos ubicar esa dirección. Revisala e intentá de nuevo.');
     this.name = 'DireccionNoValidaError';
   }
 }

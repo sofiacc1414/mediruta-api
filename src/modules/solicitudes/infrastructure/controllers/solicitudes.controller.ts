@@ -30,6 +30,7 @@ import { EnviarSolicitudUseCase } from '../../application/use-cases/enviar-solic
 import { EstimarPrecioPedidoUseCase } from '../../application/use-cases/estimar-precio-pedido.use-case';
 import { ListarNovedadesSolicitudUseCase } from '../../application/use-cases/listar-novedades-solicitud.use-case';
 import { ListarSolicitudesUseCase } from '../../application/use-cases/listar-solicitudes.use-case';
+import { ObtenerMediosPagoHabilitadosUseCase } from '../../application/use-cases/obtener-medios-pago-habilitados.use-case';
 import { ObtenerSolicitudUseCase } from '../../application/use-cases/obtener-solicitud.use-case';
 import { ReportarCodigoNoGeneradoUseCase } from '../../application/use-cases/reportar-codigo-no-generado.use-case';
 import { ReportarNovedadPacienteUseCase } from '../../application/use-cases/reportar-novedad-paciente.use-case';
@@ -96,6 +97,7 @@ export class SolicitudesController {
     private readonly listarNovedadesSolicitud: ListarNovedadesSolicitudUseCase,
     private readonly estimarPrecioPedido: EstimarPrecioPedidoUseCase,
     private readonly autocompletarDireccionPedido: AutocompletarDireccionUseCase,
+    private readonly obtenerMediosPagoHabilitados: ObtenerMediosPagoHabilitadosUseCase,
   ) {}
 
   @Post()
@@ -148,6 +150,15 @@ export class SolicitudesController {
       pacienteId: identidad.usuarioId,
       texto: dto.texto,
     });
+  }
+
+  /** Módulo 4 — qué medios de pago mostrar en el checkout. Ruta
+   * literal declarada antes de `:id` para que no la intercepte ese
+   * parámetro. */
+  @Get('medios-pago')
+  @HttpCode(HttpStatus.OK)
+  mediosPago(@UsuarioAutenticado() identidad: IdentidadAutenticada) {
+    return this.obtenerMediosPagoHabilitados.execute(identidad.usuarioId);
   }
 
   @Get(':id')
@@ -223,6 +234,8 @@ export class SolicitudesController {
             lng: dto.entregaLng,
           }
         : undefined,
+      dto.metodoPago,
+      dto.numeroTarjeta,
     );
   }
 

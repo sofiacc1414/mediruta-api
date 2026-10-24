@@ -46,7 +46,9 @@ function formatearCop(valor: number): string {
 
 export function describirCopagoContributivo(rango: RangoIngresos): string {
   const cuota = formatearCop(CUOTA_MODERADORA_CONTRIBUTIVO[rango]);
-  const porcentaje = (COPAGO_PORCENTAJE_CONTRIBUTIVO[rango] * 100).toFixed(1).replace('.0', '');
+  const porcentaje = (COPAGO_PORCENTAJE_CONTRIBUTIVO[rango] * 100)
+    .toFixed(1)
+    .replace('.0', '');
   const tope = formatearCop(COPAGO_TOPE_EVENTO_CONTRIBUTIVO[rango]);
   return (
     `Para ${ETIQUETAS_RANGO_INGRESOS[rango]} (régimen contributivo): cuota moderadora de ` +

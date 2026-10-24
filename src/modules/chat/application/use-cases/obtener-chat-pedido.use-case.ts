@@ -16,7 +16,10 @@ export class ObtenerChatPedidoUseCase {
   constructor(private readonly chats: ChatRepositoryPort) {}
 
   async execute(usuarioId: string, solicitudId: string): Promise<ChatPedido> {
-    const resultado = await this.chats.obtenerOCrearChat(usuarioId, solicitudId);
+    const resultado = await this.chats.obtenerOCrearChat(
+      usuarioId,
+      solicitudId,
+    );
     switch (resultado.resultado) {
       case 'ok':
         return resultado.chat;

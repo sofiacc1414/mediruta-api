@@ -28,12 +28,16 @@ export function lanzarSiResultadoInvalido(
     case 'sin_calificacion':
       throw new CalificacionNoEncontradaError();
     case 'puntuacion_invalida':
-      throw new CalificacionInvalidaError('La puntuación debe estar entre 1 y 5.');
+      throw new CalificacionInvalidaError(
+        'La puntuación debe estar entre 1 y 5.',
+      );
     case 'comentario_invalido':
       throw new CalificacionInvalidaError(
         'El comentario no puede superar 300 caracteres.',
       );
     default:
-      throw new CalificacionInvalidaError('No se pudo registrar la calificación.');
+      throw new CalificacionInvalidaError(
+        'No se pudo registrar la calificación.',
+      );
   }
 }

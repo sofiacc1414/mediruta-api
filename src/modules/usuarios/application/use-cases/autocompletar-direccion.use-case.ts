@@ -20,7 +20,9 @@ export type AutocompletarDireccionCommand = {
 export class AutocompletarDireccionUseCase {
   constructor(private readonly geocodificacion: GeocodificacionPort) {}
 
-  execute(command: AutocompletarDireccionCommand): Promise<CandidatoDireccion[]> {
+  execute(
+    command: AutocompletarDireccionCommand,
+  ): Promise<CandidatoDireccion[]> {
     return this.geocodificacion.autocompletar(
       command.texto,
       command.ciudad,

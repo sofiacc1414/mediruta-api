@@ -8,7 +8,9 @@ describe('ExtraerDatosFormulaUseCase', () => {
       farmaciaIpsOrigen: 'IPS Clínica Las Vegas',
       medicamentos: [],
     };
-    const ocrFormula: OcrFormulaPort = { extraer: jest.fn().mockResolvedValue(resultado) };
+    const ocrFormula: OcrFormulaPort = {
+      extraer: jest.fn().mockResolvedValue(resultado),
+    };
     const useCase = new ExtraerDatosFormulaUseCase(ocrFormula);
 
     const contenido = Buffer.from('contenido');

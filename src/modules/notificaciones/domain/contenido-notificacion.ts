@@ -49,10 +49,7 @@ export type BorradorNotificacion = {
   mensaje: string;
 };
 
-const MENSAJE_POR_ESTADO: Record<
-  string,
-  BorradorNotificacion
-> = {
+const MENSAJE_POR_ESTADO: Record<string, BorradorNotificacion> = {
   pendiente_revision: {
     titulo: 'Pedido recibido',
     mensaje: 'Recibimos tu pedido.',
@@ -91,12 +88,12 @@ const MENSAJE_POR_ESTADO: Record<
   },
 };
 
-export function contenidoCambioEstado(
-  estado: string,
-): BorradorNotificacion {
+export function contenidoCambioEstado(estado: string): BorradorNotificacion {
   const borrador = MENSAJE_POR_ESTADO[estado];
   if (!borrador) {
-    throw new Error('La notificación incluye información que no se puede enviar.');
+    throw new Error(
+      'La notificación incluye información que no se puede enviar.',
+    );
   }
   return sellar(borrador);
 }
@@ -128,7 +125,9 @@ export function sellar(borrador: BorradorNotificacion): BorradorNotificacion {
   const texto = `${titulo} ${mensaje}`.toLowerCase();
   for (const palabra of PROHIBIDOS) {
     if (texto.includes(palabra)) {
-      throw new Error('La notificación incluye información que no se puede enviar.');
+      throw new Error(
+        'La notificación incluye información que no se puede enviar.',
+      );
     }
   }
   if (/\d{6,}/.test(mensaje)) {

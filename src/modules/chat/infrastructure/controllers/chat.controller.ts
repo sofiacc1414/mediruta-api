@@ -42,7 +42,10 @@ export class ChatController {
     @UsuarioAutenticado() identidad: IdentidadAutenticada,
     @Param('solicitudId', ParseUUIDPipe) solicitudId: string,
   ) {
-    const chat = await this.obtenerChat.execute(identidad.usuarioId, solicitudId);
+    const chat = await this.obtenerChat.execute(
+      identidad.usuarioId,
+      solicitudId,
+    );
     const mensajes = await this.listarMensajes.execute(
       identidad.usuarioId,
       chat.chatId,
@@ -61,7 +64,11 @@ export class ChatController {
     @Param('chatId', ParseUUIDPipe) chatId: string,
     @Body() dto: EnviarMensajeChatDto,
   ) {
-    return this.enviarMensaje.execute(identidad.usuarioId, chatId, dto.contenido);
+    return this.enviarMensaje.execute(
+      identidad.usuarioId,
+      chatId,
+      dto.contenido,
+    );
   }
 
   @Post(':chatId/marcar-leido')

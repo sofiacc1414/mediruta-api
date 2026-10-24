@@ -54,7 +54,10 @@ export class PostgresFarmaciaAliadaRepository extends FarmaciaAliadaRepositoryPo
         'select * from app.listar_farmacias_aliadas_admin($1)',
         [adminId],
       );
-      return result.rows.map((fila) => ({ ...aFarmaciaAliada(fila), activo: fila.activo }));
+      return result.rows.map((fila) => ({
+        ...aFarmaciaAliada(fila),
+        activo: fila.activo,
+      }));
     });
   }
 
@@ -70,24 +73,45 @@ export class PostgresFarmaciaAliadaRepository extends FarmaciaAliadaRepositoryPo
     activo: boolean,
   ): Promise<ResultadoGuardarFarmaciaAliadaAdmin> {
     return this.db.withUserContext(adminId, async (client) => {
-      const result = await client.query<{ resultado: string; id: string | null }>(
+      const result = await client.query<{
+        resultado: string;
+        id: string | null;
+      }>(
         'select * from app.guardar_farmacia_aliada_admin($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-        [adminId, id, eps, nombreFarmacia, ciudad, departamento, direccion, telefono, activo],
+        [
+          adminId,
+          id,
+          eps,
+          nombreFarmacia,
+          ciudad,
+          departamento,
+          direccion,
+          telefono,
+          activo,
+        ],
       );
       const fila = result.rows[0];
       if (fila.resultado === 'guardado' && fila.id) {
         return { resultado: 'guardado', id: fila.id };
       }
-      return { resultado: fila.resultado as 'no_autorizado' | 'invalido' | 'no_encontrado' };
+      return {
+        resultado: fila.resultado as
+          'no_autorizado' | 'invalido' | 'no_encontrado',
+      };
     });
   }
 
-  eliminarAdmin(adminId: string, id: string): Promise<ResultadoEliminarFarmaciaAliadaAdmin> {
+  eliminarAdmin(
+    adminId: string,
+    id: string,
+  ): Promise<ResultadoEliminarFarmaciaAliadaAdmin> {
     return this.db.withUserContext(adminId, async (client) => {
-      const result = await client.query<{ resultado: ResultadoEliminarFarmaciaAliadaAdmin }>(
-        'select * from app.eliminar_farmacia_aliada_admin($1, $2)',
-        [adminId, id],
-      );
+      const result = await client.query<{
+        resultado: ResultadoEliminarFarmaciaAliadaAdmin;
+      }>('select * from app.eliminar_farmacia_aliada_admin($1, $2)', [
+        adminId,
+        id,
+      ]);
       return result.rows[0].resultado;
     });
   }

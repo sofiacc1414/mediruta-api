@@ -22,8 +22,12 @@ const configValida = {
 describe('CorreoRelayRecuperacionAdapter', () => {
   beforeEach(() => {
     fetchMock.mockReset();
-    fetchMock.mockResolvedValue({ ok: true, status: 200, text: async () => '' });
-    global.fetch = fetchMock as unknown as typeof fetch;
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '',
+    });
+    global.fetch = fetchMock;
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
   });
 
@@ -75,7 +79,11 @@ describe('CorreoRelayRecuperacionAdapter', () => {
   });
 
   it('si el relay responde con error, el error propagado es genérico', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 502, text: async () => 'ETIMEDOUT' });
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 502,
+      text: async () => 'ETIMEDOUT',
+    });
     const adapter = new CorreoRelayRecuperacionAdapter(configCon(configValida));
 
     await expect(
@@ -97,7 +105,11 @@ describe('CorreoRelayRecuperacionAdapter', () => {
   });
 
   it('el error genérico no incluye OTP ni el secreto del relay', async () => {
-    fetchMock.mockResolvedValue({ ok: false, status: 502, text: async () => 'boom' });
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 502,
+      text: async () => 'boom',
+    });
     const adapter = new CorreoRelayRecuperacionAdapter(configCon(configValida));
 
     try {
@@ -137,7 +149,9 @@ describe('CorreoRelayRecuperacionAdapter', () => {
 
     await expect(
       adapter.enviarCodigoRecuperacion('persona@mail.com', 'abc'),
-    ).rejects.toThrow('El código de recuperación no tiene el formato esperado.');
+    ).rejects.toThrow(
+      'El código de recuperación no tiene el formato esperado.',
+    );
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

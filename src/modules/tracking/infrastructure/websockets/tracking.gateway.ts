@@ -26,7 +26,9 @@ import { ObtenerPosicionEnVivoUseCase } from '../../application/use-cases/obtene
   cors: { origin: true, credentials: true },
   path: '/ws-tracking',
 })
-export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class TrackingGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   private readonly logger = new Logger(TrackingGateway.name);
 
   @WebSocketServer()
@@ -47,7 +49,9 @@ export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect
   private async autenticar(socket: Socket): Promise<void> {
     const token = extraerToken(socket);
     if (!token) {
-      this.logger.warn(`${socket.id}: sin token en el handshake, se desconecta.`);
+      this.logger.warn(
+        `${socket.id}: sin token en el handshake, se desconecta.`,
+      );
       socket.disconnect(true);
       return;
     }
@@ -58,14 +62,18 @@ export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect
         sid: payload.sid,
       });
       if (!sesionValida) {
-        this.logger.warn(`${socket.id}: sesión inválida (usuario ${payload.sub}), se desconecta.`);
+        this.logger.warn(
+          `${socket.id}: sesión inválida (usuario ${payload.sub}), se desconecta.`,
+        );
         socket.disconnect(true);
         return;
       }
       socket.data.usuarioId = payload.sub;
       this.logger.log(`${socket.id}: autenticado (usuario ${payload.sub}).`);
     } catch (error) {
-      this.logger.warn(`${socket.id}: token inválido (${(error as Error).message}), se desconecta.`);
+      this.logger.warn(
+        `${socket.id}: token inválido (${(error as Error).message}), se desconecta.`,
+      );
       socket.disconnect(true);
     }
   }
@@ -90,7 +98,10 @@ export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect
       return;
     }
     try {
-      const posicion = await this.obtenerPosicion.execute(usuarioId, data.solicitudId);
+      const posicion = await this.obtenerPosicion.execute(
+        usuarioId,
+        data.solicitudId,
+      );
       await socket.join(data.solicitudId);
       socket.emit('tracking:posicion_inicial', posicion);
     } catch (error) {
@@ -116,12 +127,22 @@ export class TrackingGateway implements OnGatewayConnection, OnGatewayDisconnect
   ): Promise<void> {
     await (socket.data.autenticado as Promise<void> | undefined);
     const usuarioId = socket.data.usuarioId as string | undefined;
-    if (!usuarioId || !data?.solicitudId || data.lat == null || data.lng == null) {
+    if (
+      !usuarioId ||
+      !data?.solicitudId ||
+      data.lat == null ||
+      data.lng == null
+    ) {
       socket.emit('tracking:error', { motivo: 'posicion_invalida' });
       return;
     }
     try {
-      await this.actualizarPosicion.execute(usuarioId, data.solicitudId, data.lat, data.lng);
+      await this.actualizarPosicion.execute(
+        usuarioId,
+        data.solicitudId,
+        data.lat,
+        data.lng,
+      );
       this.server.to(data.solicitudId).emit('tracking:posicion', {
         lat: data.lat,
         lng: data.lng,

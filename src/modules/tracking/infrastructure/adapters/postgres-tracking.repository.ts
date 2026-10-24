@@ -10,7 +10,8 @@ import {
 type FilaActualizar = { resultado: ResultadoActualizarUbicacion };
 
 type FilaObtener = {
-  resultado: 'ok' | 'no_autorizado' | 'pedido_no_encontrado' | 'sin_tracking_disponible';
+  resultado:
+    'ok' | 'no_autorizado' | 'pedido_no_encontrado' | 'sin_tracking_disponible';
   estado: string | null;
   domiciliario_lat: number | null;
   domiciliario_lng: number | null;
@@ -47,7 +48,10 @@ export class PostgresTrackingRepository extends TrackingRepositoryPort {
     });
   }
 
-  async obtenerPosicion(usuarioId: string, solicitudId: string): Promise<ResultadoObtenerPosicion> {
+  async obtenerPosicion(
+    usuarioId: string,
+    solicitudId: string,
+  ): Promise<ResultadoObtenerPosicion> {
     return this.db.withUserContext(usuarioId, async (client) => {
       const result = await client.query<FilaObtener>(
         'select * from app.obtener_posicion_en_vivo($1, $2)',

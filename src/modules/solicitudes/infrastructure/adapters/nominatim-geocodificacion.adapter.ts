@@ -164,7 +164,8 @@ function direccionResueltaDesde(
   textoOriginal: string,
 ): string {
   const address = resultado.address;
-  const barrio = address?.suburb ?? address?.city_district ?? address?.neighbourhood;
+  const barrio =
+    address?.suburb ?? address?.city_district ?? address?.neighbourhood;
   const ciudad = limpiarNombreCiudad(
     address?.city ?? address?.town ?? address?.municipality,
   );
@@ -220,12 +221,18 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     ciudad: string | null,
     departamento: string | null,
   ): Promise<CandidatoDireccion[]> {
-    const { acotada, amplia } = this.armarConsultas(texto, ciudad, departamento);
+    const { acotada, amplia } = this.armarConsultas(
+      texto,
+      ciudad,
+      departamento,
+    );
     if (!acotada) return [];
 
     const resultadosAcotados = await this.buscar(acotada);
     if (resultadosAcotados && resultadosAcotados.length > 0) {
-      return resultadosAcotados.map((r) => this.aCoordenadas(r, texto, acotada));
+      return resultadosAcotados.map((r) =>
+        this.aCoordenadas(r, texto, acotada),
+      );
     }
 
     if (!amplia) {
@@ -274,7 +281,12 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     departamento: string | null,
   ): string {
     const sinContexto = !ciudad?.trim() && !departamento?.trim();
-    return [texto, sinContexto ? 'Medellín' : ciudad, sinContexto ? 'Antioquia' : departamento, 'Colombia']
+    return [
+      texto,
+      sinContexto ? 'Medellín' : ciudad,
+      sinContexto ? 'Antioquia' : departamento,
+      'Colombia',
+    ]
       .filter((parte): parte is string => !!parte && parte.trim().length > 0)
       .join(', ');
   }
@@ -318,7 +330,11 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
             `"${consultaAcotada}" no dio resultados, pero sin la ciudad/departamento del perfil sí ("${consultaAmplia}") — se ofrece como candidato sin confirmar.`,
           );
           const [resultado, ...resto] = resultadosAmplios;
-          const elegido = this.aCoordenadas(resultado, direccion, consultaAmplia);
+          const elegido = this.aCoordenadas(
+            resultado,
+            direccion,
+            consultaAmplia,
+          );
           elegido.precisa = false;
           if (resto.length > 0) {
             elegido.candidatos = resto.map((candidato) =>
@@ -380,7 +396,12 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
             lat: String(coords[1]),
             lon: String(coords[0]),
             addresstype: props.type,
-            display_name: [props.name, props.street, props.housenumber, props.city]
+            display_name: [
+              props.name,
+              props.street,
+              props.housenumber,
+              props.city,
+            ]
               .filter(Boolean)
               .join(', '),
             address: {
@@ -394,7 +415,11 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
         .filter((item): item is ResultadoNominatim => item !== null);
 
       if (resultados.length === 0) return null;
-      return this.aElegidoConCandidatos(resultados, direccionOriginal, consulta);
+      return this.aElegidoConCandidatos(
+        resultados,
+        direccionOriginal,
+        consulta,
+      );
     } catch (error) {
       this.logger.warn(
         `Photon no pudo geocodificar "${consulta}": ${(error as Error).message}`,
@@ -435,11 +460,13 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     const deptoObj = (departamento?.trim() || 'Antioquia').toLowerCase();
     const puntaje = (resultado: ResultadoNominatim) => {
       const address = resultado.address;
-      const city = limpiarNombreCiudad(
-        address?.city ?? address?.town ?? address?.municipality,
-      )?.toLowerCase() ?? '';
+      const city =
+        limpiarNombreCiudad(
+          address?.city ?? address?.town ?? address?.municipality,
+        )?.toLowerCase() ?? '';
       const state = (address?.state ?? '').toLowerCase();
-      const texto = `${resultado.display_name ?? ''} ${city} ${state}`.toLowerCase();
+      const texto =
+        `${resultado.display_name ?? ''} ${city} ${state}`.toLowerCase();
       let puntos = 0;
       if (city.includes(ciudadObj) || texto.includes(ciudadObj)) puntos += 50;
       if (state.includes(deptoObj) || texto.includes(deptoObj)) puntos += 30;
@@ -456,9 +483,7 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
    * puntual de Nominatim no debe leerse como "la dirección no existe".
    * Nunca reintenta ante un 200 con 0 resultados: eso es una
    * respuesta válida (no hay ninguna coincidencia), no una falla. */
-  private async buscar(
-    consulta: string,
-  ): Promise<ResultadoNominatim[] | null> {
+  private async buscar(consulta: string): Promise<ResultadoNominatim[] | null> {
     const url = new URL(NOMINATIM_URL);
     url.searchParams.set('q', consulta);
     url.searchParams.set('format', 'json');

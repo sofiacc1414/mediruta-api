@@ -24,7 +24,9 @@ export class AutocompletarDireccionUseCase {
     private readonly geocodificacion: GeocodificacionPort,
   ) {}
 
-  async execute(command: AutocompletarDireccionCommand): Promise<CandidatoDireccion[]> {
+  async execute(
+    command: AutocompletarDireccionCommand,
+  ): Promise<CandidatoDireccion[]> {
     const parametros = await this.solicitudes.obtenerParametrosEstimacionPrecio(
       command.pacienteId,
     );

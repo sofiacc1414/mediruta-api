@@ -1,4 +1,5 @@
-export type ResultadoActualizarUbicacion = 'ok' | 'no_autorizado' | 'pedido_no_en_camino';
+export type ResultadoActualizarUbicacion =
+  'ok' | 'no_autorizado' | 'pedido_no_en_camino';
 
 export type PosicionEnVivo = {
   estado: string;
@@ -13,7 +14,10 @@ export type PosicionEnVivo = {
 
 export type ResultadoObtenerPosicion =
   | { resultado: 'ok'; posicion: PosicionEnVivo }
-  | { resultado: 'no_autorizado' | 'pedido_no_encontrado' | 'sin_tracking_disponible' };
+  | {
+      resultado:
+        'no_autorizado' | 'pedido_no_encontrado' | 'sin_tracking_disponible';
+    };
 
 /** Puerto del módulo de tracking en vivo — ver la migración
  * `20260930100000_tracking_en_vivo.sql`. No hay tabla propia: reusa

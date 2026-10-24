@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { IntencionChatbot, ResultadoClasificacion } from '../../domain/intencion-chatbot';
+import {
+  IntencionChatbot,
+  ResultadoClasificacion,
+} from '../../domain/intencion-chatbot';
 import { IntencionMatcherPort } from '../../domain/ports/intencion-matcher.port';
 
 type Disparador = { frase: string; peso: number };
@@ -22,7 +25,10 @@ type Raiz = { raiz: string; peso: number };
  * El score final de una intención es la suma de ambas capas, tope 1.0.
  * Esto sigue siendo "sin microservicio nuevo" (pedido explícito) —
  * solo mejor que coincidencia de substring puro. */
-const DISPARADORES: Record<Exclude<IntencionChatbot, 'desconocido'>, Disparador[]> = {
+const DISPARADORES: Record<
+  Exclude<IntencionChatbot, 'desconocido'>,
+  Disparador[]
+> = {
   registro_cuenta: [
     { frase: 'como me registro', peso: 1 },
     { frase: 'como registrarme', peso: 1 },
@@ -267,9 +273,7 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     { raiz: 'pedi', peso: 0.4 },
     { raiz: 'medicament', peso: 0.4 },
   ],
-  chat_domiciliario: [
-    { raiz: 'domiciliari', peso: 0.2 },
-  ],
+  chat_domiciliario: [{ raiz: 'domiciliari', peso: 0.2 }],
   reclamo_farmacia: [
     { raiz: 'reclam', peso: 0.75 },
     { raiz: 'recog', peso: 0.4 },
@@ -288,16 +292,12 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     { raiz: 'afiliad', peso: 0.7 },
     { raiz: 'eps', peso: 0.3 },
   ],
-  novedad_pedido: [
-    { raiz: 'novedad', peso: 0.75 },
-  ],
+  novedad_pedido: [{ raiz: 'novedad', peso: 0.75 }],
   codigo_entrega: [
     { raiz: 'codigo', peso: 0.75 },
     { raiz: 'entreg', peso: 0.2 },
   ],
-  pos_no_pos: [
-    { raiz: 'mipres', peso: 0.8 },
-  ],
+  pos_no_pos: [{ raiz: 'mipres', peso: 0.8 }],
 };
 
 function normalizar(texto: string): string {

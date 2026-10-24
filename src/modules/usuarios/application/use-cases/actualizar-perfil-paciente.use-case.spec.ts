@@ -26,7 +26,10 @@ describe('ActualizarPerfilPacienteUseCase', () => {
     autocompletar: jest.fn(),
   };
 
-  const useCase = new ActualizarPerfilPacienteUseCase(perfiles, geocodificacion);
+  const useCase = new ActualizarPerfilPacienteUseCase(
+    perfiles,
+    geocodificacion,
+  );
 
   const command = {
     usuarioId: 'usuario-uuid',
@@ -116,7 +119,10 @@ describe('ActualizarPerfilPacienteUseCase', () => {
     it('no llama a geocodificar y guarda directo', async () => {
       (perfiles.upsertPerfilPaciente as jest.Mock).mockResolvedValue(true);
 
-      const resultado = await useCase.execute({ ...command, direccionVerificada: true });
+      const resultado = await useCase.execute({
+        ...command,
+        direccionVerificada: true,
+      });
 
       expect(geocodificacion.geocodificar).not.toHaveBeenCalled();
       expect(perfiles.upsertPerfilPaciente).toHaveBeenCalledWith(
@@ -126,7 +132,9 @@ describe('ActualizarPerfilPacienteUseCase', () => {
         'Cundinamarca',
         'Bogotá',
       );
-      expect(resultado).toEqual({ message: MENSAJE_PERFIL_PACIENTE_ACTUALIZADO });
+      expect(resultado).toEqual({
+        message: MENSAJE_PERFIL_PACIENTE_ACTUALIZADO,
+      });
     });
 
     it('igual lanza RolNoAutorizadoError si la cuenta no tiene rol PACIENTE (la geocodificación no es lo único que valida)', async () => {

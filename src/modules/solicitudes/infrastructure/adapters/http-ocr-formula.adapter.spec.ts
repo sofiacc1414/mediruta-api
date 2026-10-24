@@ -26,9 +26,9 @@ describe('HttpOcrFormulaAdapter', () => {
   it('lanza error si falta OCR_SERVICE_URL', async () => {
     const adapter = new HttpOcrFormulaAdapter(configConUrl(undefined));
 
-    await expect(adapter.extraer(Buffer.from('x'), 'image/png')).rejects.toThrow(
-      'Falta la variable de entorno OCR_SERVICE_URL.',
-    );
+    await expect(
+      adapter.extraer(Buffer.from('x'), 'image/png'),
+    ).rejects.toThrow('Falta la variable de entorno OCR_SERVICE_URL.');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -52,9 +52,14 @@ describe('HttpOcrFormulaAdapter', () => {
         ],
       }),
     );
-    const adapter = new HttpOcrFormulaAdapter(configConUrl('http://localhost:8001'));
+    const adapter = new HttpOcrFormulaAdapter(
+      configConUrl('http://localhost:8001'),
+    );
 
-    const resultado = await adapter.extraer(Buffer.from('contenido'), 'image/png');
+    const resultado = await adapter.extraer(
+      Buffer.from('contenido'),
+      'image/png',
+    );
 
     expect(fetchMock).toHaveBeenCalledWith(
       'http://localhost:8001/formulas/procesar',
@@ -96,9 +101,14 @@ describe('HttpOcrFormulaAdapter', () => {
         ],
       }),
     );
-    const adapter = new HttpOcrFormulaAdapter(configConUrl('http://localhost:8001'));
+    const adapter = new HttpOcrFormulaAdapter(
+      configConUrl('http://localhost:8001'),
+    );
 
-    const resultado = await adapter.extraer(Buffer.from('contenido'), 'image/png');
+    const resultado = await adapter.extraer(
+      Buffer.from('contenido'),
+      'image/png',
+    );
 
     expect(resultado.medicamentos[0].posologia).toBeNull();
   });
@@ -123,9 +133,14 @@ describe('HttpOcrFormulaAdapter', () => {
         ],
       }),
     );
-    const adapter = new HttpOcrFormulaAdapter(configConUrl('http://localhost:8001'));
+    const adapter = new HttpOcrFormulaAdapter(
+      configConUrl('http://localhost:8001'),
+    );
 
-    const resultado = await adapter.extraer(Buffer.from('contenido'), 'image/png');
+    const resultado = await adapter.extraer(
+      Buffer.from('contenido'),
+      'image/png',
+    );
 
     expect(resultado.medicamentos[0].posologia).toBe(
       'Aplicar dos gotas por ojo durante 350 días.',
@@ -136,14 +151,16 @@ describe('HttpOcrFormulaAdapter', () => {
     fetchMock.mockResolvedValue(
       respuestaJson({ detail: 'Formato no soportado.' }, false, 400),
     );
-    const adapter = new HttpOcrFormulaAdapter(configConUrl('http://localhost:8001'));
+    const adapter = new HttpOcrFormulaAdapter(
+      configConUrl('http://localhost:8001'),
+    );
 
-    await expect(adapter.extraer(Buffer.from('x'), 'image/png')).rejects.toThrow(
-      ArchivoFormulaInvalidoError,
-    );
-    await expect(adapter.extraer(Buffer.from('x'), 'image/png')).rejects.toThrow(
-      'Formato no soportado.',
-    );
+    await expect(
+      adapter.extraer(Buffer.from('x'), 'image/png'),
+    ).rejects.toThrow(ArchivoFormulaInvalidoError);
+    await expect(
+      adapter.extraer(Buffer.from('x'), 'image/png'),
+    ).rejects.toThrow('Formato no soportado.');
   });
 
   it('422 del microservicio se traduce a ImagenFormulaIlegibleError', async () => {
@@ -154,21 +171,27 @@ describe('HttpOcrFormulaAdapter', () => {
         422,
       ),
     );
-    const adapter = new HttpOcrFormulaAdapter(configConUrl('http://localhost:8001'));
+    const adapter = new HttpOcrFormulaAdapter(
+      configConUrl('http://localhost:8001'),
+    );
 
-    await expect(adapter.extraer(Buffer.from('x'), 'image/png')).rejects.toThrow(
-      ImagenFormulaIlegibleError,
-    );
-    await expect(adapter.extraer(Buffer.from('x'), 'image/png')).rejects.toThrow(
-      'La imagen no es lo suficientemente clara.',
-    );
+    await expect(
+      adapter.extraer(Buffer.from('x'), 'image/png'),
+    ).rejects.toThrow(ImagenFormulaIlegibleError);
+    await expect(
+      adapter.extraer(Buffer.from('x'), 'image/png'),
+    ).rejects.toThrow('La imagen no es lo suficientemente clara.');
   });
 
   it('cualquier otro status se traduce a un error genérico', async () => {
     fetchMock.mockResolvedValue(respuestaJson(null, false, 500));
-    const adapter = new HttpOcrFormulaAdapter(configConUrl('http://localhost:8001'));
+    const adapter = new HttpOcrFormulaAdapter(
+      configConUrl('http://localhost:8001'),
+    );
 
-    await expect(adapter.extraer(Buffer.from('x'), 'image/png')).rejects.toThrow(
+    await expect(
+      adapter.extraer(Buffer.from('x'), 'image/png'),
+    ).rejects.toThrow(
       'El servicio de lectura de fórmulas respondió con un error (500).',
     );
   });

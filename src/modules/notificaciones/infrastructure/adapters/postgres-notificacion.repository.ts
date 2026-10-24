@@ -90,7 +90,10 @@ export class PostgresNotificacionRepository extends NotificacionRepositoryPort {
     }
   }
 
-  async marcarLeida(usuarioId: string, notificacionId: string): Promise<boolean> {
+  async marcarLeida(
+    usuarioId: string,
+    notificacionId: string,
+  ): Promise<boolean> {
     return this.db.withUserContext(usuarioId, async (client) => {
       const result = await client.query<{ marcar_notificacion_leida: boolean }>(
         'select app.marcar_notificacion_leida($1, $2) as marcar_notificacion_leida',
@@ -100,7 +103,9 @@ export class PostgresNotificacionRepository extends NotificacionRepositoryPort {
     });
   }
 
-  async datosPedido(solicitudId: string): Promise<DatosPedidoNotificacion | null> {
+  async datosPedido(
+    solicitudId: string,
+  ): Promise<DatosPedidoNotificacion | null> {
     return this.db.withoutUserContext(async (client) => {
       const result = await client.query<FilaPedido>(
         `select paciente_id, domiciliario_id, estado, codigo_pedido
@@ -135,10 +140,11 @@ export class PostgresNotificacionRepository extends NotificacionRepositoryPort {
     plataforma: string,
   ): Promise<void> {
     return this.db.withUserContext(usuarioId, async (client) => {
-      await client.query(
-        'select app.registrar_dispositivo_push($1, $2, $3)',
-        [usuarioId, token, plataforma],
-      );
+      await client.query('select app.registrar_dispositivo_push($1, $2, $3)', [
+        usuarioId,
+        token,
+        plataforma,
+      ]);
     });
   }
 }

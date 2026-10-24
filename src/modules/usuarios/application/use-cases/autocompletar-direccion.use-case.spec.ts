@@ -28,7 +28,12 @@ describe('AutocompletarDireccionUseCase', () => {
 
   it('devuelve la lista de candidatos tal cual la resuelve el puerto', async () => {
     const candidatos = [
-      { lat: 6.2, lng: -75.5, direccionResuelta: 'Universidad de Medellín, Medellín', precisa: false },
+      {
+        lat: 6.2,
+        lng: -75.5,
+        direccionResuelta: 'Universidad de Medellín, Medellín',
+        precisa: false,
+      },
     ];
     (geocodificacion.autocompletar as jest.Mock).mockResolvedValue(candidatos);
 

@@ -37,7 +37,9 @@ describe('HU-16 acceso temporal a documentos (MED-144)', () => {
       farmaciaLat: 6.25,
       farmaciaLng: -75.56,
     });
-    (solicitudes.obtenerDocumentosPacienteParaRecoger as jest.Mock).mockResolvedValue({
+    (
+      solicitudes.obtenerDocumentosPacienteParaRecoger as jest.Mock
+    ).mockResolvedValue({
       cedulaFrentePath: 'c1',
       cedulaReversoPath: 'c2',
       recetaPath: 'r1',
@@ -51,7 +53,10 @@ describe('HU-16 acceso temporal a documentos (MED-144)', () => {
       recetaUrl: 'https://firmada.test/doc',
     });
     expect(accesos.registrar).toHaveBeenCalledWith(
-      expect.objectContaining({ resultado: 'permitido', domiciliarioId: 'dom' }),
+      expect.objectContaining({
+        resultado: 'permitido',
+        domiciliarioId: 'dom',
+      }),
     );
   });
 
@@ -62,13 +67,15 @@ describe('HU-16 acceso temporal a documentos (MED-144)', () => {
       farmaciaLng: -75.56,
     });
 
-    await expect(useCase.execute('dom', 'sol', 6.3, -75.56)).rejects.toBeInstanceOf(
-      FueraDeUbicacionAutorizadaError,
-    );
+    await expect(
+      useCase.execute('dom', 'sol', 6.3, -75.56),
+    ).rejects.toBeInstanceOf(FueraDeUbicacionAutorizadaError);
     await expect(useCase.execute('dom', 'sol', 6.3, -75.56)).rejects.toThrow(
       MENSAJE_FUERA_DE_UBICACION,
     );
-    expect(solicitudes.obtenerDocumentosPacienteParaRecoger).not.toHaveBeenCalled();
+    expect(
+      solicitudes.obtenerDocumentosPacienteParaRecoger,
+    ).not.toHaveBeenCalled();
     expect(accesos.registrar).toHaveBeenCalledWith(
       expect.objectContaining({ resultado: 'rechazado' }),
     );
@@ -82,9 +89,9 @@ describe('HU-16 acceso temporal a documentos (MED-144)', () => {
       farmaciaLng: -75.56,
     });
 
-    await expect(useCase.execute('dom', 'sol', 6.25, -75.56)).rejects.toBeInstanceOf(
-      DocumentosPacienteNoDisponiblesError,
-    );
+    await expect(
+      useCase.execute('dom', 'sol', 6.25, -75.56),
+    ).rejects.toBeInstanceOf(DocumentosPacienteNoDisponiblesError);
     expect(accesos.revocarPorPedido).toHaveBeenCalledWith('sol');
     expect(accesos.registrar).toHaveBeenCalledWith(
       expect.objectContaining({ resultado: 'rechazado', solicitudId: 'sol' }),
@@ -94,9 +101,9 @@ describe('HU-16 acceso temporal a documentos (MED-144)', () => {
   it('5. un pedido que no es del domiciliario también queda auditado', async () => {
     (accesos.puntoFarmacia as jest.Mock).mockResolvedValue(null);
 
-    await expect(useCase.execute('dom', 'ajeno', 6.25, -75.56)).rejects.toBeInstanceOf(
-      DocumentosPacienteNoDisponiblesError,
-    );
+    await expect(
+      useCase.execute('dom', 'ajeno', 6.25, -75.56),
+    ).rejects.toBeInstanceOf(DocumentosPacienteNoDisponiblesError);
     expect(accesos.registrar).toHaveBeenCalledWith(
       expect.objectContaining({
         resultado: 'rechazado',

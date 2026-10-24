@@ -31,6 +31,7 @@ import { MarcarMedicamentosRecogidosUseCase } from './application/use-cases/marc
 import { ObtenerConfiguracionAdminUseCase } from './application/use-cases/obtener-configuracion-admin.use-case';
 import { ObtenerDetallePedidoAdminUseCase } from './application/use-cases/obtener-detalle-pedido-admin.use-case';
 import { ObtenerDocumentosPacienteParaRecogerUseCase } from './application/use-cases/obtener-documentos-paciente-para-recoger.use-case';
+import { ObtenerMediosPagoHabilitadosUseCase } from './application/use-cases/obtener-medios-pago-habilitados.use-case';
 import { ObtenerPedidoActivoUseCase } from './application/use-cases/obtener-pedido-activo.use-case';
 import { ObtenerPedidoDomiciliarioUseCase } from './application/use-cases/obtener-pedido-domiciliario.use-case';
 import { CalcularPrecioPedidoUseCase } from './application/use-cases/calcular-precio-pedido.use-case';
@@ -50,7 +51,11 @@ import { CorreoCodigoEntregaPort } from './domain/ports/correo-codigo-entrega.po
 import { EventosTiempoRealPort } from './domain/ports/eventos-tiempo-real.port';
 import { NotificacionesPedidoPort } from './domain/ports/notificaciones-pedido.port';
 import { OcrFormulaPort } from './domain/ports/ocr-formula.port';
+import { PagoTarjetaPort } from './domain/ports/pago-tarjeta.port';
+import { PagoTransferenciaPort } from './domain/ports/pago-transferencia.port';
 import { SolicitudRepositoryPort } from './domain/ports/solicitud.repository.port';
+import { SimuladoPagoTarjetaAdapter } from './infrastructure/adapters/simulado-pago-tarjeta.adapter';
+import { SimuladoPagoTransferenciaAdapter } from './infrastructure/adapters/simulado-pago-transferencia.adapter';
 import { PostgresAccesoTemporalRepository } from './infrastructure/adapters/postgres-acceso-temporal.repository';
 import { HttpOcrFormulaAdapter } from './infrastructure/adapters/http-ocr-formula.adapter';
 import { NotificacionesPedidoAdapter } from './infrastructure/adapters/notificaciones-pedido.adapter';
@@ -115,6 +120,7 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     ObtenerPedidoDomiciliarioUseCase,
     ListarHistorialPedidosUseCase,
     ObtenerDocumentosPacienteParaRecogerUseCase,
+    ObtenerMediosPagoHabilitadosUseCase,
     ListarPedidosAdminUseCase,
     ObtenerDetallePedidoAdminUseCase,
     ListarDomiciliariosCercanosAdminUseCase,
@@ -152,6 +158,14 @@ import { SolicitudesController } from './infrastructure/controllers/solicitudes.
     {
       provide: OcrFormulaPort,
       useClass: HttpOcrFormulaAdapter,
+    },
+    {
+      provide: PagoTarjetaPort,
+      useClass: SimuladoPagoTarjetaAdapter,
+    },
+    {
+      provide: PagoTransferenciaPort,
+      useClass: SimuladoPagoTransferenciaAdapter,
     },
   ],
 })

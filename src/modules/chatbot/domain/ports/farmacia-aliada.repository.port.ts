@@ -8,7 +8,10 @@ import {
 export abstract class FarmaciaAliadaRepositoryPort {
   /** Usado por el chatbot (CA1 — "¿cuáles son las farmacias de mi
    * EPS?"). Solo activas, filtradas por EPS. */
-  abstract listarPorEps(usuarioId: string, eps: string): Promise<FarmaciaAliada[]>;
+  abstract listarPorEps(
+    usuarioId: string,
+    eps: string,
+  ): Promise<FarmaciaAliada[]>;
 
   // --- Admin ---
   abstract listarAdmin(adminId: string): Promise<FarmaciaAliadaAdmin[]>;

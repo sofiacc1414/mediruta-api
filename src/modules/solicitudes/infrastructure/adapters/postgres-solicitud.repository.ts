@@ -15,6 +15,7 @@ import {
   EventoHistorial,
   FiltrosPedidosAdmin,
   Medicamento,
+  MediosPagoHabilitados,
   EstadoNovedadAdmin,
   NivelCopagoAdmin,
   NovedadAbierta,
@@ -30,6 +31,7 @@ import {
   PedidoDisponible,
   PedidoHistorialDomiciliario,
   ResultadoAccionEdicionPedido,
+  MetodoPago,
   ResultadoAceptarPedido,
   ResultadoActualizarConfiguracionAdmin,
   ResultadoAsignarDomiciliarioAdmin,
@@ -119,6 +121,8 @@ type FilaPedidoActivoDomiciliario = {
   direccion_entrega: string | null;
   direccion_farmacia: string | null;
   creado_en: string;
+  metodo_pago: MetodoPago;
+  monto_a_cobrar: string;
 };
 
 type FilaDocumentosPacienteParaRecoger = {
@@ -181,6 +185,11 @@ type FilaConfiguracionAdmin = {
   velocidad_promedio_kmh: string;
   distancia_incluida_km: string;
   tarifa_por_km_excedente: string;
+  comision_app_porcentaje: string;
+  tope_recaudo_efectivo: string;
+  pago_efectivo_habilitado: boolean;
+  pago_tarjeta_habilitado: boolean;
+  pago_transferencia_habilitado: boolean;
 };
 
 type FilaDatosPrecioPedido = {
@@ -193,6 +202,7 @@ type FilaDatosPrecioPedido = {
   velocidad_promedio_kmh: string;
   distancia_incluida_km: string;
   tarifa_por_km_excedente: string;
+  comision_app_porcentaje: string;
 };
 
 type FilaParametrosEstimacionPrecio = {
@@ -336,11 +346,13 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
   }
 
   private avisarPedido(solicitudId: string): void {
-    void this.notificaciones.notificarPedido(solicitudId).catch((error: unknown) => {
-      this.logger.warn(
-        `No se pudo notificar el pedido ${solicitudId}: ${(error as Error).message}`,
-      );
-    });
+    void this.notificaciones
+      .notificarPedido(solicitudId)
+      .catch((error: unknown) => {
+        this.logger.warn(
+          `No se pudo notificar el pedido ${solicitudId}: ${(error as Error).message}`,
+        );
+      });
   }
 
   crear(
@@ -538,38 +550,48 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     farmaciaLng: number | null,
     entregaLat: number | null,
     entregaLng: number | null,
+    metodoPago: MetodoPago,
+    copagoCobrado: number | null,
+    domicilioCobrado: number | null,
+    comisionAppPorcentaje: number | null,
+    comprobantePagoPath: string | null,
   ): Promise<ResultadoEnviar> {
     return this.trasCambio(
       solicitudId,
       this.db
-      .withUserContext<ResultadoEnviar>(pacienteId, async (client) => {
-        const result = await client.query<FilaEnviar>(
-          'select * from app.enviar_solicitud($1, $2, $3, $4, $5, $6)',
-          [
-            pacienteId,
-            solicitudId,
-            farmaciaLat,
-            farmaciaLng,
-            entregaLat,
-            entregaLng,
-          ],
-        );
-        const fila = result.rows[0];
+        .withUserContext<ResultadoEnviar>(pacienteId, async (client) => {
+          const result = await client.query<FilaEnviar>(
+            'select * from app.enviar_solicitud($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            [
+              pacienteId,
+              solicitudId,
+              farmaciaLat,
+              farmaciaLng,
+              entregaLat,
+              entregaLng,
+              metodoPago,
+              copagoCobrado,
+              domicilioCobrado,
+              comisionAppPorcentaje,
+              comprobantePagoPath,
+            ],
+          );
+          const fila = result.rows[0];
 
-        if (fila.resultado === 'incompleta') {
-          return { resultado: 'incompleta', faltantes: fila.faltantes ?? [] };
-        }
-        if (fila.resultado === 'no_encontrada') {
-          return { resultado: 'no_encontrada' };
-        }
-        if (fila.resultado === 'enviada' && fila.codigo_pedido) {
-          return { resultado: 'enviada', codigoPedido: fila.codigo_pedido };
-        }
-        throw new Error(
-          `Resultado inesperado de app.enviar_solicitud: ${fila.resultado}`,
-        );
-      })
-      .finally(() => this.eventos.emitirPedidoActualizado()),
+          if (fila.resultado === 'incompleta') {
+            return { resultado: 'incompleta', faltantes: fila.faltantes ?? [] };
+          }
+          if (fila.resultado === 'no_encontrada') {
+            return { resultado: 'no_encontrada' };
+          }
+          if (fila.resultado === 'enviada' && fila.codigo_pedido) {
+            return { resultado: 'enviada', codigoPedido: fila.codigo_pedido };
+          }
+          throw new Error(
+            `Resultado inesperado de app.enviar_solicitud: ${fila.resultado}`,
+          );
+        })
+        .finally(() => this.eventos.emitirPedidoActualizado()),
       (valor) => valor.resultado === 'enviada',
     );
   }
@@ -581,16 +603,16 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     return this.trasCambio(
       solicitudId,
       this.db
-      .withUserContext(pacienteId, async (client) => {
-        const result = await client.query<{
-          cancelar_solicitud: ResultadoCancelar;
-        }>('select app.cancelar_solicitud($1, $2) as cancelar_solicitud', [
-          pacienteId,
-          solicitudId,
-        ]);
-        return result.rows[0].cancelar_solicitud;
-      })
-      .finally(() => this.eventos.emitirPedidoActualizado()),
+        .withUserContext(pacienteId, async (client) => {
+          const result = await client.query<{
+            cancelar_solicitud: ResultadoCancelar;
+          }>('select app.cancelar_solicitud($1, $2) as cancelar_solicitud', [
+            pacienteId,
+            solicitudId,
+          ]);
+          return result.rows[0].cancelar_solicitud;
+        })
+        .finally(() => this.eventos.emitirPedidoActualizado()),
       (valor) => valor === 'cancelada',
     );
   }
@@ -740,16 +762,16 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     return this.trasCambio(
       solicitudId,
       this.db
-      .withUserContext(domiciliarioId, async (client) => {
-        const result = await client.query<{
-          resultado: ResultadoAceptarPedido;
-        }>('select * from app.aceptar_pedido($1, $2)', [
-          domiciliarioId,
-          solicitudId,
-        ]);
-        return result.rows[0].resultado;
-      })
-      .finally(() => this.eventos.emitirPedidoActualizado()),
+        .withUserContext(domiciliarioId, async (client) => {
+          const result = await client.query<{
+            resultado: ResultadoAceptarPedido;
+          }>('select * from app.aceptar_pedido($1, $2)', [
+            domiciliarioId,
+            solicitudId,
+          ]);
+          return result.rows[0].resultado;
+        })
+        .finally(() => this.eventos.emitirPedidoActualizado()),
       (valor) => valor === 'aceptado',
     );
   }
@@ -761,16 +783,16 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     return this.trasCambio(
       solicitudId,
       this.db
-      .withUserContext(domiciliarioId, async (client) => {
-        const result = await client.query<{
-          resultado: ResultadoTransicionPedido;
-        }>('select * from app.marcar_en_farmacia($1, $2)', [
-          domiciliarioId,
-          solicitudId,
-        ]);
-        return result.rows[0].resultado;
-      })
-      .finally(() => this.eventos.emitirPedidoActualizado()),
+        .withUserContext(domiciliarioId, async (client) => {
+          const result = await client.query<{
+            resultado: ResultadoTransicionPedido;
+          }>('select * from app.marcar_en_farmacia($1, $2)', [
+            domiciliarioId,
+            solicitudId,
+          ]);
+          return result.rows[0].resultado;
+        })
+        .finally(() => this.eventos.emitirPedidoActualizado()),
       (valor) => valor === 'actualizado',
     );
   }
@@ -782,16 +804,16 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     return this.trasCambio(
       solicitudId,
       this.db
-      .withUserContext(domiciliarioId, async (client) => {
-        const result = await client.query<{
-          resultado: ResultadoTransicionPedido;
-        }>('select * from app.marcar_medicamentos_recogidos($1, $2)', [
-          domiciliarioId,
-          solicitudId,
-        ]);
-        return result.rows[0].resultado;
-      })
-      .finally(() => this.eventos.emitirPedidoActualizado()),
+        .withUserContext(domiciliarioId, async (client) => {
+          const result = await client.query<{
+            resultado: ResultadoTransicionPedido;
+          }>('select * from app.marcar_medicamentos_recogidos($1, $2)', [
+            domiciliarioId,
+            solicitudId,
+          ]);
+          return result.rows[0].resultado;
+        })
+        .finally(() => this.eventos.emitirPedidoActualizado()),
       (valor) => valor === 'actualizado',
     );
   }
@@ -803,16 +825,16 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     return this.trasCambio(
       solicitudId,
       this.db
-      .withUserContext(domiciliarioId, async (client) => {
-        const result = await client.query<{
-          resultado: ResultadoTransicionPedido;
-        }>('select * from app.iniciar_entrega($1, $2)', [
-          domiciliarioId,
-          solicitudId,
-        ]);
-        return result.rows[0].resultado;
-      })
-      .finally(() => this.eventos.emitirPedidoActualizado()),
+        .withUserContext(domiciliarioId, async (client) => {
+          const result = await client.query<{
+            resultado: ResultadoTransicionPedido;
+          }>('select * from app.iniciar_entrega($1, $2)', [
+            domiciliarioId,
+            solicitudId,
+          ]);
+          return result.rows[0].resultado;
+        })
+        .finally(() => this.eventos.emitirPedidoActualizado()),
       (valor) => valor === 'actualizado',
     );
   }
@@ -824,16 +846,16 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     return this.trasCambio(
       solicitudId,
       this.db
-      .withUserContext(domiciliarioId, async (client) => {
-        const result = await client.query<{
-          resultado: ResultadoTransicionPedido;
-        }>('select * from app.marcar_en_sitio($1, $2)', [
-          domiciliarioId,
-          solicitudId,
-        ]);
-        return result.rows[0].resultado;
-      })
-      .finally(() => this.eventos.emitirPedidoActualizado()),
+        .withUserContext(domiciliarioId, async (client) => {
+          const result = await client.query<{
+            resultado: ResultadoTransicionPedido;
+          }>('select * from app.marcar_en_sitio($1, $2)', [
+            domiciliarioId,
+            solicitudId,
+          ]);
+          return result.rows[0].resultado;
+        })
+        .finally(() => this.eventos.emitirPedidoActualizado()),
       (valor) => valor === 'actualizado',
     );
   }
@@ -846,17 +868,17 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     return this.trasCambio(
       solicitudId,
       this.db
-      .withUserContext(domiciliarioId, async (client) => {
-        const result = await client.query<{
-          resultado: ResultadoEntregarPedido;
-        }>('select * from app.entregar_pedido($1, $2, $3)', [
-          domiciliarioId,
-          solicitudId,
-          codigo,
-        ]);
-        return result.rows[0].resultado;
-      })
-      .finally(() => this.eventos.emitirPedidoActualizado()),
+        .withUserContext(domiciliarioId, async (client) => {
+          const result = await client.query<{
+            resultado: ResultadoEntregarPedido;
+          }>('select * from app.entregar_pedido($1, $2, $3)', [
+            domiciliarioId,
+            solicitudId,
+            codigo,
+          ]);
+          return result.rows[0].resultado;
+        })
+        .finally(() => this.eventos.emitirPedidoActualizado()),
       (valor) => valor === 'entregado',
     );
   }
@@ -907,6 +929,8 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         direccionEntrega: fila.direccion_entrega,
         direccionFarmacia: fila.direccion_farmacia,
         creadoEn: fila.creado_en,
+        metodoPago: fila.metodo_pago,
+        montoACobrar: Number(fila.monto_a_cobrar),
       };
     });
   }
@@ -931,6 +955,8 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
         direccionEntrega: fila.direccion_entrega,
         direccionFarmacia: fila.direccion_farmacia,
         creadoEn: fila.creado_en,
+        metodoPago: fila.metodo_pago,
+        montoACobrar: Number(fila.monto_a_cobrar),
       };
     });
   }
@@ -1288,7 +1314,14 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
           resultado: ResultadoAccionEdicionPedido;
         }>(
           'select * from app.aprobar_edicion_pedido_admin($1, $2, $3, $4, $5, $6)',
-          [adminId, novedadId, farmaciaLat, farmaciaLng, entregaLat, entregaLng],
+          [
+            adminId,
+            novedadId,
+            farmaciaLat,
+            farmaciaLng,
+            entregaLat,
+            entregaLng,
+          ],
         );
         return result.rows[0].resultado;
       })
@@ -1408,17 +1441,17 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     return this.trasCambio(
       solicitudId,
       this.db
-      .withUserContext(adminId, async (client) => {
-        const result = await client.query<{
-          resultado: ResultadoAsignarDomiciliarioAdmin;
-        }>('select * from app.asignar_domiciliario_admin($1, $2, $3)', [
-          adminId,
-          solicitudId,
-          domiciliarioId,
-        ]);
-        return result.rows[0].resultado;
-      })
-      .finally(() => this.eventos.emitirPedidoActualizado()),
+        .withUserContext(adminId, async (client) => {
+          const result = await client.query<{
+            resultado: ResultadoAsignarDomiciliarioAdmin;
+          }>('select * from app.asignar_domiciliario_admin($1, $2, $3)', [
+            adminId,
+            solicitudId,
+            domiciliarioId,
+          ]);
+          return result.rows[0].resultado;
+        })
+        .finally(() => this.eventos.emitirPedidoActualizado()),
       (valor) => valor === 'asignado',
     );
   }
@@ -1437,6 +1470,11 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       const fila = result.rows[0];
       return {
         umbralDemoraAsignacionMinutos: fila.umbral_demora_asignacion_minutos,
+        comisionAppPorcentaje: Number(fila.comision_app_porcentaje),
+        topeRecaudoEfectivo: Number(fila.tope_recaudo_efectivo),
+        pagoEfectivoHabilitado: fila.pago_efectivo_habilitado,
+        pagoTarjetaHabilitado: fila.pago_tarjeta_habilitado,
+        pagoTransferenciaHabilitado: fila.pago_transferencia_habilitado,
         ...mapearParametrosPrecio(fila),
       };
     });
@@ -1446,12 +1484,19 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
     adminId: string,
     umbralMinutos: number,
     parametrosPrecio: ParametrosPrecioDomicilio,
+    comisionAppPorcentaje: number,
+    topeRecaudoEfectivo: number,
+    pagoEfectivoHabilitado: boolean,
+    pagoTarjetaHabilitado: boolean,
+    pagoTransferenciaHabilitado: boolean,
   ): Promise<ResultadoActualizarConfiguracionAdmin> {
     return this.db.withUserContext(adminId, async (client) => {
       const result = await client.query<{
         resultado: ResultadoActualizarConfiguracionAdmin;
       }>(
-        'select * from app.actualizar_configuracion_admin($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        `select * from app.actualizar_configuracion_admin(
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
+        )`,
         [
           adminId,
           umbralMinutos,
@@ -1462,6 +1507,11 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
           parametrosPrecio.velocidadPromedioKmh,
           parametrosPrecio.distanciaIncluidaKm,
           parametrosPrecio.tarifaPorKmExcedente,
+          comisionAppPorcentaje,
+          topeRecaudoEfectivo,
+          pagoEfectivoHabilitado,
+          pagoTarjetaHabilitado,
+          pagoTransferenciaHabilitado,
         ],
       );
       return result.rows[0].resultado;
@@ -1484,7 +1534,26 @@ export class PostgresSolicitudRepository extends SolicitudRepositoryPort {
       return {
         copago: fila.copago !== null ? Number(fila.copago) : null,
         distanciaMetros: fila.distancia_metros,
+        comisionAppPorcentaje: Number(fila.comision_app_porcentaje),
         ...mapearParametrosPrecio(fila),
+      };
+    });
+  }
+
+  obtenerMediosPagoHabilitados(
+    usuarioId: string,
+  ): Promise<MediosPagoHabilitados> {
+    return this.db.withUserContext(usuarioId, async (client) => {
+      const result = await client.query<{
+        pago_efectivo_habilitado: boolean;
+        pago_tarjeta_habilitado: boolean;
+        pago_transferencia_habilitado: boolean;
+      }>('select * from app.obtener_medios_pago_habilitados($1)', [usuarioId]);
+      const fila = result.rows[0];
+      return {
+        pagoEfectivoHabilitado: fila.pago_efectivo_habilitado,
+        pagoTarjetaHabilitado: fila.pago_tarjeta_habilitado,
+        pagoTransferenciaHabilitado: fila.pago_transferencia_habilitado,
       };
     });
   }

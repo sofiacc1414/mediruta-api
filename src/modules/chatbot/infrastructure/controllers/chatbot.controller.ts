@@ -1,4 +1,12 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseFilters, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseFilters,
+  UseGuards,
+} from '@nestjs/common';
 import type { IdentidadAutenticada } from '../../../usuarios/domain/identidad-autenticada';
 import { UsuarioAutenticadoOpcional } from '../../../usuarios/infrastructure/decorators/usuario-autenticado-opcional.decorator';
 import { DominioHttpFilter } from '../../../usuarios/infrastructure/filters/dominio-http.filter';
@@ -22,7 +30,9 @@ import { MensajeChatbotDto } from '../dtos/mensaje-chatbot.dto';
 @UseFilters(DominioHttpFilter)
 @UseGuards(OptionalAuthGuard)
 export class ChatbotController {
-  constructor(private readonly procesarMensaje: ProcesarMensajeChatbotUseCase) {}
+  constructor(
+    private readonly procesarMensaje: ProcesarMensajeChatbotUseCase,
+  ) {}
 
   @Post('mensaje')
   @HttpCode(HttpStatus.OK)

@@ -12,7 +12,10 @@ import {
   NovedadDelPaciente,
   SolicitudRepositoryPort,
 } from '../../domain/ports/solicitud.repository.port';
-import { CalcularPrecioPedidoUseCase, PrecioPedido } from './calcular-precio-pedido.use-case';
+import {
+  CalcularPrecioPedidoUseCase,
+  PrecioPedido,
+} from './calcular-precio-pedido.use-case';
 
 export type ObtenerSolicitudResultado = {
   id: string;

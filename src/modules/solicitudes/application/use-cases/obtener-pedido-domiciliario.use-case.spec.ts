@@ -14,6 +14,7 @@ describe('ObtenerPedidoDomiciliarioUseCase', () => {
     listarHistorial: jest.fn(),
     actualizar: jest.fn(),
     actualizarReceta: jest.fn(),
+    obtenerMediosPagoHabilitados: jest.fn(),
     enviar: jest.fn(),
     cancelar: jest.fn(),
     obtenerDatosGeocodificacionFarmacia: jest.fn(),
@@ -22,6 +23,7 @@ describe('ObtenerPedidoDomiciliarioUseCase', () => {
     listarNovedadesSolicitudDomiciliario: jest.fn(),
     listarPedidosDisponibles: jest.fn(),
     aceptarPedido: jest.fn(),
+    marcarEnFarmacia: jest.fn(),
     marcarMedicamentosRecogidos: jest.fn(),
     iniciarEntrega: jest.fn(),
     marcarEnSitio: jest.fn(),
@@ -42,6 +44,7 @@ describe('ObtenerPedidoDomiciliarioUseCase', () => {
     obtenerNovedadAbiertaPedidoAdmin: jest.fn(),
     reportarNovedadPaciente: jest.fn(),
     solicitarEdicionPedido: jest.fn(),
+    adjuntarRecetaPropuestaEdicion: jest.fn(),
     reportarCodigoNoGenerado: jest.fn(),
     aprobarEdicionPedidoAdmin: jest.fn(),
     obtenerDatosGeocodificacionNovedadAdmin: jest.fn(),
@@ -53,6 +56,7 @@ describe('ObtenerPedidoDomiciliarioUseCase', () => {
     obtenerConfiguracionAdmin: jest.fn(),
     actualizarConfiguracionAdmin: jest.fn(),
     obtenerDatosPrecioPedido: jest.fn(),
+    obtenerParametrosEstimacionPrecio: jest.fn(),
     listarNivelesCopagoAdmin: jest.fn(),
     guardarNivelCopagoAdmin: jest.fn(),
     eliminarNivelCopagoAdmin: jest.fn(),
@@ -81,6 +85,8 @@ describe('ObtenerPedidoDomiciliarioUseCase', () => {
       direccionEntrega: 'Calle 1 #2-3',
       direccionFarmacia: 'Carrera 5 #6-7',
       creadoEn: '2026-08-20T10:00:00.000Z',
+      metodoPago: 'efectivo',
+      montoACobrar: 24400,
     };
     const historial = [
       {

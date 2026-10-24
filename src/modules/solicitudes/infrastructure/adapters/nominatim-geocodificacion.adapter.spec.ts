@@ -109,7 +109,9 @@ describe('NominatimGeocodificacionAdapter', () => {
     await adapter.geocodificar(entrada, null, null);
 
     const [url] = fetchMock.mock.calls[0] as [URL];
-    expect(url.searchParams.get('q')).toBe(`${esperado.replace(/^Cra /, 'Carrera ')}, Medellín, Antioquia, Colombia`);
+    expect(url.searchParams.get('q')).toBe(
+      `${esperado.replace(/^Cra /, 'Carrera ')}, Medellín, Antioquia, Colombia`,
+    );
   });
 
   it('no toca "no" cuando no es un numeral (palabra común, ni "Norte")', async () => {
@@ -212,7 +214,11 @@ describe('NominatimGeocodificacionAdapter', () => {
       );
       const adapter = new NominatimGeocodificacionAdapter();
 
-      const resultado = await adapter.geocodificar('Calle 27', 'Medellín', 'Antioquia');
+      const resultado = await adapter.geocodificar(
+        'Calle 27',
+        'Medellín',
+        'Antioquia',
+      );
 
       // "Perímetro Urbano " se limpia del nombre de la ciudad, y
       // `suburb` (la comuna) se prefiere sobre `neighbourhood` (el
@@ -238,7 +244,11 @@ describe('NominatimGeocodificacionAdapter', () => {
       );
       const adapter = new NominatimGeocodificacionAdapter();
 
-      const resultado = await adapter.geocodificar('Calle 10', 'Bucaramanga', 'Santander');
+      const resultado = await adapter.geocodificar(
+        'Calle 10',
+        'Bucaramanga',
+        'Santander',
+      );
 
       expect(resultado?.direccionResuelta).toBe(
         'Calle 10, Comuna 13 - Oriental, Bucaramanga',
@@ -261,7 +271,11 @@ describe('NominatimGeocodificacionAdapter', () => {
       );
       const adapter = new NominatimGeocodificacionAdapter();
 
-      const resultado = await adapter.geocodificar('Carrera 43A', 'Bogotá', null);
+      const resultado = await adapter.geocodificar(
+        'Carrera 43A',
+        'Bogotá',
+        null,
+      );
 
       expect(resultado?.direccionResuelta).toBe(
         'Carrera 43A, Localidad Teusaquillo, Bogotá',
@@ -370,11 +384,17 @@ describe('NominatimGeocodificacionAdapter', () => {
       fetchMock
         .mockResolvedValueOnce(respuestaJson(null, false, 503))
         .mockResolvedValueOnce(
-          respuestaJson([{ lat: '6.2', lon: '-75.6', address: { road: 'Calle 27' } }]),
+          respuestaJson([
+            { lat: '6.2', lon: '-75.6', address: { road: 'Calle 27' } },
+          ]),
         );
       const adapter = new NominatimGeocodificacionAdapter();
 
-      const resultado = await adapter.geocodificar('Calle 27', 'Medellín', 'Antioquia');
+      const resultado = await adapter.geocodificar(
+        'Calle 27',
+        'Medellín',
+        'Antioquia',
+      );
 
       expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(resultado).not.toBeNull();
@@ -385,11 +405,17 @@ describe('NominatimGeocodificacionAdapter', () => {
       fetchMock
         .mockRejectedValueOnce(new Error('network error'))
         .mockResolvedValueOnce(
-          respuestaJson([{ lat: '6.2', lon: '-75.6', address: { road: 'Calle 27' } }]),
+          respuestaJson([
+            { lat: '6.2', lon: '-75.6', address: { road: 'Calle 27' } },
+          ]),
         );
       const adapter = new NominatimGeocodificacionAdapter();
 
-      const resultado = await adapter.geocodificar('Calle 27', 'Medellín', 'Antioquia');
+      const resultado = await adapter.geocodificar(
+        'Calle 27',
+        'Medellín',
+        'Antioquia',
+      );
 
       expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(resultado).not.toBeNull();
@@ -399,7 +425,11 @@ describe('NominatimGeocodificacionAdapter', () => {
       fetchMock.mockResolvedValue(respuestaJson([]));
       const adapter = new NominatimGeocodificacionAdapter();
 
-      const resultado = await adapter.geocodificar('dirección inventada', null, null);
+      const resultado = await adapter.geocodificar(
+        'dirección inventada',
+        null,
+        null,
+      );
 
       // Nominatim vacío y, después, el respaldo Photon.
       expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -418,7 +448,15 @@ describe('NominatimGeocodificacionAdapter', () => {
   // mejor dato disponible (ej. el centro real del campus, navegable),
   // solo se marca `precisa: false` para que quien consuma esto pueda
   // avisarle al usuario sin bloquear el envío.
-  it.each(['amenity', 'shop', 'tourism', 'leisure', 'office', 'historic', 'building'])(
+  it.each([
+    'amenity',
+    'shop',
+    'tourism',
+    'leisure',
+    'office',
+    'historic',
+    'building',
+  ])(
     'geocodifica igual pero con precisa=false si es un lugar SIN house_number (addresstype="%s") — ej. Universidad de Medellín',
     async (addresstype) => {
       fetchMock.mockResolvedValue(
@@ -428,7 +466,8 @@ describe('NominatimGeocodificacionAdapter', () => {
             lon: '-75.6114011',
             addresstype,
             address: {},
-            display_name: 'Universidad de Medellín, Calle 30A, Los Alpes, Medellín, Antioquia, Colombia',
+            display_name:
+              'Universidad de Medellín, Calle 30A, Los Alpes, Medellín, Antioquia, Colombia',
           },
         ]),
       );
@@ -488,7 +527,9 @@ describe('NominatimGeocodificacionAdapter', () => {
     'precisa=true cuando el addresstype es de calle/dirección ("%s"), aunque falte house_number',
     async (addresstype) => {
       fetchMock.mockResolvedValue(
-        respuestaJson([{ lat: '4.6486', lon: '-74.0628', addresstype, address: {} }]),
+        respuestaJson([
+          { lat: '4.6486', lon: '-74.0628', addresstype, address: {} },
+        ]),
       );
       const adapter = new NominatimGeocodificacionAdapter();
 
@@ -508,7 +549,11 @@ describe('NominatimGeocodificacionAdapter', () => {
     );
     const adapter = new NominatimGeocodificacionAdapter();
 
-    const resultado = await adapter.geocodificar('Calle 80', 'Bogotá', 'Cundinamarca');
+    const resultado = await adapter.geocodificar(
+      'Calle 80',
+      'Bogotá',
+      'Cundinamarca',
+    );
 
     expect(resultado?.precisa).toBe(true);
   });
@@ -592,7 +637,8 @@ describe('NominatimGeocodificacionAdapter', () => {
               lon: '-75.5708593',
               addresstype: 'road',
               address: { house_number: '5A-113' },
-              display_name: 'Carrera 43A, El Poblado, Medellín, Antioquia, Colombia',
+              display_name:
+                'Carrera 43A, El Poblado, Medellín, Antioquia, Colombia',
             },
           ]),
         ); // sin ciudad/departamento
@@ -653,26 +699,26 @@ describe('NominatimGeocodificacionAdapter', () => {
     });
 
     it('ofrece los demás resultados de la búsqueda amplia como candidatos', async () => {
-      fetchMock
-        .mockResolvedValueOnce(respuestaJson([]))
-        .mockResolvedValueOnce(
-          respuestaJson([
-            {
-              lat: '6.2093857',
-              lon: '-75.5708593',
-              addresstype: 'road',
-              address: { house_number: '5A-113' },
-              display_name: 'Carrera 43A, El Poblado, Medellín, Antioquia, Colombia',
-            },
-            {
-              lat: '6.1590',
-              lon: '-75.6280',
-              addresstype: 'road',
-              address: { house_number: '5A-113' },
-              display_name: 'Carrera 43A, San Antonio de Prado, Medellín, Antioquia, Colombia',
-            },
-          ]),
-        );
+      fetchMock.mockResolvedValueOnce(respuestaJson([])).mockResolvedValueOnce(
+        respuestaJson([
+          {
+            lat: '6.2093857',
+            lon: '-75.5708593',
+            addresstype: 'road',
+            address: { house_number: '5A-113' },
+            display_name:
+              'Carrera 43A, El Poblado, Medellín, Antioquia, Colombia',
+          },
+          {
+            lat: '6.1590',
+            lon: '-75.6280',
+            addresstype: 'road',
+            address: { house_number: '5A-113' },
+            display_name:
+              'Carrera 43A, San Antonio de Prado, Medellín, Antioquia, Colombia',
+          },
+        ]),
+      );
 
       const adapter = new NominatimGeocodificacionAdapter();
       const resultado = await adapter.geocodificar(
@@ -699,14 +745,16 @@ describe('NominatimGeocodificacionAdapter', () => {
             lon: '-75.5895294',
             addresstype: 'amenity',
             address: { amenity: 'Universidad de Medellín' },
-            display_name: 'Universidad de Medellín, Medellín, Antioquia, Colombia',
+            display_name:
+              'Universidad de Medellín, Medellín, Antioquia, Colombia',
           },
           {
             lat: '6.2',
             lon: '-75.6',
             addresstype: 'amenity',
             address: { amenity: 'Universidad Nacional de Medellín' },
-            display_name: 'Universidad Nacional de Medellín, Medellín, Antioquia, Colombia',
+            display_name:
+              'Universidad Nacional de Medellín, Medellín, Antioquia, Colombia',
           },
         ]),
       );
@@ -719,7 +767,9 @@ describe('NominatimGeocodificacionAdapter', () => {
       );
 
       expect(resultado).toHaveLength(2);
-      expect(resultado[0].direccionResuelta).toBe('Universidad de Medellín, Medellín, Antioquia');
+      expect(resultado[0].direccionResuelta).toBe(
+        'Universidad de Medellín, Medellín, Antioquia',
+      );
       expect(resultado[1].direccionResuelta).toBe(
         'Universidad Nacional de Medellín, Medellín, Antioquia',
       );
@@ -735,7 +785,11 @@ describe('NominatimGeocodificacionAdapter', () => {
         );
       const adapter = new NominatimGeocodificacionAdapter();
 
-      const resultado = await adapter.autocompletar('Calle 27', 'Amagá', 'Antioquia');
+      const resultado = await adapter.autocompletar(
+        'Calle 27',
+        'Amagá',
+        'Antioquia',
+      );
 
       expect(fetchMock).toHaveBeenCalledTimes(2);
       const [urlAmplia] = fetchMock.mock.calls[1] as [URL];
@@ -747,7 +801,11 @@ describe('NominatimGeocodificacionAdapter', () => {
       fetchMock.mockResolvedValue(respuestaJson([]));
       const adapter = new NominatimGeocodificacionAdapter();
 
-      const resultado = await adapter.autocompletar('dirección inventada', null, null);
+      const resultado = await adapter.autocompletar(
+        'dirección inventada',
+        null,
+        null,
+      );
 
       expect(resultado).toEqual([]);
     });

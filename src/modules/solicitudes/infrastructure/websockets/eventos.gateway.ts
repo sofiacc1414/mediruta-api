@@ -53,7 +53,9 @@ export class EventosGateway
 
     const token = extraerToken(socket);
     if (!token) {
-      this.logger.warn(`${socket.id}: sin token en el handshake, se desconecta.`);
+      this.logger.warn(
+        `${socket.id}: sin token en el handshake, se desconecta.`,
+      );
       socket.disconnect(true);
       return;
     }
@@ -65,13 +67,17 @@ export class EventosGateway
         sid: payload.sid,
       });
       if (!sesionValida) {
-        this.logger.warn(`${socket.id}: sesión inválida (usuario ${payload.sub}), se desconecta.`);
+        this.logger.warn(
+          `${socket.id}: sesión inválida (usuario ${payload.sub}), se desconecta.`,
+        );
         socket.disconnect(true);
         return;
       }
       this.logger.log(`${socket.id}: autenticado (usuario ${payload.sub}).`);
     } catch (error) {
-      this.logger.warn(`${socket.id}: token inválido (${(error as Error).message}), se desconecta.`);
+      this.logger.warn(
+        `${socket.id}: token inválido (${(error as Error).message}), se desconecta.`,
+      );
       socket.disconnect(true);
     }
   }

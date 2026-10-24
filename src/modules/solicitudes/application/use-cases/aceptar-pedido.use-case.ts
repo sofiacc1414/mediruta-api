@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { DomiciliarioBloqueadoPorTopeError } from '../../domain/errors/domiciliario-bloqueado-por-tope.error';
 import { DomiciliarioConPedidoActivoError } from '../../domain/errors/domiciliario-con-pedido-activo.error';
 import { PedidoYaAsignadoError } from '../../domain/errors/pedido-ya-asignado.error';
 import { SolicitudNoEncontradaError } from '../../domain/errors/solicitud-no-encontrada.error';
@@ -34,6 +35,8 @@ export class AceptarPedidoUseCase {
         throw new DomiciliarioConPedidoActivoError();
       case 'no_encontrado':
         throw new SolicitudNoEncontradaError();
+      case 'bloqueado_por_tope':
+        throw new DomiciliarioBloqueadoPorTopeError();
     }
   }
 }

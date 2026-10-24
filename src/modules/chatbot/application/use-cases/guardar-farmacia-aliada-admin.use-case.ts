@@ -43,6 +43,8 @@ export class GuardarFarmaciaAliadaAdminUseCase {
     if (resultado.resultado === 'no_encontrado') {
       throw new FarmaciaAliadaNoEncontradaError();
     }
-    throw new Error('La EPS, el nombre de la farmacia y la ciudad son obligatorios.');
+    throw new Error(
+      'La EPS, el nombre de la farmacia y la ciudad son obligatorios.',
+    );
   }
 }
