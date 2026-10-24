@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { CalificacionesModule } from './modules/calificaciones/calificaciones.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { ChatbotModule } from './modules/chatbot/chatbot.module';
+import { ComportamientoDomiciliariosModule } from './modules/comportamiento-domiciliarios/comportamiento-domiciliarios.module';
 import { DomiciliariosModule } from './modules/domiciliarios/domiciliarios.module';
 import { NotificacionesModule } from './modules/notificaciones/notificaciones.module';
 import { SolicitudesModule } from './modules/solicitudes/solicitudes.module';
@@ -27,6 +28,7 @@ import { GeocodificacionModule } from './shared/infrastructure/geocodificacion/g
     ChatbotModule,
     TrackingModule,
     WalletModule,
+    ComportamientoDomiciliariosModule,
   ],
   controllers: [AppController],
   providers: [],
