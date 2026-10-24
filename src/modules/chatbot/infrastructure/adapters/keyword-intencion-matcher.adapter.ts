@@ -51,6 +51,18 @@ const DISPARADORES: Record<
     { frase: 'como me hago domiciliario', peso: 1 },
     { frase: 'ser repartidor', peso: 0.7 },
     { frase: 'ser domiciliario', peso: 0.8 },
+    // Vocabulario colombiano: "mensajero" es sinónimo coloquial de
+    // domiciliario/repartidor en varias regiones.
+    { frase: 'quiero ser mensajero', peso: 1 },
+    { frase: 'trabajar como domiciliario', peso: 1 },
+    { frase: 'como trabajo con ustedes', peso: 0.9 },
+    { frase: 'quiero trabajar con mediruta', peso: 0.9 },
+    { frase: 'como me uno a mediruta', peso: 0.9 },
+    { frase: 'requisitos para ser domiciliario', peso: 1 },
+    { frase: 'que necesito para ser domiciliario', peso: 1 },
+    { frase: 'como creo mi usuario', peso: 0.9 },
+    { frase: 'como ingreso por primera vez', peso: 0.7 },
+    { frase: 'no tengo cuenta todavia', peso: 0.7 },
   ],
   cambio_contrasena: [
     { frase: 'olvide mi contraseña', peso: 1 },
@@ -65,6 +77,16 @@ const DISPARADORES: Record<
     { frase: 'no recuerdo mi contraseña', peso: 1 },
     { frase: 'no recuerdo mi clave', peso: 1 },
     { frase: 'como entro si olvide la clave', peso: 1 },
+    { frase: 'se me olvido la clave', peso: 1 },
+    { frase: 'se me olvido la contraseña', peso: 1 },
+    { frase: 'perdi mi contraseña', peso: 1 },
+    { frase: 'perdi mi clave', peso: 1 },
+    { frase: 'clave incorrecta', peso: 0.8 },
+    { frase: 'contraseña incorrecta', peso: 0.8 },
+    { frase: 'cambiar mi clave', peso: 0.9 },
+    { frase: 'actualizar mi contraseña', peso: 0.9 },
+    { frase: 'no me deja entrar', peso: 0.6 },
+    { frase: 'no puedo iniciar sesion', peso: 0.7 },
   ],
   baja_cuenta: [
     { frase: 'como me doy de baja', peso: 1 },
@@ -75,6 +97,11 @@ const DISPARADORES: Record<
     { frase: 'ya no quiero usar la app', peso: 0.8 },
     { frase: 'como reactivo mi cuenta', peso: 1 },
     { frase: 'reactivar mi cuenta', peso: 0.9 },
+    { frase: 'quiero desactivar mi cuenta', peso: 1 },
+    { frase: 'borrar mi perfil', peso: 0.9 },
+    { frase: 'eliminar mi perfil', peso: 0.9 },
+    { frase: 'no quiero usar mas la app', peso: 0.8 },
+    { frase: 'cancelar mi cuenta', peso: 0.7 },
   ],
   cobros_tarifas: [
     { frase: 'cuanto cuesta el domicilio', peso: 1 },
@@ -91,6 +118,19 @@ const DISPARADORES: Record<
     { frase: 'hay cargo adicional', peso: 0.8 },
     { frase: 'cobran propina', peso: 0.8 },
     { frase: 'tarifa de servicio', peso: 0.8 },
+    // Vocabulario colombiano: "domi" como apócope de "domicilio" (no
+    // de "domiciliario" — ojo, por eso va como frase exacta y no como
+    // raíz, "domi" también es el inicio de "domiciliario").
+    { frase: 'cuanto cuesta el domi', peso: 1 },
+    { frase: 'cuanto vale el domi', peso: 1 },
+    { frase: 'cuanto es el domi', peso: 0.9 },
+    { frase: 'cuanta plata cuesta el domicilio', peso: 1 },
+    { frase: 'cuanta plata es el envio', peso: 1 },
+    { frase: 'cuanto cuesta el envio', peso: 1 },
+    { frase: 'cuanto vale el envio', peso: 1 },
+    { frase: 'cuanto es el flete', peso: 0.9 },
+    { frase: 'cuanto me cobran por traer el pedido', peso: 1 },
+    { frase: 'tiene costo adicional', peso: 0.8 },
   ],
   cancelacion_costo: [
     { frase: 'puedo cancelar sin costo', peso: 1 },
@@ -100,6 +140,10 @@ const DISPARADORES: Record<
     { frase: 'hay multa por cancelar', peso: 1 },
     { frase: 'puedo cancelar mi pedido', peso: 0.8 },
     { frase: 'como cancelo mi pedido', peso: 0.8 },
+    { frase: 'si cancelo me cobran', peso: 1 },
+    { frase: 'tiene penalidad cancelar', peso: 1 },
+    { frase: 'puedo cancelar gratis', peso: 0.9 },
+    { frase: 'cancelar sale caro', peso: 0.9 },
   ],
   pedir_medicamentos: [
     { frase: 'como pido medicamentos', peso: 1 },
@@ -124,6 +168,16 @@ const DISPARADORES: Record<
     { frase: 'como funciona un pedido', peso: 0.9 },
     { frase: 'proceso para pedir medicamentos', peso: 1 },
     { frase: 'proceso para pedir mis medicamentos', peso: 1 },
+    { frase: 'quiero pedir mis pastillas', peso: 0.9 },
+    { frase: 'necesito mis medicinas', peso: 0.7 },
+    { frase: 'como ordeno mis medicamentos', peso: 1 },
+    { frase: 'quiero hacer un pedido', peso: 0.9 },
+    { frase: 'quiero hacer una orden', peso: 0.7 },
+    { frase: 'subir foto de la orden medica', peso: 1 },
+    { frase: 'como adjunto la orden', peso: 0.9 },
+    { frase: 'necesito subir mi orden', peso: 0.9 },
+    { frase: 'como creo un pedido', peso: 1 },
+    { frase: 'como monto una solicitud', peso: 1 },
   ],
   chat_domiciliario: [
     { frase: 'chatear con el domiciliario', peso: 1 },
@@ -135,6 +189,11 @@ const DISPARADORES: Record<
     { frase: 'donde esta el domiciliario', peso: 0.8 },
     { frase: 'comunicarme con el repartidor', peso: 1 },
     { frase: 'escribirle al domiciliario', peso: 0.9 },
+    { frase: 'quiero escribirle al repartidor', peso: 1 },
+    { frase: 'como me comunico con el domiciliario', peso: 1 },
+    { frase: 'puedo llamar al domiciliario', peso: 0.9 },
+    { frase: 'como le aviso al domiciliario', peso: 0.9 },
+    { frase: 'hablar con el domi', peso: 0.9 },
   ],
   reclamo_farmacia: [
     { frase: 'como reclamo en la farmacia', peso: 1 },
@@ -147,6 +206,9 @@ const DISPARADORES: Record<
     { frase: 'recogida en la farmacia', peso: 0.8 },
     { frase: 'reclamar mis medicamentos', peso: 0.8 },
     { frase: 'reclamar en la droguería', peso: 0.9 },
+    { frase: 'que debo mostrar en la farmacia', peso: 0.9 },
+    { frase: 'debo llevar la cedula a la farmacia', peso: 1 },
+    { frase: 'necesitan mi cedula en la farmacia', peso: 1 },
   ],
   copago_eps: [
     { frase: 'cuanto es el copago', peso: 1 },
@@ -158,6 +220,11 @@ const DISPARADORES: Record<
     { frase: 'copago segun mis ingresos', peso: 1 },
     { frase: 'cuanto es la cuota moderadora', peso: 1 },
     { frase: 'cuanto cuesta el copago', peso: 1 },
+    { frase: 'cuanto tengo que pagar en la farmacia', peso: 0.9 },
+    { frase: 'tengo que pagar algo en la droguería', peso: 0.9 },
+    { frase: 'cuanto pago segun mi eps', peso: 1 },
+    { frase: 'me toca pagar algo', peso: 0.6 },
+    { frase: 'cuanta plata es el copago', peso: 1 },
   ],
   farmacias_eps: [
     { frase: 'farmacias de mi eps', peso: 1 },
@@ -177,6 +244,11 @@ const DISPARADORES: Record<
     { frase: 'direccion de mi farmacia', peso: 0.9 },
     { frase: 'no se cual es mi farmacia', peso: 1 },
     { frase: 'no se la direccion de la farmacia', peso: 1 },
+    { frase: 'en que droguería reclamo', peso: 1 },
+    { frase: 'cual droguería me corresponde', peso: 1 },
+    { frase: 'farmacia asignada', peso: 0.8 },
+    { frase: 'a que farmacia debo ir', peso: 1 },
+    { frase: 'a que droguería debo ir', peso: 1 },
   ],
   novedad_pedido: [
     { frase: 'reportar novedad', peso: 1 },
@@ -194,6 +266,11 @@ const DISPARADORES: Record<
     { frase: 'que hago si la direccion', peso: 0.9 },
     { frase: 'problema con la direccion', peso: 1 },
     { frase: 'no puedo llegar a la direccion', peso: 1 },
+    { frase: 'el pedido esta demorado', peso: 1 },
+    { frase: 'pedido atrasado', peso: 0.9 },
+    { frase: 'demora en la entrega', peso: 1 },
+    { frase: 'mi pedido no avanza', peso: 0.9 },
+    { frase: 'el domi no llega', peso: 0.9 },
   ],
   codigo_entrega: [
     { frase: 'codigo de entrega', peso: 0.9 },
@@ -203,6 +280,10 @@ const DISPARADORES: Record<
     { frase: 'el codigo no se genero', peso: 1 },
     { frase: 'no me llego el codigo', peso: 1 },
     { frase: 'que hago si el codigo', peso: 0.9 },
+    { frase: 'no tengo el codigo', peso: 0.9 },
+    { frase: 'perdi el codigo de entrega', peso: 1 },
+    { frase: 'me pueden reenviar el codigo', peso: 1 },
+    { frase: 'el codigo esta vencido', peso: 1 },
   ],
   pos_no_pos: [
     { frase: 'no pos', peso: 0.9 },
@@ -213,6 +294,10 @@ const DISPARADORES: Record<
     { frase: 'como tramito un no pos', peso: 1 },
     { frase: 'que es mipres', peso: 1 },
     { frase: 'plan de beneficios', peso: 0.7 },
+    { frase: 'medicamento no incluido', peso: 0.9 },
+    { frase: 'no me lo cubre la eps', peso: 0.9 },
+    { frase: 'formato mipres', peso: 1 },
+    { frase: 'tengo que tramitar algo especial', peso: 0.7 },
   ],
 };
 
@@ -230,6 +315,8 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     { raiz: 'registr', peso: 0.75 },
     { raiz: 'inscrib', peso: 0.75 },
     { raiz: 'repartidor', peso: 0.6 },
+    // Vocabulario colombiano: "mensajero" como sinónimo de domiciliario.
+    { raiz: 'mensajer', peso: 0.6 },
     // Pregunta de seguimiento real reportada ("¿se activa mi cuenta
     // automáticamente?") sobre lo que el bot ya había contestado —
     // "activ" + "cuenta" juntos alcanzan el umbral solos.
@@ -245,6 +332,9 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
   baja_cuenta: [
     { raiz: 'desactiv', peso: 0.75 },
     { raiz: 'reactiv', peso: 0.75 },
+    // "eliminar" sola es genérica (eliminar un medicamento de la
+    // lista, etc.) — moderada, necesita otra señal para confirmar.
+    { raiz: 'elimin', peso: 0.5 },
   ],
   cobros_tarifas: [
     // "precio"/"tarifa" son inequívocas en este dominio — no hace
@@ -256,6 +346,13 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     { raiz: 'cobr', peso: 0.6 },
     { raiz: 'propina', peso: 0.75 },
     { raiz: 'servicio', peso: 0.3 },
+    // Vocabulario colombiano: "flete"/"recargo" para el costo del
+    // domicilio, "plata" para dinero en general (moderada: "plata" se
+    // usa para cualquier cosa, no solo el precio del domicilio).
+    { raiz: 'flete', peso: 0.75 },
+    { raiz: 'recargo', peso: 0.7 },
+    { raiz: 'plata', peso: 0.4 },
+    { raiz: 'envio', peso: 0.5 },
   ],
   cancelacion_costo: [
     { raiz: 'cancel', peso: 0.75 },
@@ -279,8 +376,20 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     // "gener" + "pedi"/"medicament" juntos ya son inequívocos acá
     // (generar/genero/género/generación un pedido/solicitud).
     { raiz: 'gener', peso: 0.3 },
+    // "orden" (sinónimo colombiano de fórmula/receta médica) y
+    // "pastilla"/"medicina" son comunes pero algo genéricas solas —
+    // moderadas, igual que "solicitud".
+    { raiz: 'orden', peso: 0.3 },
+    { raiz: 'pastilla', peso: 0.6 },
+    { raiz: 'medicin', peso: 0.5 },
   ],
-  chat_domiciliario: [{ raiz: 'domiciliari', peso: 0.2 }],
+  chat_domiciliario: [
+    { raiz: 'domiciliari', peso: 0.2 },
+    // "domi" (apócope colombiano) es ambiguo a propósito: también es
+    // el inicio de "domiciliario" y de "domicilio" (costo) — queda
+    // bajo, necesita otra señal (ver también cobros_tarifas).
+    { raiz: 'domi', peso: 0.2 },
+  ],
   reclamo_farmacia: [
     { raiz: 'reclam', peso: 0.75 },
     { raiz: 'recog', peso: 0.4 },
@@ -298,8 +407,15 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     { raiz: 'aliad', peso: 0.7 },
     { raiz: 'afiliad', peso: 0.7 },
     { raiz: 'eps', peso: 0.3 },
+    { raiz: 'asignad', peso: 0.4 },
   ],
-  novedad_pedido: [{ raiz: 'novedad', peso: 0.75 }],
+  novedad_pedido: [
+    { raiz: 'novedad', peso: 0.75 },
+    // "demora"/"demorado"/"atrasado" son comunes en reclamos reales
+    // sobre un pedido en curso.
+    { raiz: 'demor', peso: 0.6 },
+    { raiz: 'atrasa', peso: 0.6 },
+  ],
   codigo_entrega: [
     { raiz: 'codigo', peso: 0.75 },
     { raiz: 'entreg', peso: 0.2 },

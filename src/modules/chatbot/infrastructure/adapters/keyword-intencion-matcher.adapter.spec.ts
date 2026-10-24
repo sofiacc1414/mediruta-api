@@ -145,6 +145,28 @@ const CASOS: { mensaje: string; esperado: IntencionChatbot }[] = [
   },
 ];
 
+// Vocabulario colombiano / coloquial del dominio — "domi" (apócope de
+// domicilio/domiciliario), "plata", "flete", "mensajero", "orden
+// médica" como sinónimo de fórmula, etc.
+const CASOS_COLOMBIANOS: { mensaje: string; esperado: IntencionChatbot }[] = [
+  { mensaje: 'cuanto cuesta el domi', esperado: 'cobros_tarifas' },
+  { mensaje: 'cuanta plata es el domicilio', esperado: 'cobros_tarifas' },
+  { mensaje: 'cuanto es el flete', esperado: 'cobros_tarifas' },
+  { mensaje: 'me van a cobrar recargo?', esperado: 'cobros_tarifas' },
+  { mensaje: 'quiero ser mensajero de mediruta', esperado: 'registro_cuenta' },
+  { mensaje: 'hablar con el domi de mi pedido', esperado: 'chat_domiciliario' },
+  { mensaje: 'el domi no llega todavia', esperado: 'novedad_pedido' },
+  { mensaje: 'pedido esta muy demorado', esperado: 'novedad_pedido' },
+  {
+    mensaje: 'necesito subir la orden medica para pedir',
+    esperado: 'pedir_medicamentos',
+  },
+  { mensaje: 'quiero pedir mis pastillas ya', esperado: 'pedir_medicamentos' },
+  { mensaje: 'se me olvido la clave de la cuenta', esperado: 'cambio_contrasena' },
+  { mensaje: 'cuanta plata es el copago', esperado: 'copago_eps' },
+  { mensaje: 'a que droguería me toca ir', esperado: 'farmacias_eps' },
+];
+
 // Frases reales, tal cual las escribió el usuario probando la app —
 // las 3 fallaban ("desconocido") antes de este fix.
 const CASOS_REALES_REPORTADOS: {
