@@ -18,6 +18,7 @@ describe('FcmPushAdapter', () => {
     tokens: ['token-1'],
     titulo: 'Título',
     mensaje: 'Mensaje',
+    tipo: 'cambio_estado',
     referenciaTipo: 'pedido',
     referenciaId: 'sol-1',
   };
@@ -69,7 +70,7 @@ describe('FcmPushAdapter', () => {
       expect.objectContaining({
         tokens: ['token-1'],
         notification: { title: 'Título', body: 'Mensaje' },
-        data: { referenciaTipo: 'pedido', referenciaId: 'sol-1' },
+        data: { tipo: 'cambio_estado', referenciaTipo: 'pedido', referenciaId: 'sol-1' },
       }),
     );
   });

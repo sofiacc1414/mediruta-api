@@ -38,6 +38,7 @@ export class RegistrarNotificacionUseCase {
       tokens,
       titulo: entrada.titulo,
       mensaje: entrada.mensaje,
+      tipo: entrada.tipo,
       referenciaTipo: entrada.referenciaTipo,
       referenciaId: entrada.referenciaId,
     };

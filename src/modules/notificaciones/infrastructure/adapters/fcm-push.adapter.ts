@@ -46,6 +46,7 @@ export class FcmPushAdapter extends PushNotificacionPort {
       tokens: aviso.tokens,
       notification: { title: aviso.titulo, body: aviso.mensaje },
       data: {
+        tipo: aviso.tipo,
         referenciaTipo: aviso.referenciaTipo,
         referenciaId: aviso.referenciaId ?? '',
       },
