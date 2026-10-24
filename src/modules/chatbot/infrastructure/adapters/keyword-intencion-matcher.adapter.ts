@@ -124,6 +124,15 @@ const DISPARADORES: Record<
     { frase: 'cuanto cuesta el domi', peso: 1 },
     { frase: 'cuanto vale el domi', peso: 1 },
     { frase: 'cuanto es el domi', peso: 0.9 },
+    // "servicio" como sinónimo genérico de "domicilio/pedido" — caso
+    // real reportado: "cuánto cuesta un servicio" no calzaba con
+    // ninguna frase armada a mano (todas exigían "el domicilio/pedido/
+    // domi/envío" en vez de "un servicio").
+    { frase: 'cuanto cuesta un servicio', peso: 1 },
+    { frase: 'cuanto vale un servicio', peso: 1 },
+    { frase: 'cuanto cuesta el servicio', peso: 1 },
+    { frase: 'cuanto vale el servicio', peso: 1 },
+    { frase: 'cuanto es el servicio', peso: 0.9 },
     { frase: 'cuanta plata cuesta el domicilio', peso: 1 },
     { frase: 'cuanta plata es el envio', peso: 1 },
     { frase: 'cuanto cuesta el envio', peso: 1 },
@@ -194,6 +203,10 @@ const DISPARADORES: Record<
     { frase: 'puedo llamar al domiciliario', peso: 0.9 },
     { frase: 'como le aviso al domiciliario', peso: 0.9 },
     { frase: 'hablar con el domi', peso: 0.9 },
+    { frase: 'contactar a mi repartidor', peso: 1 },
+    { frase: 'contactar al repartidor', peso: 1 },
+    { frase: 'hablar con el repartidor', peso: 1 },
+    { frase: 'hablar con mi repartidor', peso: 1 },
   ],
   reclamo_farmacia: [
     { frase: 'como reclamo en la farmacia', peso: 1 },
@@ -314,6 +327,10 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
   registro_cuenta: [
     { raiz: 'registr', peso: 0.75 },
     { raiz: 'inscrib', peso: 0.75 },
+    // "inscripción"/"inscripciones" no arranca con "inscrib" (raíz
+    // distinta del mismo verbo) — derivado nominal, no cubierto por
+    // la raíz verbal de arriba. Tan inequívoca como "registr".
+    { raiz: 'inscripc', peso: 0.75 },
     { raiz: 'repartidor', peso: 0.6 },
     // Vocabulario colombiano: "mensajero" como sinónimo de domiciliario.
     { raiz: 'mensajer', peso: 0.6 },
@@ -321,6 +338,9 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     // automáticamente?") sobre lo que el bot ya había contestado —
     // "activ" + "cuenta" juntos alcanzan el umbral solos.
     { raiz: 'activ', peso: 0.5 },
+    // "verificar"/"verificación" como sinónimo de activar, sobre la
+    // misma pregunta de seguimiento.
+    { raiz: 'verific', peso: 0.4 },
     { raiz: 'cuenta', peso: 0.3 },
   ],
   cambio_contrasena: [
@@ -328,6 +348,11 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     // "clave" sola queda moderada: también se usa genéricamente
     // ("es clave que...", nada que ver con contraseñas).
     { raiz: 'clave', peso: 0.4 },
+    // Derivados de "restablecer"/"actualizar" — ya cubiertos como
+    // frase exacta, acá generalizan a otras conjugaciones
+    // ("restablecimiento", "actualizando mi clave").
+    { raiz: 'restablec', peso: 0.5 },
+    { raiz: 'actualiz', peso: 0.3 },
   ],
   baja_cuenta: [
     { raiz: 'desactiv', peso: 0.75 },
@@ -335,6 +360,11 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     // "eliminar" sola es genérica (eliminar un medicamento de la
     // lista, etc.) — moderada, necesita otra señal para confirmar.
     { raiz: 'elimin', peso: 0.5 },
+    // Sinónimos de "desactivar"/"eliminar" — "inactivar" (más formal)
+    // y "suprimir" (menos común pero real), igual de inequívocos en
+    // este dominio.
+    { raiz: 'inactiv', peso: 0.75 },
+    { raiz: 'suprim', peso: 0.75 },
   ],
   cobros_tarifas: [
     // "precio"/"tarifa" son inequívocas en este dominio — no hace
@@ -353,11 +383,19 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     { raiz: 'recargo', peso: 0.7 },
     { raiz: 'plata', peso: 0.4 },
     { raiz: 'envio', peso: 0.5 },
+    // Caso real reportado: "cuánta plata es el domicilio" solo
+    // prendía "plata" (0.4), por debajo del umbral — "domicilio"
+    // como costo complementa (moderada: comparte prefijo con
+    // "domiciliario", la persona — ver chat_domiciliario).
+    { raiz: 'domicili', peso: 0.3 },
   ],
   cancelacion_costo: [
     { raiz: 'cancel', peso: 0.75 },
     { raiz: 'multa', peso: 0.7 },
     { raiz: 'costo', peso: 0.3 },
+    // "anular" como sinónimo de "cancelar" un pedido, igual de
+    // inequívoco en este dominio.
+    { raiz: 'anul', peso: 0.75 },
   ],
   pedir_medicamentos: [
     { raiz: 'formula', peso: 0.75 },
@@ -389,6 +427,11 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     // el inicio de "domiciliario" y de "domicilio" (costo) — queda
     // bajo, necesita otra señal (ver también cobros_tarifas).
     { raiz: 'domi', peso: 0.2 },
+    // Nota: "repartidor" NO se agrega acá como raíz suelta — ya es
+    // raíz de registro_cuenta (contexto "ser repartidor"/trabajar
+    // como tal) con peso más alto, y una raíz sin contexto gana por
+    // score aunque la intención real sea otra. Se cubre con frases
+    // exactas en vez de una raíz ambigua compartida.
   ],
   reclamo_farmacia: [
     { raiz: 'reclam', peso: 0.75 },
@@ -396,10 +439,18 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
     // "farmacia" sola es ambigua a propósito (comparte con
     // farmacias_eps) — no decide nada por sí sola.
     { raiz: 'farmaci', peso: 0.2 },
+    // "retirar" como sinónimo de "reclamar"/"recoger" los medicamentos
+    // — junto con "farmaci" (0.2) alcanza el umbral.
+    { raiz: 'retir', peso: 0.5 },
   ],
   copago_eps: [
     { raiz: 'copago', peso: 0.75 },
     { raiz: 'moderador', peso: 0.6 },
+    // Generaliza más allá de la frase exacta "cuota moderadora" —
+    // moderada porque "cuota" sola es un término financiero genérico;
+    // junto con "eps" (abajo) alcanza el umbral.
+    { raiz: 'cuota', peso: 0.5 },
+    { raiz: 'eps', peso: 0.3 },
   ],
   farmacias_eps: [
     { raiz: 'farmaci', peso: 0.4 },
@@ -411,16 +462,31 @@ const RAICES: Record<Exclude<IntencionChatbot, 'desconocido'>, Raiz[]> = {
   ],
   novedad_pedido: [
     { raiz: 'novedad', peso: 0.75 },
-    // "demora"/"demorado"/"atrasado" son comunes en reclamos reales
-    // sobre un pedido en curso.
-    { raiz: 'demor', peso: 0.6 },
-    { raiz: 'atrasa', peso: 0.6 },
+    // "demora"/"demorado"/"atrasado" son, en la práctica, tan
+    // inequívocos en este dominio como "novedad" — bug real
+    // reportado: "pedido está muy demorado" quedaba en 0.6, por
+    // debajo del umbral, con el peso moderado que tenían antes.
+    { raiz: 'demor', peso: 0.75 },
+    { raiz: 'atrasa', peso: 0.75 },
+    // "retraso"/"retrasado" es el mismo sinónimo con otra raíz.
+    { raiz: 'retras', peso: 0.75 },
+    // "tarda"/"tardanza" es más genérico (también se usa fuera de
+    // pedidos) — queda moderado.
+    { raiz: 'tard', peso: 0.5 },
   ],
   codigo_entrega: [
     { raiz: 'codigo', peso: 0.75 },
     { raiz: 'entreg', peso: 0.2 },
+    // "vencido"/"vencimiento" generaliza más allá de la frase exacta
+    // "el código está vencido".
+    { raiz: 'venc', peso: 0.3 },
   ],
-  pos_no_pos: [{ raiz: 'mipres', peso: 0.8 }],
+  pos_no_pos: [
+    { raiz: 'mipres', peso: 0.8 },
+    // "cobertura" como sinónimo de "cubierto"/"plan de beneficios" —
+    // en este dominio, suficientemente inequívoca sola.
+    { raiz: 'cobertura', peso: 0.7 },
+  ],
 };
 
 function normalizar(texto: string): string {

@@ -165,6 +165,28 @@ const CASOS_COLOMBIANOS: { mensaje: string; esperado: IntencionChatbot }[] = [
   { mensaje: 'se me olvido la clave de la cuenta', esperado: 'cambio_contrasena' },
   { mensaje: 'cuanta plata es el copago', esperado: 'copago_eps' },
   { mensaje: 'a que droguería me toca ir', esperado: 'farmacias_eps' },
+  { mensaje: 'cuanto cuesta un servicio', esperado: 'cobros_tarifas' },
+];
+
+// Derivados y sinónimos ampliados (no coloquiales, de uso general) —
+// conjugaciones/formas nominales distintas de la raíz ya cubierta, o
+// palabras equivalentes que la gente usa indistintamente.
+const CASOS_DERIVADOS: { mensaje: string; esperado: IntencionChatbot }[] = [
+  { mensaje: 'necesito la inscripcion a la app', esperado: 'registro_cuenta' },
+  { mensaje: 'como hago la verificacion de mi cuenta', esperado: 'registro_cuenta' },
+  { mensaje: 'quiero el restablecimiento de mi clave', esperado: 'cambio_contrasena' },
+  { mensaje: 'estoy actualizando mi contraseña y no puedo', esperado: 'cambio_contrasena' },
+  { mensaje: 'quiero la inactivacion de mi cuenta', esperado: 'baja_cuenta' },
+  { mensaje: 'como suprimo mi cuenta de la app', esperado: 'baja_cuenta' },
+  { mensaje: 'cuanta plata es el domicilio', esperado: 'cobros_tarifas' },
+  { mensaje: 'puedo anular mi pedido sin problema', esperado: 'cancelacion_costo' },
+  { mensaje: 'necesito contactar a mi repartidor ya', esperado: 'chat_domiciliario' },
+  { mensaje: 'como retiro mis medicamentos de la farmacia', esperado: 'reclamo_farmacia' },
+  { mensaje: 'cual es mi cuota en la eps', esperado: 'copago_eps' },
+  { mensaje: 'pedido esta muy demorado', esperado: 'novedad_pedido' },
+  { mensaje: 'mi pedido tiene mucho retraso', esperado: 'novedad_pedido' },
+  { mensaje: 'el codigo ya esta vencido', esperado: 'codigo_entrega' },
+  { mensaje: 'mi eps no me da cobertura para esto', esperado: 'pos_no_pos' },
 ];
 
 // Frases reales, tal cual las escribió el usuario probando la app —
@@ -203,6 +225,24 @@ describe('KeywordIntencionMatcherAdapter', () => {
 
   it.each(CASOS)(
     'clasifica "$mensaje" como $esperado',
+    ({ mensaje, esperado }) => {
+      const resultado = adapter.clasificar(mensaje);
+      expect(resultado.intencion).toBe(esperado);
+      expect(resultado.score).toBeGreaterThanOrEqual(UMBRAL_CONFIANZA_MINIMO);
+    },
+  );
+
+  it.each(CASOS_COLOMBIANOS)(
+    'vocabulario colombiano: "$mensaje" -> $esperado',
+    ({ mensaje, esperado }) => {
+      const resultado = adapter.clasificar(mensaje);
+      expect(resultado.intencion).toBe(esperado);
+      expect(resultado.score).toBeGreaterThanOrEqual(UMBRAL_CONFIANZA_MINIMO);
+    },
+  );
+
+  it.each(CASOS_DERIVADOS)(
+    'derivado/sinonimo: "$mensaje" -> $esperado',
     ({ mensaje, esperado }) => {
       const resultado = adapter.clasificar(mensaje);
       expect(resultado.intencion).toBe(esperado);
