@@ -6,6 +6,11 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { INTENCIONES_CHATBOT } from '../../domain/intencion-chatbot';
+
+const INTENCIONES_FORZABLES = INTENCIONES_CHATBOT.filter(
+  (i) => i !== 'desconocido',
+);
 
 export class MensajeChatbotDto {
   @IsString()
@@ -28,4 +33,13 @@ export class MensajeChatbotDto {
   @IsInt()
   @Min(0)
   intentosSinExitoSeguidos?: number;
+
+  /** La app lo manda al tocar un botón de sugerencia — ver
+   * `EntradaMensajeChatbot.intencionForzada`. */
+  @IsOptional()
+  @IsIn(INTENCIONES_FORZABLES)
+  intencionForzada?: Exclude<
+    (typeof INTENCIONES_CHATBOT)[number],
+    'desconocido'
+  >;
 }

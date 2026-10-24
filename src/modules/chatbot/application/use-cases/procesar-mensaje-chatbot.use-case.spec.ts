@@ -10,8 +10,12 @@ import { ProcesarMensajeChatbotUseCase } from './procesar-mensaje-chatbot.use-ca
 function matcherQueDevuelve(
   intencion: string,
   score: number,
+  candidatos: { intencion: string; score: number }[] = [],
 ): IntencionMatcherPort {
-  return { clasificar: jest.fn().mockReturnValue({ intencion, score }) };
+  return {
+    clasificar: jest.fn().mockReturnValue({ intencion, score }),
+    clasificarCandidatos: jest.fn().mockReturnValue(candidatos),
+  } as unknown as IntencionMatcherPort;
 }
 
 describe('ProcesarMensajeChatbotUseCase', () => {
@@ -36,6 +40,7 @@ describe('ProcesarMensajeChatbotUseCase', () => {
       respuesta: MENSAJE_NO_ENTENDIDO,
       requiereDatos: null,
       ofrecerSoporte: false,
+      sugerencias: null,
     });
     expect(farmacias.listarPorEps).not.toHaveBeenCalled();
   });
@@ -52,6 +57,57 @@ describe('ProcesarMensajeChatbotUseCase', () => {
 
     expect(resultado.respuesta).toBe(MENSAJE_SOPORTE_HUMANO);
     expect(resultado.ofrecerSoporte).toBe(true);
+  });
+
+  it('score bajo pero con candidatos razonables ofrece sugerencias en vez de "no entendí"', async () => {
+    const matcher = matcherQueDevuelve('pedir_medicamentos', 0.4, [
+      { intencion: 'pedir_medicamentos', score: 0.4 },
+      { intencion: 'cobros_tarifas', score: 0.35 },
+    ]);
+    const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
+
+    const resultado = await useCase.execute({
+      usuarioId: 'u1',
+      mensaje: 'el domi',
+    });
+
+    expect(resultado.intencion).toBe('desconocido');
+    expect(resultado.sugerencias).toEqual([
+      { intencion: 'pedir_medicamentos', etiqueta: expect.any(String) },
+      { intencion: 'cobros_tarifas', etiqueta: expect.any(String) },
+    ]);
+    expect(resultado.ofrecerSoporte).toBe(false);
+  });
+
+  it('sin candidatos por encima del umbral de sugerencia, no ofrece ninguna', async () => {
+    const matcher = matcherQueDevuelve('pedir_medicamentos', 0.1, [
+      { intencion: 'pedir_medicamentos', score: 0.1 },
+    ]);
+    const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
+
+    const resultado = await useCase.execute({
+      usuarioId: 'u1',
+      mensaje: 'algo muy vago',
+    });
+
+    expect(resultado.sugerencias).toBeNull();
+    expect(resultado.respuesta).toBe(MENSAJE_NO_ENTENDIDO);
+  });
+
+  it('intencionForzada responde directo sin volver a clasificar', async () => {
+    const matcher = matcherQueDevuelve('copago_eps', 0.1);
+    const useCase = new ProcesarMensajeChatbotUseCase(matcher, farmacias);
+
+    const resultado = await useCase.execute({
+      usuarioId: 'u1',
+      mensaje: 'el domi',
+      intencionForzada: 'pedir_medicamentos',
+    });
+
+    expect(matcher.clasificar).not.toHaveBeenCalled();
+    expect(resultado.intencion).toBe('pedir_medicamentos');
+    expect(resultado.score).toBe(1);
+    expect(resultado.respuesta).toBe(RESPUESTAS_ESTATICAS.pedir_medicamentos);
   });
 
   it('funciona sin sesión (usuarioId null) para intenciones que no la necesitan', async () => {

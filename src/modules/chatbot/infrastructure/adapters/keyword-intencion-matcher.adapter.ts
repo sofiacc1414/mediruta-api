@@ -436,11 +436,15 @@ function normalizar(texto: string): string {
 @Injectable()
 export class KeywordIntencionMatcherAdapter extends IntencionMatcherPort {
   clasificar(mensaje: string): ResultadoClasificacion {
+    const [mejor] = this.clasificarCandidatos(mensaje);
+    return mejor ?? { intencion: 'desconocido', score: 0 };
+  }
+
+  clasificarCandidatos(mensaje: string): ResultadoClasificacion[] {
     const normalizado = normalizar(mensaje);
     const tokens = normalizado.split(' ').filter(Boolean);
 
-    let mejorIntencion: IntencionChatbot = 'desconocido';
-    let mejorScore = 0;
+    const resultados: ResultadoClasificacion[] = [];
 
     for (const intencion of Object.keys(DISPARADORES) as Exclude<
       IntencionChatbot,
@@ -466,12 +470,16 @@ export class KeywordIntencionMatcherAdapter extends IntencionMatcherPort {
 
       score = Math.min(1, score);
 
-      if (score > mejorScore) {
-        mejorScore = score;
-        mejorIntencion = intencion;
+      if (score > 0) {
+        resultados.push({ intencion, score });
       }
     }
 
-    return { intencion: mejorIntencion, score: mejorScore };
+    // Orden estable (V8 garantiza estabilidad en Array.sort desde
+    // ES2019): entre dos intenciones con el mismo score, gana la que
+    // apareció primero en DISPARADORES — igual que el `score >
+    // mejorScore` estricto que tenía la versión anterior de este
+    // método.
+    return resultados.sort((a, b) => b.score - a.score);
   }
 }

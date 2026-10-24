@@ -47,6 +47,7 @@ export class ChatbotController {
       regimen: dto.regimen,
       rangoIngresos: dto.rangoIngresos,
       intentosSinExitoSeguidos: dto.intentosSinExitoSeguidos,
+      intencionForzada: dto.intencionForzada,
     });
   }
 }

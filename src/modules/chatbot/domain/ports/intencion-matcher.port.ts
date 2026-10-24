@@ -9,4 +9,9 @@ import { ResultadoClasificacion } from '../intencion-chatbot';
  * sin sumar otra pieza desplegable. */
 export abstract class IntencionMatcherPort {
   abstract clasificar(mensaje: string): ResultadoClasificacion;
+
+  /** Todas las intenciones con score > 0, de mayor a menor — usado
+   * para ofrecer sugerencias cuando ninguna cruza el umbral de
+   * confianza por sí sola. */
+  abstract clasificarCandidatos(mensaje: string): ResultadoClasificacion[];
 }

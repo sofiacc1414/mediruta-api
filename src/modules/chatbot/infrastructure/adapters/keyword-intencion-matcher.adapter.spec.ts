@@ -228,4 +228,27 @@ describe('KeywordIntencionMatcherAdapter', () => {
     const resultado = adapter.clasificar('CÓMO ME REGÍSTRO EN LA APP');
     expect(resultado.intencion).toBe('registro_cuenta');
   });
+
+  describe('clasificarCandidatos', () => {
+    it('devuelve todas las intenciones con score > 0, de mayor a menor', () => {
+      const candidatos = adapter.clasificarCandidatos('cuanto cuesta el domi');
+      expect(candidatos[0].intencion).toBe('cobros_tarifas');
+      expect(candidatos[0].score).toBeGreaterThanOrEqual(UMBRAL_CONFIANZA_MINIMO);
+      for (let i = 1; i < candidatos.length; i++) {
+        expect(candidatos[i].score).toBeLessThanOrEqual(candidatos[i - 1].score);
+      }
+    });
+
+    it('devuelve lista vacía si ninguna intención matchea nada', () => {
+      const candidatos = adapter.clasificarCandidatos('qué clima hace hoy en Medellín');
+      expect(candidatos).toEqual([]);
+    });
+
+    it('es consistente con clasificar() para el mejor candidato', () => {
+      const mensaje = 'el domi no llega todavia';
+      const mejor = adapter.clasificar(mensaje);
+      const [primero] = adapter.clasificarCandidatos(mensaje);
+      expect(primero).toEqual(mejor);
+    });
+  });
 });

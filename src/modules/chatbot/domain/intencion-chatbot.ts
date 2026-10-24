@@ -26,4 +26,11 @@ export type ResultadoClasificacion = {
  * se trata como "desconocido" aunque el matcher haya encontrado algo. */
 export const UMBRAL_CONFIANZA_MINIMO = 0.7;
 
+/** Por debajo de esto ni siquiera vale la pena sugerirla — demasiado
+ * ambiguo (una sola raíz débil, ruido). Entre este umbral y
+ * `UMBRAL_CONFIANZA_MINIMO` la intención no es lo bastante segura para
+ * responder directo, pero sí para ofrecerla como opción clicable en
+ * vez de un "no entendí" plano. */
+export const UMBRAL_SUGERENCIA = 0.35;
+
 export type RangoIngresos = 'menos_2_smlv' | 'entre_2_y_5_smlv' | 'mas_5_smlv';

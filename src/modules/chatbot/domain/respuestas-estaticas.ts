@@ -7,6 +7,9 @@ export const MENSAJE_SOPORTE_HUMANO =
   'Parece que no estoy logrando ayudarte con esto. Escribinos directo a ' +
   'soporte@mediruta.com y te responde una persona del equipo.';
 
+export const MENSAJE_QUIZAS_TE_REFERIS =
+  'No estoy seguro de haber entendido tu pregunta. ¿Tiene que ver con alguna de estas opciones?';
+
 /** Contenido fijo de las preguntas frecuentes operativas de la app —
  * construido a partir de cómo funciona MediRuta realmente, no datos
  * externos que cambien. */
