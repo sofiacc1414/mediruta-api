@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { calcularCantidadDesdePosologia } from '../../domain/calcular-cantidad-posologia';
 import { ArchivoFormulaInvalidoError } from '../../domain/errors/archivo-formula-invalido.error';
 import { ImagenFormulaIlegibleError } from '../../domain/errors/imagen-formula-ilegible.error';
 import {
@@ -102,12 +103,19 @@ export class HttpOcrFormulaAdapter extends OcrFormulaPort {
   }
 
   private aMedicamento(m: MedicamentoOcr): Medicamento {
+    const posologia = this.posologiaDesde(m);
     return {
       nombre: m.nombre,
       concentracion: m.dosis,
       formaFarmaceutica: m.forma_farmaceutica,
-      cantidad: m.cantidad,
-      posologia: this.posologiaDesde(m),
+      // Caso real reportado: la fórmula no siempre trae `cantidad`
+      // explícita, pero si la posología trae frecuencia y duración
+      // ("cada 6 horas durante 3 días"), es calculable — evita que el
+      // paciente se tope con un campo obligatorio vacío sin aviso.
+      // Si no es calculable (ej. "a libre demanda"), queda `null`
+      // igual que antes — nunca se inventa un número.
+      cantidad: m.cantidad ?? calcularCantidadDesdePosologia(posologia),
+      posologia,
     };
   }
 

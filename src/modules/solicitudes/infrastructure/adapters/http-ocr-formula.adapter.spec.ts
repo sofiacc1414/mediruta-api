@@ -81,6 +81,52 @@ describe('HttpOcrFormulaAdapter', () => {
     });
   });
 
+  it('caso real reportado: calcula cantidad desde la posología cuando el OCR no la trae', async () => {
+    fetchMock.mockResolvedValue(
+      respuestaJson({
+        fecha_emision: null,
+        fecha_vencimiento: null,
+        farmacia_ips_origen: null,
+        medicamentos: [
+          {
+            nombre: 'Acetaminofen',
+            dosis: '500mg',
+            forma_farmaceutica: 'TAB',
+            cantidad: null,
+            frecuencia: null,
+            via_administracion: null,
+            duracion: null,
+            instrucciones:
+              'Tomar 1 tableta (s) cada 6 horas durante 3 dia (s)',
+          },
+          {
+            // "A libre demanda" — no hay cantidad determinística, debe
+            // quedar null para que la app lo marque como pendiente.
+            nombre: 'Sales rehidratantes',
+            dosis: null,
+            forma_farmaceutica: 'SOB',
+            cantidad: null,
+            frecuencia: null,
+            via_administracion: null,
+            duracion: null,
+            instrucciones: 'A LIBRE DEMANDA',
+          },
+        ],
+      }),
+    );
+    const adapter = new HttpOcrFormulaAdapter(
+      configConUrl('http://localhost:8001'),
+    );
+
+    const resultado = await adapter.extraer(
+      Buffer.from('contenido'),
+      'image/png',
+    );
+
+    expect(resultado.medicamentos[0].cantidad).toBe('12 tableta(s) (calculado)');
+    expect(resultado.medicamentos[1].cantidad).toBeNull();
+  });
+
   it('medicamento sin frecuencia/vía/duración detectadas deja posologia en null', async () => {
     fetchMock.mockResolvedValue(
       respuestaJson({
