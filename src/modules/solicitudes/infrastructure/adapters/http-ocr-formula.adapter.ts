@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { calcularCantidadDesdePosologia } from '../../domain/calcular-cantidad-posologia';
+import {
+  calcularCantidadDesdeEstructura,
+  calcularCantidadDesdePosologia,
+} from '../../domain/calcular-cantidad-posologia';
 import { ArchivoFormulaInvalidoError } from '../../domain/errors/archivo-formula-invalido.error';
 import { ImagenFormulaIlegibleError } from '../../domain/errors/imagen-formula-ilegible.error';
 import {
@@ -18,6 +21,11 @@ type MedicamentoOcr = {
   via_administracion: string | null;
   duracion: string | null;
   instrucciones: string | null;
+  // Dosis POR TOMA (ej. "Tomar 1 tableta"), distinta de `cantidad`
+  // (el total a dispensar) — ver PATRON_DOSIS_TOMA en
+  // mediruta-ocr-service. Permite calcular `cantidad` cuando no viene
+  // explícita pero sí frecuencia/duración.
+  dosis_toma: string | null;
 };
 
 type RespuestaOcrServicio = {
@@ -109,12 +117,18 @@ export class HttpOcrFormulaAdapter extends OcrFormulaPort {
       concentracion: m.dosis,
       formaFarmaceutica: m.forma_farmaceutica,
       // Caso real reportado: la fórmula no siempre trae `cantidad`
-      // explícita, pero si la posología trae frecuencia y duración
-      // ("cada 6 horas durante 3 días"), es calculable — evita que el
-      // paciente se tope con un campo obligatorio vacío sin aviso.
-      // Si no es calculable (ej. "a libre demanda"), queda `null`
-      // igual que antes — nunca se inventa un número.
-      cantidad: m.cantidad ?? calcularCantidadDesdePosologia(posologia),
+      // explícita, pero si se conoce dosis por toma + frecuencia +
+      // duración ("Tomar 1 tableta cada 6 horas durante 3 días"), es
+      // calculable — evita que el paciente se tope con un campo
+      // obligatorio vacío sin aviso. Se intenta primero con los
+      // campos estructurados (más confiables), y si no vinieron, con
+      // la posología como texto libre. Si no es calculable (ej. "a
+      // libre demanda"), queda `null` igual que antes — nunca se
+      // inventa un número.
+      cantidad:
+        m.cantidad ??
+        calcularCantidadDesdeEstructura(m.dosis_toma, m.frecuencia, m.duracion) ??
+        calcularCantidadDesdePosologia(posologia),
       posologia,
     };
   }

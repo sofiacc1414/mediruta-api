@@ -1,4 +1,34 @@
-import { calcularCantidadDesdePosologia } from './calcular-cantidad-posologia';
+import {
+  calcularCantidadDesdeEstructura,
+  calcularCantidadDesdePosologia,
+} from './calcular-cantidad-posologia';
+
+describe('calcularCantidadDesdeEstructura', () => {
+  it('calcula la cantidad total desde campos separados (formato real del microservicio OCR)', () => {
+    expect(
+      calcularCantidadDesdeEstructura('Tomar 1 tableta', 'cada 6 horas', 'durante 3 dia'),
+    ).toBe('12 tableta(s) (calculado)');
+  });
+
+  it('calcula correctamente con otra combinación real (caso reportado)', () => {
+    expect(
+      calcularCantidadDesdeEstructura('Tomar 1 tableta', 'cada 8 horas', 'durante 1 dia'),
+    ).toBe('3 tableta(s) (calculado)');
+  });
+
+  it('funciona con las etiquetas de una fila tabulada (mayúsculas, "Días")', () => {
+    // 24/24 = 1 toma/día * 1 tableta/toma * 30 días = 30
+    expect(
+      calcularCantidadDesdeEstructura('Tomar 1 TABLETA', 'Cada 24 Horas', '30 Días'),
+    ).toBe('30 tableta(s) (calculado)');
+  });
+
+  it('devuelve null si falta cualquiera de las tres señales', () => {
+    expect(calcularCantidadDesdeEstructura(null, 'cada 6 horas', 'durante 3 dias')).toBeNull();
+    expect(calcularCantidadDesdeEstructura('Tomar 1 tableta', null, 'durante 3 dias')).toBeNull();
+    expect(calcularCantidadDesdeEstructura('Tomar 1 tableta', 'cada 6 horas', null)).toBeNull();
+  });
+});
 
 describe('calcularCantidadDesdePosologia', () => {
   it('calcula la cantidad total cuando la posología trae dosis, frecuencia y duración', () => {

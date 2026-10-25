@@ -81,7 +81,66 @@ describe('HttpOcrFormulaAdapter', () => {
     });
   });
 
-  it('caso real reportado: calcula cantidad desde la posología cuando el OCR no la trae', async () => {
+  it('caso real reportado: calcula cantidad desde dosis_toma/frecuencia/duracion (formato real del microservicio)', async () => {
+    fetchMock.mockResolvedValue(
+      respuestaJson({
+        fecha_emision: null,
+        fecha_vencimiento: null,
+        farmacia_ips_origen: null,
+        medicamentos: [
+          {
+            nombre: 'ACETAMINOFEN',
+            dosis: '500MG',
+            forma_farmaceutica: 'TAB',
+            cantidad: null,
+            frecuencia: 'cada 6 horas',
+            via_administracion: null,
+            duracion: 'durante 3 dia',
+            instrucciones: null,
+            dosis_toma: 'Tomar 1 tableta',
+          },
+          {
+            nombre: 'LOMOTIL',
+            dosis: '2MG',
+            forma_farmaceutica: 'TAB',
+            cantidad: null,
+            frecuencia: 'cada 8 horas',
+            via_administracion: null,
+            duracion: 'durante 1 dia',
+            instrucciones: null,
+            dosis_toma: 'Tomar 1 tableta',
+          },
+          {
+            // "A libre demanda" — no hay frecuencia/duración/dosis por
+            // toma reconocibles, debe quedar null.
+            nombre: 'SALES REHIDRATANTES',
+            dosis: null,
+            forma_farmaceutica: 'SOB',
+            cantidad: null,
+            frecuencia: null,
+            via_administracion: null,
+            duracion: null,
+            instrucciones: null,
+            dosis_toma: null,
+          },
+        ],
+      }),
+    );
+    const adapter = new HttpOcrFormulaAdapter(
+      configConUrl('http://localhost:8001'),
+    );
+
+    const resultado = await adapter.extraer(
+      Buffer.from('contenido'),
+      'image/png',
+    );
+
+    expect(resultado.medicamentos[0].cantidad).toBe('12 tableta(s) (calculado)');
+    expect(resultado.medicamentos[1].cantidad).toBe('3 tableta(s) (calculado)');
+    expect(resultado.medicamentos[2].cantidad).toBeNull();
+  });
+
+  it('respaldo: calcula cantidad desde la posología en texto libre cuando no vienen campos estructurados', async () => {
     fetchMock.mockResolvedValue(
       respuestaJson({
         fecha_emision: null,
