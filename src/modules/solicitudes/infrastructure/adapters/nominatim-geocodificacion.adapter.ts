@@ -361,7 +361,16 @@ export class NominatimGeocodificacionAdapter extends GeocodificacionPort {
     const url = new URL(PHOTON_URL);
     url.searchParams.set('q', expandirNomenclaturaColombiana(consulta));
     url.searchParams.set('limit', String(LIMITE_RESULTADOS));
-    url.searchParams.set('lang', 'es');
+    // Bug real reportado ("las direcciones no se están resolviendo"):
+    // Photon solo acepta `lang` en {default, de, en, fr} — "es" no
+    // está soportado y la API respondía 400 en CADA llamada, siempre,
+    // no solo cuando Nominatim fallaba. Como `buscar()` trata
+    // cualquier respuesta no-ok como fallo silencioso (`return null`),
+    // este respaldo nunca funcionó: cuando Nominatim se queda sin
+    // resultados o Render queda rate-limited por su IP compartida, el
+    // único fallback también fallaba siempre. Sin `lang`, Photon usa
+    // su set de nombres por defecto (sigue siendo útil: trae
+    // calle/barrio/ciudad en los campos estructurados igual).
 
     await this.esperarTurno();
     try {
