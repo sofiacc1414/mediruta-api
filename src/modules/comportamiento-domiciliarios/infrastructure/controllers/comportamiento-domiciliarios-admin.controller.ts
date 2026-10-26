@@ -24,8 +24,16 @@ import { RangoFechasDto } from '../dtos/rango-fechas.dto';
  * domiciliarios (entregas, cancelaciones, incidentes, calificaciones),
  * para detectar patrones inusuales y, desde ahí, bloquear/reactivar la
  * cuenta en `UsuariosModule` (G04 — este módulo no gestiona permisos,
- * solo lee comportamiento; el link de acción vive en el panel). */
-@Controller('admin/domiciliarios/comportamiento')
+ * solo lee comportamiento; el link de acción vive en el panel).
+ *
+ * Bug real reportado ("Validation failed (uuid is expected)"): este
+ * controller NO puede vivir bajo `admin/domiciliarios/...` — ya existe
+ * `DomiciliariosAdminController` en ese prefijo con `@Get(':id')` +
+ * `ParseUUIDPipe` (validación de registro). Una ruta anidada tipo
+ * `admin/domiciliarios/comportamiento` queda capturada por ESA ruta
+ * (":id" = "comportamiento", no es un UUID válido) antes de llegar
+ * acá. Prefijo propio para no colisionar con ningún `:id` ajeno. */
+@Controller('admin/comportamiento-domiciliarios')
 @UseFilters(DominioHttpFilter)
 @UseGuards(AccessAuthGuard, RolesGuard)
 @Roles('ADMINISTRADOR', 'ROOT')
